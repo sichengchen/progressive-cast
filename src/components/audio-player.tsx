@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Rewind, FastForward, Volume2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -17,6 +17,7 @@ export function AudioPlayer() {
   const {
     playbackState,
     preferences,
+    podcasts,
     pausePlayback,
     resumePlayback,
     setCurrentTime,
@@ -32,6 +33,120 @@ export function AudioPlayer() {
   } = usePodcastStore();
 
   const { currentEpisode, isPlaying, currentTime, duration, volume, seekRequested } = playbackState;
+
+  // Get current podcast info
+  const currentPodcast = currentEpisode ? podcasts.find(p => p.id === currentEpisode.podcastId) : null;
+
+  const handleSkip = useCallback((seconds: number) => {
+    if (!audioRef.current) return;
+
+    const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
+    setCurrentTime(newTime);
+    audioRef.current.currentTime = newTime;
+    
+    // Save progress after seeking
+    if (currentEpisode && duration > 0) {
+      saveProgress(currentEpisode.id, newTime, duration);
+    }
+  }, [duration, currentTime, setCurrentTime, currentEpisode, saveProgress]);
+
+  // Update MediaSession metadata when episode changes
+  const updateMediaSession = useCallback(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator && currentEpisode && currentPodcast) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: currentEpisode.title,
+        artist: currentPodcast.title,
+        album: currentPodcast.author || currentPodcast.title,
+        artwork: currentEpisode.imageUrl || currentPodcast.imageUrl ? [
+          {
+            src: currentEpisode.imageUrl || currentPodcast.imageUrl || '',
+            sizes: '512x512',
+            type: 'image/jpeg'
+          }
+        ] : undefined
+      });
+
+      // Set up action handlers
+      navigator.mediaSession.setActionHandler('play', () => {
+        resumePlayback();
+      });
+
+      navigator.mediaSession.setActionHandler('pause', () => {
+        pausePlayback();
+      });
+
+      navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+        const skipTime = details.seekOffset || preferences.skipInterval || 30;
+        handleSkip(-skipTime);
+      });
+
+      navigator.mediaSession.setActionHandler('seekforward', (details) => {
+        const skipTime = details.seekOffset || preferences.skipInterval || 30;
+        handleSkip(skipTime);
+      });
+
+      navigator.mediaSession.setActionHandler('seekto', (details) => {
+        if (details.seekTime !== undefined && audioRef.current) {
+          const newTime = Math.max(0, Math.min(duration, details.seekTime));
+          setCurrentTime(newTime);
+          audioRef.current.currentTime = newTime;
+          
+          // Save progress after seeking via MediaSession
+          if (currentEpisode && duration > 0) {
+            saveProgress(currentEpisode.id, newTime, duration);
+          }
+        }
+      });
+    }
+  }, [currentEpisode, currentPodcast, resumePlayback, pausePlayback, handleSkip, preferences.skipInterval, setCurrentTime, duration, saveProgress]);
+
+  // Update MediaSession playback state
+  const updateMediaSessionState = useCallback(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator) {
+      // Update playback state
+      navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused';
+    }
+  }, [isPlaying]);
+
+  // Update MediaSession position state
+  const updateMediaSessionPosition = useCallback(() => {
+    if (typeof window !== 'undefined' && 'mediaSession' in navigator && duration > 0) {
+      try {
+        navigator.mediaSession.setPositionState({
+          duration: duration,
+          playbackRate: 1,
+          position: Math.min(currentTime, duration) // Ensure position doesn't exceed duration
+        });
+      } catch (error) {
+        // Some browsers may not support setPositionState or have issues with it
+        console.warn('Failed to update MediaSession position:', error);
+      }
+    }
+  }, [currentTime, duration]);
+
+  // Update MediaSession metadata when episode changes
+  useEffect(() => {
+    updateMediaSession();
+  }, [updateMediaSession]);
+
+  // Update MediaSession playback state when play/pause changes
+  useEffect(() => {
+    updateMediaSessionState();
+  }, [updateMediaSessionState]);
+
+  // Update MediaSession position periodically (less frequently than every second)
+  useEffect(() => {
+    if (!currentEpisode || duration <= 0) return;
+    
+    const interval = setInterval(() => {
+      updateMediaSessionPosition();
+    }, 5000); // Update position every 5 seconds instead of every second
+
+    // Also update immediately
+    updateMediaSessionPosition();
+
+    return () => clearInterval(interval);
+  }, [currentEpisode, duration, updateMediaSessionPosition]);
 
   useEffect(() => {
     setMounted(true);
@@ -160,14 +275,29 @@ export function AudioPlayer() {
     if (!currentEpisode || !isPlaying) return;
 
     const interval = setInterval(() => {
-      saveProgress(currentEpisode.id, currentTime, duration);
+      // Get current values directly from audio element to avoid dependency issues
+      if (audioRef.current && currentEpisode) {
+        const currentAudioTime = audioRef.current.currentTime;
+        const currentAudioDuration = audioRef.current.duration || duration;
+        if (currentAudioDuration > 0) {
+          saveProgress(currentEpisode.id, currentAudioTime, currentAudioDuration);
+        }
+      }
     }, 10000); // Save every 10 seconds
 
     return () => clearInterval(interval);
-  }, [currentEpisode, isPlaying, currentTime, duration, saveProgress]);
+  }, [currentEpisode, isPlaying, saveProgress, duration]);
 
   const handlePlayPause = () => {
     if (isPlaying) {
+      // Save progress when pausing
+      if (currentEpisode && audioRef.current) {
+        const currentAudioTime = audioRef.current.currentTime;
+        const currentAudioDuration = audioRef.current.duration || duration;
+        if (currentAudioDuration > 0) {
+          saveProgress(currentEpisode.id, currentAudioTime, currentAudioDuration);
+        }
+      }
       pausePlayback();
     } else {
       resumePlayback();
@@ -180,18 +310,15 @@ export function AudioPlayer() {
     if (audioRef.current) {
       audioRef.current.currentTime = newTime;
     }
+    
+    // Save progress after seeking via progress bar
+    if (currentEpisode && duration > 0) {
+      saveProgress(currentEpisode.id, newTime, duration);
+    }
   };
 
   const handleVolumeChange = (value: number[]) => {
     setVolume(value[0]);
-  };
-
-  const handleSkip = (seconds: number) => {
-    if (!audioRef.current) return;
-
-    const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
-    setCurrentTime(newTime);
-    audioRef.current.currentTime = newTime;
   };
 
   const handleCoverClick = () => {
