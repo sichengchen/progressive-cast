@@ -68,7 +68,7 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
                         return (
                             <div key={episode.id}>
                                 <Card
-                                    className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none"
+                                    className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none bg-transparent"
                                     onClick={() => handlePlayEpisode(episode)}
                                 >
                                     <CardContent className="px-3">

@@ -115,7 +115,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
   const shouldShowMore = cleanDescription.length > 0;
 
   return (
-    <Card className="border-0 shadow-none">
+    <Card className="border-0 shadow-none bg-transparent">
       <CardHeader className="p-0">
         <div className="flex flex-col gap-6 md:flex-row md:gap-8 md:items-start">
           {/* Podcast Cover - Aligned with content height */}
