@@ -67,7 +67,7 @@ export function SettingsPage() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 mt-6">
+      <div className="px-6 py-3 my-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Settings</h1>
         </div>

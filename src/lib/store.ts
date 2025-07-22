@@ -642,7 +642,7 @@ export const usePodcastStore = create<PodcastStore>()(
 
             if (feedUrl) {
               try {
-                updateProgress(i + 1, `Importing: ${title}`);
+                updateProgress(i + 1, `${title}`);
 
                 // Check if already subscribed
                 const existing = get().podcasts.find(p => p.feedUrl === feedUrl);

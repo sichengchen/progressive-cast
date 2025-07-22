@@ -25,7 +25,17 @@ export function MainContent() {
     </div>
   );
 
-  // Handle different page views
+  // If there are no podcasts at all, always show welcome screen regardless of currentPage
+  if (podcasts.length === 0 && currentPage !== 'settings') {
+    return (
+      <>
+        {isMobile && <MobileHeader />}
+        <WelcomeScreen />
+      </>
+    );
+  }
+
+  // Handle different page views (only when user has podcasts)
   if (currentPage === 'whats-new') {
     return (
       <>
@@ -54,16 +64,6 @@ export function MainContent() {
   }
 
   // Default podcast view
-  // If there are no podcasts at all, show welcome screen
-  if (podcasts.length === 0) {
-    return (
-      <>
-        {isMobile && <MobileHeader />}
-        <WelcomeScreen />
-      </>
-    );
-  }
-
   // If there are podcasts but no podcast is selected, show empty content with consistent layout
   if (!selectedPodcastId) {
     return (

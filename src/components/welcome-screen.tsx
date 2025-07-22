@@ -52,11 +52,11 @@ export function WelcomeScreen() {
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
             <Radio className="w-8 h-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome</CardTitle>
+          <CardTitle className="text-2xl">Welcome!</CardTitle>
         </CardHeader>
         <CardContent className="text-center space-y-4 px-8">
           <p className="text-muted-foreground text-sm">
-            A modern, privacy-focused progressive web app podcast player. Get started by adding your first podcast.
+            Progressive Cast is a progressive web app (PWA) podcast player. Get started by adding your first podcast.
           </p>
 
           <div className="space-y-2">
