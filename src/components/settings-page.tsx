@@ -7,6 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { 
   AlertDialog,
   AlertDialogTrigger,
   AlertDialogContent,
@@ -26,7 +33,7 @@ import { toast } from 'sonner';
 export function SettingsPage() {
   const [isClearingData, setIsClearingData] = useState(false);
   
-  const { preferences, setSkipInterval, setAutoPlay, clearAllData, podcasts } = usePodcastStore();
+  const { preferences, setSkipInterval, setAutoPlay, setWhatsNewCount, clearAllData, podcasts } = usePodcastStore();
 
   const handleSkipIntervalChange = (value: number[]) => {
     setSkipInterval(value[0]);
@@ -34,6 +41,10 @@ export function SettingsPage() {
 
   const handleAutoPlayChange = (checked: boolean) => {
     setAutoPlay(checked);
+  };
+
+  const handleWhatsNewCountChange = (value: string) => {
+    setWhatsNewCount(parseInt(value));
   };
 
   const handleClearAllData = async () => {
@@ -81,9 +92,9 @@ export function SettingsPage() {
             <CardContent className="space-y-6">
               {/* Skip Interval */}
               <div className="space-y-2">
-                <Label>Skip Interval: {preferences.skipInterval} seconds</Label>
+                <Label>Skip Interval: {preferences.skipInterval || 30} seconds</Label>
                 <Slider
-                  value={[preferences.skipInterval]}
+                  value={[preferences.skipInterval || 30]}
                   onValueChange={handleSkipIntervalChange}
                   max={60}
                   min={10}
@@ -105,11 +116,43 @@ export function SettingsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => handleAutoPlayChange(!preferences.autoPlay)}
-                  className={preferences.autoPlay ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+                  onClick={() => handleAutoPlayChange(!(preferences.autoPlay || false))}
+                  className={(preferences.autoPlay || false) ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
                 >
-                  {preferences.autoPlay ? "On" : "Off"}
+                  {(preferences.autoPlay || false) ? "On" : "Off"}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* What's New Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>What&apos;s New</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Number of Episodes */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label>Number of Episodes</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Number of latest episodes to show in the What&apos;s New section
+                  </p>
+                </div>
+                <Select
+                  value={(preferences.whatsNewCount || 10).toString()}
+                  onValueChange={handleWhatsNewCountChange}
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Select count" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="5">5 episodes</SelectItem>
+                    <SelectItem value="10">10 episodes</SelectItem>
+                    <SelectItem value="20">20 episodes</SelectItem>
+                    <SelectItem value="50">50 episodes</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </CardContent>
           </Card>

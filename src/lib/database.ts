@@ -7,16 +7,22 @@ export interface PodcastDB {
   playbackProgress: EntityTable<PlaybackProgress, 'id'>;
 }
 
-export const db = new Dexie('PodcastPlayerDB') as Dexie & PodcastDB;
+const db = new Dexie('PodcastPlayerDB') as Dexie & PodcastDB;
 
-// Define schemas
+// Define schemas with optimized indexes for performance
 db.version(1).stores({
   podcasts: '&id, title, feedUrl, subscriptionDate, lastUpdated',
   episodes: '&id, podcastId, title, publishedAt, audioUrl',
   playbackProgress: '&id, episodeId, podcastId, lastPlayedAt, isCompleted'
 });
 
-// Helper functions for database operations
+// Add compound indexes for better query performance
+db.version(2).stores({
+  podcasts: '&id, title, feedUrl, subscriptionDate, lastUpdated',
+  episodes: '&id, podcastId, title, publishedAt, audioUrl, [publishedAt+podcastId]', // Compound index for latest episodes query
+  playbackProgress: '&id, episodeId, podcastId, lastPlayedAt, isCompleted'
+});
+
 export class DatabaseService {
   // Podcast operations
   static async addPodcast(podcast: Podcast): Promise<void> {
@@ -47,6 +53,16 @@ export class DatabaseService {
   // Episode operations
   static async addEpisodes(episodes: Episode[]): Promise<void> {
     await db.episodes.bulkAdd(episodes);
+  }
+
+  // Optimized method for getting latest episodes across all podcasts
+  static async getLatestEpisodesOptimized(limit: number = 10): Promise<Episode[]> {
+    // Single query to get latest episodes across all podcasts, sorted by publishedAt
+    return await db.episodes
+      .orderBy('publishedAt')
+      .reverse()
+      .limit(limit)
+      .toArray();
   }
 
   static async getEpisodesByPodcastId(podcastId: string): Promise<Episode[]> {

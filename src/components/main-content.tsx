@@ -6,6 +6,7 @@ import { ShowNotes } from './show-notes';
 import { WelcomeScreen } from './welcome-screen';
 import { PodcastDetails } from './podcast-details';
 import { SettingsPage } from './settings-page';
+import { WhatsNew } from './whats-new';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -24,6 +25,15 @@ export function MainContent() {
   );
 
   // Handle different page views
+  if (currentPage === 'whats-new') {
+    return (
+      <>
+        {isMobile && <MobileHeader />}
+        <WhatsNew />
+      </>
+    );
+  }
+
   if (currentPage === 'settings') {
     return (
       <>

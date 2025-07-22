@@ -19,6 +19,37 @@ export function formatTime(seconds: number): string {
   }
 }
 
+// Alias for formatTime to be more explicit for duration formatting
+export const formatDuration = formatTime;
+
+// Format date to a readable string
+export function formatDate(date: Date | string): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (isNaN(dateObj.getTime())) return 'Invalid date';
+  
+  const now = new Date();
+  const diffInMs = now.getTime() - dateObj.getTime();
+  const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  
+  if (diffInDays === 0) {
+    return 'Today';
+  } else if (diffInDays === 1) {
+    return 'Yesterday';
+  } else if (diffInDays < 7) {
+    return `${diffInDays} days ago`;
+  } else if (diffInDays < 30) {
+    const weeks = Math.floor(diffInDays / 7);
+    return weeks === 1 ? '1 week ago' : `${weeks} weeks ago`;
+  } else if (diffInDays < 365) {
+    const months = Math.floor(diffInDays / 30);
+    return months === 1 ? '1 month ago' : `${months} months ago`;
+  } else {
+    const years = Math.floor(diffInDays / 365);
+    return years === 1 ? '1 year ago' : `${years} years ago`;
+  }
+}
+
 // Parse timestamp string (like "36:01" or "1:23:45") to seconds
 export function parseTimestamp(timestamp: string): number {
   const parts = timestamp.split(':').map(Number);

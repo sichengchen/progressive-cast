@@ -4,6 +4,17 @@ import type { Podcast, Episode, PlaybackProgress, PlaybackState, UserPreferences
 import { DatabaseService } from './database';
 import { RSSService } from './rss-service';
 
+const defaultPreferences: UserPreferences = {
+  theme: 'system',
+  skipInterval: 30,
+  autoPlay: false,
+  whatsNewCount: 10,
+};
+
+const ensureCompletePreferences = (preferences: Partial<UserPreferences> = {}): UserPreferences => {
+  return { ...defaultPreferences, ...preferences };
+};
+
 interface PodcastStore {
   // State
   podcasts: Podcast[];
@@ -13,10 +24,17 @@ interface PodcastStore {
   preferences: UserPreferences;
   selectedPodcastId: string | null;
   showNotesOpen: boolean;
-  currentPage: 'podcasts' | 'settings';
+  currentPage: 'podcasts' | 'whats-new' | 'settings';
   isLoading: boolean;
   error: string | null;
-  
+
+  // Cache for latest episodes to improve performance
+  latestEpisodesCache: {
+    episodes: Episode[];
+    timestamp: number;
+    count: number;
+  } | null;
+
   // Progress state
   progressDialog: {
     isOpen: boolean;
@@ -28,21 +46,23 @@ interface PodcastStore {
 
   // Actions
   initializeStore: () => Promise<void>;
-  
+
   // Podcast actions
   subscribeToPodcast: (feedUrl: string) => Promise<void>;
   unsubscribeFromPodcast: (podcastId: string) => Promise<void>;
   refreshPodcast: (podcastId: string) => Promise<void>;
   refreshAllPodcasts: () => Promise<void>;
   setSelectedPodcast: (podcastId: string | null) => void;
-  
+
   // Episode actions
   loadEpisodes: (podcastId: string) => Promise<void>;
+  getLatestEpisodes: () => Promise<Episode[]>;
+  clearLatestEpisodesCache: () => void;
   toggleShowNotes: () => void;
-  
+
   // Page navigation
-  setCurrentPage: (page: 'podcasts' | 'settings') => void;
-  
+  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'settings') => void;
+
   // Playback actions
   playEpisode: (episode: Episode) => void;
   pausePlayback: () => void;
@@ -55,24 +75,25 @@ interface PodcastStore {
   setLoading: (isLoading: boolean) => void;
   saveProgress: (episodeId: string, currentTime: number, duration: number) => Promise<void>;
   markEpisodeCompleted: (episodeId: string) => Promise<void>;
-  
+
   // Preference actions
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
   setSkipInterval: (interval: number) => void;
+  setWhatsNewCount: (count: number) => void;
   setAutoPlay: (autoPlay: boolean) => void;
-  
+
   // Error handling
   setError: (error: string | null) => void;
   clearError: () => void;
-  
+
   // Progress dialog actions
   setProgressDialog: (data: { isOpen: boolean; title?: string; currentItem?: string; progress?: number; total?: number }) => void;
   updateProgress: (progress: number, currentItem?: string) => void;
   closeProgressDialog: () => void;
-  
-    // OPML import
+
+  // OPML import
   importFromOPML: (opmlContent: string) => Promise<{ imported: number; errors: number }>;
-  
+
   // Data management
   clearAllData: () => Promise<void>;
 }
@@ -94,17 +115,14 @@ export const usePodcastStore = create<PodcastStore>()(
         showNotes: '',
         seekRequested: false,
       },
-      preferences: {
-        theme: 'system',
-        skipInterval: 30,
-        autoPlay: false,
-      },
+      preferences: defaultPreferences,
       selectedPodcastId: null,
       showNotesOpen: false,
-      currentPage: 'podcasts' as const,
+      currentPage: 'whats-new' as const,
       isLoading: false,
       error: null,
-      
+      latestEpisodesCache: null,
+
       // Progress dialog initial state
       progressDialog: {
         isOpen: false,
@@ -118,7 +136,7 @@ export const usePodcastStore = create<PodcastStore>()(
       initializeStore: async () => {
         try {
           set({ isLoading: true });
-          
+
           const [podcasts, allProgress] = await Promise.all([
             DatabaseService.getPodcasts(),
             DatabaseService.exportData().then(data => data.playbackProgress)
@@ -129,15 +147,15 @@ export const usePodcastStore = create<PodcastStore>()(
             progressMap.set(progress.episodeId, progress);
           });
 
-          set({ 
-            podcasts, 
+          set({
+            podcasts,
             playbackProgress: progressMap,
-            isLoading: false 
+            isLoading: false
           });
         } catch (error) {
-          set({ 
+          set({
             error: `Failed to initialize store: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            isLoading: false 
+            isLoading: false
           });
         }
       },
@@ -146,7 +164,7 @@ export const usePodcastStore = create<PodcastStore>()(
       subscribeToPodcast: async (feedUrl: string) => {
         try {
           set({ error: null });
-          
+
           // Start progress dialog
           const { setProgressDialog, updateProgress, closeProgressDialog } = get();
           setProgressDialog({
@@ -160,14 +178,14 @@ export const usePodcastStore = create<PodcastStore>()(
           // Step 1: Parse feed
           updateProgress(1, 'Parsing RSS feed...');
           const feed = await RSSService.parseFeed(feedUrl);
-          
+
           // Check if already subscribed
           const existing = get().podcasts.find(p => p.feedUrl === feedUrl);
           if (existing) {
             closeProgressDialog();
             throw new Error('Already subscribed to this podcast');
           }
-          
+
           // Step 2: Convert to internal format
           updateProgress(2, `Processing podcast: ${feed.title}`);
           const podcast = RSSService.rssFeedToPodcast(feed);
@@ -182,12 +200,15 @@ export const usePodcastStore = create<PodcastStore>()(
           set(state => ({
             podcasts: [podcast, ...state.podcasts],
           }));
-          
+
+          // Clear cache since we have new episodes
+          get().clearLatestEpisodesCache();
+
           closeProgressDialog();
         } catch (error) {
           const { closeProgressDialog } = get();
           closeProgressDialog();
-          set({ 
+          set({
             error: `Failed to subscribe to podcast: ${error instanceof Error ? error.message : 'Unknown error'}`,
           });
         }
@@ -197,7 +218,7 @@ export const usePodcastStore = create<PodcastStore>()(
       unsubscribeFromPodcast: async (podcastId: string) => {
         try {
           await DatabaseService.deletePodcast(podcastId);
-          
+
           set(state => ({
             podcasts: state.podcasts.filter(p => p.id !== podcastId),
             episodes: state.episodes.filter(e => e.podcastId !== podcastId),
@@ -216,11 +237,11 @@ export const usePodcastStore = create<PodcastStore>()(
 
           const feed = await RSSService.parseFeed(podcast.feedUrl);
           const newEpisodes = RSSService.rssEpisodesToEpisodes(feed.episodes, podcast.id);
-          
+
           // Update podcast metadata
           const updatedPodcast = { ...podcast, lastUpdated: new Date() };
           await DatabaseService.updatePodcast(podcast.id, { lastUpdated: new Date() });
-          
+
           // Add new episodes (existing ones will be ignored due to unique IDs)
           try {
             await DatabaseService.addEpisodes(newEpisodes);
@@ -231,6 +252,9 @@ export const usePodcastStore = create<PodcastStore>()(
           set(state => ({
             podcasts: state.podcasts.map(p => p.id === podcastId ? updatedPodcast : p)
           }));
+
+          // Clear cache since episodes may have been updated
+          get().clearLatestEpisodesCache();
         } catch (error) {
           set({ error: `Failed to refresh podcast: ${error instanceof Error ? error.message : 'Unknown error'}` });
         }
@@ -260,13 +284,51 @@ export const usePodcastStore = create<PodcastStore>()(
         }
       },
 
+      // Get latest episodes from all podcasts with caching for performance
+      getLatestEpisodes: async () => {
+        try {
+          const { preferences, latestEpisodesCache } = get();
+          const limit = preferences.whatsNewCount || 10;
+          const cacheValidDuration = 5 * 60 * 1000; // 5 minutes cache
+
+          // Check if we have valid cached data
+          if (latestEpisodesCache &&
+            latestEpisodesCache.count === limit &&
+            Date.now() - latestEpisodesCache.timestamp < cacheValidDuration) {
+            return latestEpisodesCache.episodes;
+          }
+
+          // Use optimized database query instead of loading all episodes
+          const latestEpisodes = await DatabaseService.getLatestEpisodesOptimized(limit);
+
+          // Update cache
+          set(() => ({
+            latestEpisodesCache: {
+              episodes: latestEpisodes,
+              timestamp: Date.now(),
+              count: limit
+            }
+          }));
+
+          return latestEpisodes;
+        } catch (error) {
+          set({ error: `Failed to load latest episodes: ${error instanceof Error ? error.message : 'Unknown error'}` });
+          return [];
+        }
+      },
+
+      // Clear latest episodes cache when needed
+      clearLatestEpisodesCache: () => {
+        set({ latestEpisodesCache: null });
+      },
+
       // Toggle show notes
       toggleShowNotes: () => {
         set(state => ({ showNotesOpen: !state.showNotesOpen }));
       },
 
       // Set current page
-      setCurrentPage: (page: 'podcasts' | 'settings') => {
+      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'settings') => {
         set({ currentPage: page });
       },
 
@@ -274,7 +336,7 @@ export const usePodcastStore = create<PodcastStore>()(
       playEpisode: (episode: Episode) => {
         const { playbackProgress } = get();
         const savedProgress = playbackProgress.get(episode.id);
-        
+
         set(state => ({
           playbackState: {
             ...state.playbackState,
@@ -385,7 +447,7 @@ export const usePodcastStore = create<PodcastStore>()(
         };
 
         await DatabaseService.savePlaybackProgress(progress);
-        
+
         set(state => {
           const newProgressMap = new Map(state.playbackProgress);
           newProgressMap.set(episodeId, progress);
@@ -399,7 +461,7 @@ export const usePodcastStore = create<PodcastStore>()(
         if (!playbackState.currentEpisode) return;
 
         await DatabaseService.markEpisodeCompleted(episodeId, playbackState.currentEpisode.podcastId);
-        
+
         const progress: PlaybackProgress = {
           id: `${episodeId}_progress`,
           episodeId,
@@ -433,6 +495,16 @@ export const usePodcastStore = create<PodcastStore>()(
           preferences: {
             ...state.preferences,
             skipInterval: interval
+          }
+        }));
+      },
+
+      // Set what's new count
+      setWhatsNewCount: (count: number) => {
+        set(state => ({
+          preferences: {
+            ...state.preferences,
+            whatsNewCount: count
           }
         }));
       },
@@ -494,12 +566,12 @@ export const usePodcastStore = create<PodcastStore>()(
       importFromOPML: async (opmlContent: string) => {
         try {
           const { setProgressDialog, updateProgress, closeProgressDialog } = get();
-          
+
           // Parse OPML
           const parser = new DOMParser();
           const doc = parser.parseFromString(opmlContent, 'application/xml');
           const outlines = doc.querySelectorAll('outline[xmlUrl]');
-          
+
           const totalFeeds = outlines.length;
           if (totalFeeds === 0) {
             throw new Error('No podcast feeds found in OPML file');
@@ -521,11 +593,11 @@ export const usePodcastStore = create<PodcastStore>()(
             const outline = outlines[i];
             const feedUrl = outline.getAttribute('xmlUrl');
             const title = outline.getAttribute('title') || outline.getAttribute('text') || feedUrl;
-            
+
             if (feedUrl) {
               try {
                 updateProgress(i + 1, `Importing: ${title}`);
-                
+
                 // Check if already subscribed
                 const existing = get().podcasts.find(p => p.feedUrl === feedUrl);
                 if (existing) {
@@ -564,7 +636,7 @@ export const usePodcastStore = create<PodcastStore>()(
       clearAllData: async () => {
         try {
           await DatabaseService.clearAllData();
-          
+
           // Reset all state to initial values
           set({
             podcasts: [],
@@ -582,8 +654,9 @@ export const usePodcastStore = create<PodcastStore>()(
             },
             selectedPodcastId: null,
             showNotesOpen: false,
-            currentPage: 'podcasts' as const,
+            currentPage: 'whats-new' as const,
             error: null,
+            latestEpisodesCache: null,
             progressDialog: {
               isOpen: false,
               title: '',
@@ -599,10 +672,18 @@ export const usePodcastStore = create<PodcastStore>()(
     }),
     {
       name: 'podcast-player-preferences',
-      partialize: (state) => ({ 
+      partialize: (state) => ({
         preferences: state.preferences,
-        selectedPodcastId: state.selectedPodcastId 
+        selectedPodcastId: state.selectedPodcastId
       }),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<PodcastStore> | undefined;
+        return {
+          ...currentState,
+          ...(persisted || {}),
+          preferences: ensureCompletePreferences(persisted?.preferences),
+        };
+      },
     }
   )
 ); 

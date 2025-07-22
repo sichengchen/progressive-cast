@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { Plus, Radio, Search, RefreshCw, Settings } from 'lucide-react';
+import { Plus, Radio, Search, RefreshCw, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -23,6 +23,11 @@ import { toast } from 'sonner';
 
 // Menu items
 const menuItems = [
+  {
+    title: "What's New",
+    icon: Sparkles,
+    action: "whats-new",
+  },
   {
     title: "Settings",
     icon: Settings,
@@ -60,6 +65,9 @@ export function PodcastSidebar() {
 
   const handleMenuClick = (action: string) => {
     switch (action) {
+      case 'whats-new':
+        setCurrentPage('whats-new');
+        break;
       case 'settings':
         setCurrentPage('settings');
         break;
