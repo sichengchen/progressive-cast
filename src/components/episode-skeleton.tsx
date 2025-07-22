@@ -15,7 +15,7 @@ export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
         <div className="space-y-0">
           {Array.from({ length: count }, (_, index) => (
             <div key={index}>
-              <Card className="border-0 shadow-none">
+              <Card className="border-0 shadow-none bg-transparent">
                 <CardContent className="px-3">
                   <div className="flex items-center gap-4">
                     {/* Cover image skeleton - matches w-20 h-20 */}
