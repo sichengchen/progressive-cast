@@ -24,7 +24,7 @@ interface PodcastStore {
   preferences: UserPreferences;
   selectedPodcastId: string | null;
   showNotesOpen: boolean;
-  currentPage: 'podcasts' | 'whats-new' | 'settings';
+  currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings';
   isLoading: boolean;
   error: string | null;
 
@@ -57,11 +57,12 @@ interface PodcastStore {
   // Episode actions
   loadEpisodes: (podcastId: string) => Promise<void>;
   getLatestEpisodes: () => Promise<Episode[]>;
+  getUnfinishedEpisodes: () => Promise<Episode[]>;
   clearLatestEpisodesCache: () => void;
   toggleShowNotes: () => void;
 
   // Page navigation
-  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'settings') => void;
+  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings') => void;
 
   // Playback actions
   playEpisode: (episode: Episode) => void;
@@ -317,6 +318,51 @@ export const usePodcastStore = create<PodcastStore>()(
         }
       },
 
+      // Get unfinished episodes (episodes with progress but not completed)
+      getUnfinishedEpisodes: async () => {
+        try {
+          const { playbackProgress } = get();
+          
+          // Get all progress records that are not completed and have some progress
+          const unfinishedProgressIds: string[] = [];
+          playbackProgress.forEach((progress, episodeId) => {
+            if (!progress.isCompleted && progress.currentTime > 0) {
+              unfinishedProgressIds.push(episodeId);
+            }
+          });
+
+          if (unfinishedProgressIds.length === 0) {
+            return [];
+          }
+
+          // Get episodes for the unfinished progress records by fetching each one
+          const episodes: Episode[] = [];
+          for (const episodeId of unfinishedProgressIds) {
+            try {
+              const episode = await DatabaseService.getEpisodeById(episodeId);
+              if (episode) {
+                episodes.push(episode);
+              }
+            } catch (error) {
+              console.warn(`Failed to load episode ${episodeId}:`, error);
+            }
+          }
+          
+          // Sort by last played date (most recent first)
+          const sortedEpisodes = episodes.sort((a: Episode, b: Episode) => {
+            const progressA = playbackProgress.get(a.id);
+            const progressB = playbackProgress.get(b.id);
+            if (!progressA || !progressB) return 0;
+            return new Date(progressB.lastPlayedAt).getTime() - new Date(progressA.lastPlayedAt).getTime();
+          });
+
+          return sortedEpisodes;
+        } catch (error) {
+          set({ error: `Failed to load unfinished episodes: ${error instanceof Error ? error.message : 'Unknown error'}` });
+          return [];
+        }
+      },
+
       // Clear latest episodes cache when needed
       clearLatestEpisodesCache: () => {
         set({ latestEpisodesCache: null });
@@ -328,7 +374,7 @@ export const usePodcastStore = create<PodcastStore>()(
       },
 
       // Set current page
-      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'settings') => {
+      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings') => {
         set({ currentPage: page });
       },
 

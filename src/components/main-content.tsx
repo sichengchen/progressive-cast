@@ -7,6 +7,7 @@ import { WelcomeScreen } from './welcome-screen';
 import { PodcastDetails } from './podcast-details';
 import { SettingsPage } from './settings-page';
 import { WhatsNew } from './whats-new';
+import { ResumePlaying } from './resume-playing';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -30,6 +31,15 @@ export function MainContent() {
       <>
         {isMobile && <MobileHeader />}
         <WhatsNew />
+      </>
+    );
+  }
+
+  if (currentPage === 'resume-playing') {
+    return (
+      <>
+        {isMobile && <MobileHeader />}
+        <ResumePlaying />
       </>
     );
   }
