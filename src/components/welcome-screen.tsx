@@ -10,10 +10,9 @@ import { toast } from 'sonner';
 
 export function WelcomeScreen() {
   const [addPodcastOpen, setAddPodcastOpen] = useState(false);
-  const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { subscribeToPodcast } = usePodcastStore();
+  const { importFromOPML, progressDialog } = usePodcastStore();
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -23,46 +22,26 @@ export function WelcomeScreen() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsImporting(true);
     try {
       const text = await file.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'application/xml');
+      const result = await importFromOPML(text);
       
-      const outlines = doc.querySelectorAll('outline[xmlUrl]');
-      let imported = 0;
-      let errors = 0;
-
-      for (const outline of outlines) {
-        const feedUrl = outline.getAttribute('xmlUrl');
-        if (feedUrl) {
-          try {
-            await subscribeToPodcast(feedUrl);
-            imported++;
-          } catch (error) {
-            console.error(`Failed to import podcast: ${feedUrl}`, error);
-            errors++;
-          }
-        }
-      }
-
-      if (imported > 0) {
-        toast.success(`Successfully imported ${imported} podcast(s)!`);
-        if (errors > 0) {
-          toast.warning(`${errors} podcast(s) failed to import. Check console for details.`);
+      if (result.imported > 0) {
+        toast.success(`Successfully imported ${result.imported} podcast(s)!`);
+        if (result.errors > 0) {
+          toast.warning(`${result.errors} podcast(s) failed to import. Check console for details.`);
         }
       } else {
         toast.error('No podcasts were imported. Please check the OPML file format.');
       }
     } catch (error) {
       console.error('OPML import error:', error);
-      toast.error('Failed to import OPML file. Please check the file format.');
-    } finally {
-      setIsImporting(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      toast.error(`Failed to import OPML file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -101,10 +80,10 @@ export function WelcomeScreen() {
               size="lg" 
               variant="outline"
               onClick={handleImportClick}
-              disabled={isImporting}
+              disabled={progressDialog.isOpen}
             >
               <Import className="w-4 h-4 mr-2" />
-              {isImporting ? 'Importing...' : 'Import OPML'}
+              {progressDialog.isOpen ? 'Importing...' : 'Import OPML'}
             </Button>
           </div>
 

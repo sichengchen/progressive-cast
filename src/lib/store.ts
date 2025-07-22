@@ -16,6 +16,15 @@ interface PodcastStore {
   currentPage: 'podcasts' | 'settings';
   isLoading: boolean;
   error: string | null;
+  
+  // Progress state
+  progressDialog: {
+    isOpen: boolean;
+    title: string;
+    currentItem: string;
+    progress: number;
+    total: number;
+  };
 
   // Actions
   initializeStore: () => Promise<void>;
@@ -56,6 +65,14 @@ interface PodcastStore {
   setError: (error: string | null) => void;
   clearError: () => void;
   
+  // Progress dialog actions
+  setProgressDialog: (data: { isOpen: boolean; title?: string; currentItem?: string; progress?: number; total?: number }) => void;
+  updateProgress: (progress: number, currentItem?: string) => void;
+  closeProgressDialog: () => void;
+  
+    // OPML import
+  importFromOPML: (opmlContent: string) => Promise<{ imported: number; errors: number }>;
+  
   // Data management
   clearAllData: () => Promise<void>;
 }
@@ -87,6 +104,15 @@ export const usePodcastStore = create<PodcastStore>()(
       currentPage: 'podcasts' as const,
       isLoading: false,
       error: null,
+      
+      // Progress dialog initial state
+      progressDialog: {
+        isOpen: false,
+        title: '',
+        currentItem: '',
+        progress: 0,
+        total: 0,
+      },
 
       // Initialize store with data from IndexedDB
       initializeStore: async () => {
@@ -119,29 +145,50 @@ export const usePodcastStore = create<PodcastStore>()(
       // Subscribe to a new podcast
       subscribeToPodcast: async (feedUrl: string) => {
         try {
-          set({ isLoading: true, error: null });
+          set({ error: null });
+          
+          // Start progress dialog
+          const { setProgressDialog, updateProgress, closeProgressDialog } = get();
+          setProgressDialog({
+            isOpen: true,
+            title: 'Adding Podcast',
+            currentItem: 'Getting podcast information...',
+            progress: 0,
+            total: 3
+          });
 
+          // Step 1: Parse feed
+          updateProgress(1, 'Parsing RSS feed...');
           const feed = await RSSService.parseFeed(feedUrl);
-          const podcast = RSSService.rssFeedToPodcast(feed);
-          const episodes = RSSService.rssEpisodesToEpisodes(feed.episodes, podcast.id);
-
+          
           // Check if already subscribed
           const existing = get().podcasts.find(p => p.feedUrl === feedUrl);
           if (existing) {
+            closeProgressDialog();
             throw new Error('Already subscribed to this podcast');
           }
+          
+          // Step 2: Convert to internal format
+          updateProgress(2, `Processing podcast: ${feed.title}`);
+          const podcast = RSSService.rssFeedToPodcast(feed);
+          const episodes = RSSService.rssEpisodesToEpisodes(feed.episodes, podcast.id);
 
+          // Step 3: Save to database
+          updateProgress(3, 'Saving to local database...');
           await DatabaseService.addPodcast(podcast);
           await DatabaseService.addEpisodes(episodes);
 
+          // Update state and close dialog
           set(state => ({
             podcasts: [podcast, ...state.podcasts],
-            isLoading: false
           }));
+          
+          closeProgressDialog();
         } catch (error) {
+          const { closeProgressDialog } = get();
+          closeProgressDialog();
           set({ 
             error: `Failed to subscribe to podcast: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            isLoading: false 
           });
         }
       },
@@ -410,6 +457,109 @@ export const usePodcastStore = create<PodcastStore>()(
         set({ error: null });
       },
 
+      // Progress dialog actions
+      setProgressDialog: (data: { isOpen: boolean; title?: string; currentItem?: string; progress?: number; total?: number }) => {
+        set(state => ({
+          progressDialog: {
+            ...state.progressDialog,
+            isOpen: data.isOpen,
+            title: data.title || state.progressDialog.title,
+            currentItem: data.currentItem || state.progressDialog.currentItem,
+            progress: data.progress !== undefined ? data.progress : state.progressDialog.progress,
+            total: data.total !== undefined ? data.total : state.progressDialog.total,
+          }
+        }));
+      },
+
+      updateProgress: (progress: number, currentItem?: string) => {
+        set(state => ({
+          progressDialog: {
+            ...state.progressDialog,
+            progress,
+            currentItem: currentItem || state.progressDialog.currentItem,
+          }
+        }));
+      },
+
+      closeProgressDialog: () => {
+        set(state => ({
+          progressDialog: {
+            ...state.progressDialog,
+            isOpen: false,
+          }
+        }));
+      },
+
+      // Import from OPML
+      importFromOPML: async (opmlContent: string) => {
+        try {
+          const { setProgressDialog, updateProgress, closeProgressDialog } = get();
+          
+          // Parse OPML
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(opmlContent, 'application/xml');
+          const outlines = doc.querySelectorAll('outline[xmlUrl]');
+          
+          const totalFeeds = outlines.length;
+          if (totalFeeds === 0) {
+            throw new Error('No podcast feeds found in OPML file');
+          }
+
+          // Start progress dialog
+          setProgressDialog({
+            isOpen: true,
+            title: 'Importing OPML Subscriptions',
+            currentItem: 'Preparing import...',
+            progress: 0,
+            total: totalFeeds
+          });
+
+          let imported = 0;
+          let errors = 0;
+
+          for (let i = 0; i < outlines.length; i++) {
+            const outline = outlines[i];
+            const feedUrl = outline.getAttribute('xmlUrl');
+            const title = outline.getAttribute('title') || outline.getAttribute('text') || feedUrl;
+            
+            if (feedUrl) {
+              try {
+                updateProgress(i + 1, `Importing: ${title}`);
+                
+                // Check if already subscribed
+                const existing = get().podcasts.find(p => p.feedUrl === feedUrl);
+                if (existing) {
+                  continue; // Skip already subscribed podcasts
+                }
+
+                const feed = await RSSService.parseFeed(feedUrl);
+                const podcast = RSSService.rssFeedToPodcast(feed);
+                const episodes = RSSService.rssEpisodesToEpisodes(feed.episodes, podcast.id);
+
+                await DatabaseService.addPodcast(podcast);
+                await DatabaseService.addEpisodes(episodes);
+
+                set(state => ({
+                  podcasts: [podcast, ...state.podcasts],
+                }));
+
+                imported++;
+              } catch (error) {
+                console.error(`Failed to import podcast: ${feedUrl}`, error);
+                errors++;
+              }
+            }
+          }
+
+          closeProgressDialog();
+          return { imported, errors };
+        } catch (error) {
+          const { closeProgressDialog } = get();
+          closeProgressDialog();
+          throw error;
+        }
+      },
+
       // Clear all data
       clearAllData: async () => {
         try {
@@ -433,7 +583,14 @@ export const usePodcastStore = create<PodcastStore>()(
             selectedPodcastId: null,
             showNotesOpen: false,
             currentPage: 'podcasts' as const,
-            error: null
+            error: null,
+            progressDialog: {
+              isOpen: false,
+              title: '',
+              currentItem: '',
+              progress: 0,
+              total: 0,
+            }
           });
         } catch (error) {
           set({ error: `Failed to clear data: ${error instanceof Error ? error.message : 'Unknown error'}` });

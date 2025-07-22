@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 
 export function OPMLManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { podcasts, subscribeToPodcast } = usePodcastStore();
+  const { podcasts, importFromOPML } = usePodcastStore();
 
   const exportOPML = () => {
     const opmlContent = generateOPML(podcasts);
@@ -34,28 +34,20 @@ export function OPMLManager() {
 
     try {
       const text = await file.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(text, 'application/xml');
+      const result = await importFromOPML(text);
       
-      const outlines = doc.querySelectorAll('outline[xmlUrl]');
-      let imported = 0;
-
-      for (const outline of outlines) {
-        const feedUrl = outline.getAttribute('xmlUrl');
-        if (feedUrl) {
-          try {
-            await subscribeToPodcast(feedUrl);
-            imported++;
-          } catch (error) {
-            console.error(`Failed to import podcast: ${feedUrl}`, error);
-          }
+      if (result.imported > 0) {
+        toast.success(`Successfully imported ${result.imported} podcast(s)!`);
+        if (result.errors > 0) {
+          toast.warning(`${result.errors} podcast(s) failed to import. Check console for details.`);
         }
+      } else {
+        toast.error('No podcasts were imported. Please check the OPML file format.');
       }
-
-      toast.success(`Successfully imported ${imported} podcast(s)!`);
-         } catch {
-       toast.error('Failed to import OPML file. Please check the file format.');
-     }
+    } catch (error) {
+      console.error('OPML import error:', error);
+      toast.error(`Failed to import OPML file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
 
     // Reset file input
     if (fileInputRef.current) {

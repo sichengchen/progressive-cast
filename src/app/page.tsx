@@ -5,6 +5,7 @@ import { PodcastSidebar } from "@/components/podcast-sidebar";
 import { MainContent } from "@/components/main-content";
 import { AudioPlayer } from "@/components/audio-player";
 import { LoadingScreen } from "@/components/loading-screen";
+import { ProgressDialog } from "@/components/progress-dialog";
 import { usePodcastStore } from "@/lib/store";
 
 export default function HomePage() {
@@ -28,6 +29,7 @@ export default function HomePage() {
           <AudioPlayer />
         </SidebarInset>
       </div>
+      <ProgressDialog />
     </SidebarProvider>
   );
 }

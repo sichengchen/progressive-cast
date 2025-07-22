@@ -15,15 +15,13 @@ interface AddPodcastDialogProps {
 
 export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) {
   const [feedUrl, setFeedUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   
-  const { subscribeToPodcast, clearError } = usePodcastStore();
+  const { subscribeToPodcast, clearError, progressDialog } = usePodcastStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedUrl.trim()) return;
 
-    setIsLoading(true);
     clearError();
     
     await subscribeToPodcast(feedUrl.trim());
@@ -37,8 +35,6 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
       onOpenChange(false);
       toast.success('Podcast added successfully!');
     }
-    
-    setIsLoading(false);
   };
 
   const handleClose = () => {
@@ -49,7 +45,7 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent>
+      <DialogContent showCloseButton={false}>
         <DialogHeader>
           <DialogTitle>Add New Podcast</DialogTitle>
           <DialogDescription>
@@ -63,10 +59,10 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
             <Input
               id="feedUrl"
               type="url"
-              placeholder="https://example.com/podcast.rss"
+              placeholder="https://example.com/feed.xml"
               value={feedUrl}
               onChange={(e) => setFeedUrl(e.target.value)}
-              disabled={isLoading}
+              disabled={progressDialog.isOpen}
               className="mt-1"
             />
           </div>
@@ -76,12 +72,12 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
               type="button"
               variant="outline"
               onClick={handleClose}
-              disabled={isLoading}
+              disabled={progressDialog.isOpen}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !feedUrl.trim()}>
-              {isLoading ? 'Adding...' : 'Add Podcast'}
+            <Button type="submit" disabled={progressDialog.isOpen || !feedUrl.trim()}>
+              {progressDialog.isOpen ? 'Adding...' : 'Add Podcast'}
             </Button>
           </div>
         </form>
