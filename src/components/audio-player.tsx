@@ -72,6 +72,16 @@ export function AudioPlayer() {
 
     const handleCanPlay = () => {
       setLoading(false);
+      // Auto-play if user intended to play this episode
+      if (isPlaying && audio.paused) {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((error) => {
+            console.warn('Auto-play failed:', error);
+            pausePlayback();
+          });
+        }
+      }
     };
 
     const handleEnded = () => {
@@ -106,7 +116,7 @@ export function AudioPlayer() {
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [currentEpisode, setDuration, setLoading, pausePlayback, saveProgress, setCurrentTime, duration]);
+  }, [currentEpisode, setDuration, setLoading, pausePlayback, saveProgress, setCurrentTime, duration, isPlaying]);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -114,8 +124,8 @@ export function AudioPlayer() {
     const audio = audioRef.current;
 
     if (isPlaying) {
-      // Only try to play if audio is ready
-      if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      // Only try to play if audio is ready and not already playing
+      if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && audio.paused) {
         const playPromise = audio.play();
         if (playPromise !== undefined) {
           playPromise.catch((error) => {
@@ -124,20 +134,8 @@ export function AudioPlayer() {
             pausePlayback();
           });
         }
-      } else {
-        // Wait for audio to be ready before playing
-        const handleCanPlay = () => {
-          const playPromise = audio.play();
-          if (playPromise !== undefined) {
-            playPromise.catch((error) => {
-              console.warn('Play request failed:', error);
-              pausePlayback();
-            });
-          }
-          audio.removeEventListener('canplay', handleCanPlay);
-        };
-        audio.addEventListener('canplay', handleCanPlay);
       }
+      // If audio is not ready, the canplay handler in the episode loading effect will handle it
     } else {
       audio.pause();
     }
