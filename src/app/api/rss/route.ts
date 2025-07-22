@@ -24,11 +24,11 @@ export async function GET(request: NextRequest) {
     // Fetch RSS content
     const response = await fetch(feedUrl, {
       headers: {
-        'User-Agent': 'Progressive-Cast/1.0 (Podcast Player)',
-        'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml',
+        'User-Agent': 'Mozilla/5.0 (compatible; Progressive-Cast/1.0)',
+        'Accept': 'application/rss+xml, application/xml, text/xml, application/atom+xml, text/plain, */*',
       },
-      // Set timeout
-      signal: AbortSignal.timeout(10000), // 10 seconds timeout
+      // Increase timeout for production environment
+      signal: AbortSignal.timeout(15000), // 15 seconds timeout
     });
 
     if (!response.ok) {
@@ -38,21 +38,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const contentType = response.headers.get('content-type');
-    if (!contentType?.includes('xml')) {
-      return NextResponse.json(
-        { error: 'Invalid content type. Expected XML format.' },
-        { status: 400 }
-      );
-    }
-
     const rssContent = await response.text();
+
+    // More flexible content validation - check if content looks like XML
+    const trimmedContent = rssContent.trim();
+    if (!trimmedContent.startsWith('<?xml') && !trimmedContent.startsWith('<rss') && !trimmedContent.startsWith('<feed')) {
+      const contentType = response.headers.get('content-type');
+      console.warn(`Suspicious content type: ${contentType}, content preview: ${trimmedContent.substring(0, 200)}`);
+      
+      // Still try to parse if it might be XML-like content
+      if (!trimmedContent.includes('<') || !trimmedContent.includes('>')) {
+        return NextResponse.json(
+          { error: 'Invalid content format. Expected XML/RSS format.' },
+          { status: 400 }
+        );
+      }
+    }
 
     // Return RSS content with appropriate CORS headers
     return new NextResponse(rssContent, {
       status: 200,
       headers: {
-        'Content-Type': 'application/xml',
+        'Content-Type': 'application/xml; charset=utf-8',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET',
         'Access-Control-Allow-Headers': 'Content-Type',
@@ -71,8 +78,24 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Handle timeout errors specifically
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return NextResponse.json(
+        { error: 'Request timeout. The RSS feed took too long to respond.' },
+        { status: 408 }
+      );
+    }
+
+    // More detailed error reporting for production debugging
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Detailed RSS fetch error:', {
+      url: feedUrl,
+      error: errorMessage,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     return NextResponse.json(
-      { error: 'Failed to fetch RSS feed' },
+      { error: `Failed to fetch RSS feed: ${errorMessage}` },
       { status: 500 }
     );
   }

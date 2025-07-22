@@ -19,24 +19,47 @@ export class RSSService {
       });
       
       console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          // If response is not JSON, try to get text content
+          const textContent = await response.text();
+          console.error('Non-JSON API response:', textContent);
+          errorData = { error: textContent || `HTTP ${response.status}: ${response.statusText}` };
+        }
+        
         const errorMessage = errorData.error || `HTTP ${response.status}: ${response.statusText}`;
-        console.error('API response error:', errorMessage);
+        console.error('API response error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorMessage,
+          feedUrl
+        });
         throw new Error(errorMessage);
       }
 
       // Parse the returned XML content directly
       const xmlContent = await response.text();
       console.log('Received XML content length:', xmlContent.length);
+      console.log('XML content starts with:', xmlContent.substring(0, 200));
       
       if (!xmlContent || xmlContent.trim().length === 0) {
         throw new Error('Empty response from RSS feed');
       }
       
+      // Additional validation for XML content
+      const trimmedContent = xmlContent.trim();
+      if (!trimmedContent.startsWith('<?xml') && !trimmedContent.startsWith('<rss') && !trimmedContent.startsWith('<feed')) {
+        console.error('Invalid XML format. Content preview:', trimmedContent.substring(0, 500));
+        throw new Error('Invalid XML format in RSS response');
+      }
+      
       const feed = await parser.parseString(xmlContent);
-      console.log('Parsed feed:', feed.title);
+      console.log('Parsed feed:', feed.title, 'with', feed.items?.length || 0, 'episodes');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const episodes: RSSEpisode[] = feed.items?.map((item: any) => ({
@@ -64,11 +87,23 @@ export class RSSService {
         episodes,
       };
     } catch (error) {
-      console.error('Error parsing RSS feed:', error);
+      console.error('Error parsing RSS feed:', {
+        feedUrl,
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
+      });
       
       // Provide more specific error messages
       if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
         throw new Error('Unable to connect to the RSS feed. Please check your internet connection and ensure the development server is running.');
+      }
+      
+      if (error instanceof Error && error.message.includes('timeout')) {
+        throw new Error('RSS feed request timed out. The feed may be temporarily unavailable or slow to respond.');
+      }
+      
+      if (error instanceof Error && error.message.includes('Invalid XML')) {
+        throw new Error('The RSS feed returned invalid XML content. This may be a temporary issue with the feed.');
       }
       
       if (error instanceof Error) {
