@@ -71,7 +71,7 @@ export function WhatsNew() {
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="p-6">
+        <div className="px-6 py-3 mt-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">What&apos;s New</h1>
           </div>
@@ -85,7 +85,7 @@ export function WhatsNew() {
   if (latestEpisodes.length === 0) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="p-6">
+        <div className="px-6 py-3 mt-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">What&apos;s New</h1>
           </div>
@@ -102,12 +102,12 @@ export function WhatsNew() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="p-6">
+      <div className="px-6 py-3 mt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">What&apos;s New</h1>
         </div>
         
-        <div className="space-y-0 max-w-4xl mx-auto">
+        <div className="space-y-0">
           {processedEpisodes.map((episodeData, index) => {
             const { podcast, progress, ...episode } = episodeData;
             
@@ -117,12 +117,12 @@ export function WhatsNew() {
                   className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none"
                   onClick={() => handlePlayEpisode(episode)}
                 >
-                  <CardContent className="p-3">
+                  <CardContent className="px-3">
                     <div className="flex items-center gap-4">
                       <CoverImage
                         src={episode.imageUrl || podcast?.imageUrl}
                         alt={episode.title}
-                        className="w-24 h-24 md:w-32 md:h-32"
+                        className="w-20 h-20"
                       >
                         {/* Play icon overlay only on cover area */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">

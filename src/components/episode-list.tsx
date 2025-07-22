@@ -60,7 +60,7 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
 
     return (
         <div className="h-full overflow-y-auto">
-            <div className="p-6">
+            <div className="p-3">
                 <div className="space-y-0">
                     {episodes.map((episode, index) => {
                         const progress = playbackProgress.get(episode.id);
@@ -71,7 +71,7 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
                                     className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none"
                                     onClick={() => handlePlayEpisode(episode)}
                                 >
-                                    <CardContent className="p-3">
+                                    <CardContent className="px-3">
                                         <div className="flex items-center gap-4">
                                             <CoverImage
                                                 src={episode.imageUrl}

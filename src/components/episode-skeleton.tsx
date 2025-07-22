@@ -10,43 +10,50 @@ interface EpisodeSkeletonProps {
 
 export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
   return (
-    <div className="space-y-0 max-w-4xl mx-auto">
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index}>
-          <Card className="border-0 shadow-none">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-4">
-                {/* Cover image skeleton */}
-                <Skeleton className="w-24 h-24 md:w-32 md:h-32 rounded" />
+    <div className="h-full overflow-y-auto">
+      <div className="p-3">
+        <div className="space-y-0">
+          {Array.from({ length: count }, (_, index) => (
+            <div key={index}>
+              <Card className="border-0 shadow-none">
+                <CardContent className="px-3">
+                  <div className="flex items-center gap-4">
+                    {/* Cover image skeleton - matches w-20 h-20 */}
+                    <Skeleton className="w-20 h-20 rounded" />
 
-                <div className="flex-1 min-w-0 space-y-2">
-                  {/* Podcast title skeleton */}
-                  <Skeleton className="h-3 w-32" />
-                  
-                  {/* Date skeleton */}
-                  <Skeleton className="h-3 w-24" />
+                    <div className="flex-1 min-w-0">
+                      {/* Date skeleton - matches text-xs above title */}
+                      <Skeleton className="h-3 w-20 mb-1" />
+                      
+                      {/* Episode title skeleton - matches font-medium line-clamp-2 */}
+                      <Skeleton className="h-4 w-full max-w-md mb-1" />
+                      <Skeleton className="h-4 w-3/4 mb-1" />
 
-                  {/* Episode title skeleton */}
-                  <Skeleton className="h-4 w-full max-w-md" />
-                  <Skeleton className="h-4 w-3/4" />
+                      {/* Duration skeleton - matches Clock icon + time */}
+                      <Skeleton className="h-3 w-16 mb-2" />
 
-                  {/* Duration skeleton */}
-                  <Skeleton className="h-3 w-16" />
+                      {/* Description skeleton - matches text-sm line-clamp-2 */}
+                      <Skeleton className="h-3 w-full mb-2" />
+                      <Skeleton className="h-3 w-4/5 mb-2" />
 
-                  {/* Description skeleton */}
-                  <Skeleton className="h-3 w-full" />
-                  <Skeleton className="h-3 w-5/6" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Separator except for the last item */}
-          {index < count - 1 && (
-            <Separator className="my-2" />
-          )}
+                      {/* Progress bar skeleton (optional) */}
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="flex-1 h-1 rounded-full" />
+                        <Skeleton className="h-3 w-16" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              {/* Separator except for the last item */}
+              {index < count - 1 && (
+                <Separator className="my-2" />
+              )}
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 } 
