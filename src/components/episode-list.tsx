@@ -22,9 +22,7 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
         episodes,
         playbackProgress,
         loadEpisodes,
-        playEpisode,
-        setSelectedEpisode,
-        selectedEpisodeId
+        playEpisode
     } = usePodcastStore();
 
     useEffect(() => {
@@ -42,7 +40,6 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
             event.stopPropagation();
         }
         playEpisode(episode);
-        setSelectedEpisode(episode.id); // Auto-select the episode when playing
     };
 
     // Show skeleton while loading episodes
@@ -67,13 +64,11 @@ export function EpisodeList({ podcastId }: EpisodeListProps) {
                 <div className="space-y-0">
                     {episodes.map((episode, index) => {
                         const progress = playbackProgress.get(episode.id);
-                        const isSelected = selectedEpisodeId === episode.id;
 
                         return (
                             <div key={episode.id}>
                                 <Card
-                                    className={`relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none ${isSelected ? 'bg-accent' : ''
-                                        }`}
+                                    className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none"
                                     onClick={() => handlePlayEpisode(episode)}
                                 >
                                     <CardContent className="p-3">

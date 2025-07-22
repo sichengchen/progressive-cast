@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePodcastStore } from '@/lib/store';
-import Image from 'next/image';
 
 interface SearchBarProps {
   onClose?: () => void;
@@ -18,7 +17,7 @@ export function SearchBar({ onClose }: SearchBarProps) {
   const [results, setResults] = useState<{ podcasts: any[]; episodes: any[] }>({ podcasts: [], episodes: [] });
   const [isSearching, setIsSearching] = useState(false);
   
-  const { podcasts, episodes, setSelectedPodcast, setSelectedEpisode, playEpisode } = usePodcastStore();
+  const { podcasts, episodes, setSelectedPodcast, playEpisode } = usePodcastStore();
 
   const handleSearch = async (searchQuery: string) => {
     setQuery(searchQuery);
@@ -51,14 +50,6 @@ export function SearchBar({ onClose }: SearchBarProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handlePodcastSelect = (podcast: any) => {
     setSelectedPodcast(podcast.id);
-    setQuery('');
-    setResults({ podcasts: [], episodes: [] });
-    onClose?.();
-  };
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const handleEpisodeSelect = (episode: any) => {
-    setSelectedEpisode(episode.id);
     setQuery('');
     setResults({ podcasts: [], episodes: [] });
     onClose?.();
@@ -147,10 +138,7 @@ export function SearchBar({ onClose }: SearchBarProps) {
                         className="p-2 rounded hover:bg-accent"
                       >
                         <div className="flex items-center justify-between">
-                          <div
-                            className="flex-1 min-w-0 cursor-pointer"
-                            onClick={() => handleEpisodeSelect(episode)}
-                          >
+                          <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{episode.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{episode.description}</p>
                           </div>

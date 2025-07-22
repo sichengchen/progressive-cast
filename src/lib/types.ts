@@ -60,7 +60,6 @@ export interface AppState {
   playbackState: PlaybackState;
   preferences: UserPreferences;
   selectedPodcastId: string | null;
-  selectedEpisodeId: string | null;
   isLoading: boolean;
   error: string | null;
 }

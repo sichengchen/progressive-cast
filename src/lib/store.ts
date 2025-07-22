@@ -12,7 +12,6 @@ interface PodcastStore {
   playbackState: PlaybackState;
   preferences: UserPreferences;
   selectedPodcastId: string | null;
-  selectedEpisodeId: string | null;
   showNotesOpen: boolean;
   currentPage: 'podcasts' | 'settings';
   isLoading: boolean;
@@ -30,7 +29,6 @@ interface PodcastStore {
   
   // Episode actions
   loadEpisodes: (podcastId: string) => Promise<void>;
-  setSelectedEpisode: (episodeId: string | null) => void;
   toggleShowNotes: () => void;
   
   // Page navigation
@@ -85,7 +83,6 @@ export const usePodcastStore = create<PodcastStore>()(
         autoPlay: false,
       },
       selectedPodcastId: null,
-      selectedEpisodeId: null,
       showNotesOpen: false,
       currentPage: 'podcasts' as const,
       isLoading: false,
@@ -157,10 +154,7 @@ export const usePodcastStore = create<PodcastStore>()(
           set(state => ({
             podcasts: state.podcasts.filter(p => p.id !== podcastId),
             episodes: state.episodes.filter(e => e.podcastId !== podcastId),
-            selectedPodcastId: state.selectedPodcastId === podcastId ? null : state.selectedPodcastId,
-            selectedEpisodeId: state.selectedEpisodeId && 
-              state.episodes.find(e => e.id === state.selectedEpisodeId)?.podcastId === podcastId 
-                ? null : state.selectedEpisodeId
+            selectedPodcastId: state.selectedPodcastId === podcastId ? null : state.selectedPodcastId
           }));
         } catch (error) {
           set({ error: `Failed to unsubscribe: ${error instanceof Error ? error.message : 'Unknown error'}` });
@@ -219,11 +213,6 @@ export const usePodcastStore = create<PodcastStore>()(
         }
       },
 
-      // Set selected episode
-      setSelectedEpisode: (episodeId: string | null) => {
-        set({ selectedEpisodeId: episodeId });
-      },
-
       // Toggle show notes
       toggleShowNotes: () => {
         set(state => ({ showNotesOpen: !state.showNotesOpen }));
@@ -248,8 +237,7 @@ export const usePodcastStore = create<PodcastStore>()(
             duration: savedProgress?.duration || 0, // Use saved duration if available
             isLoading: true, // Show loading state
             showNotes: episode.content || episode.description || '',
-          },
-          selectedEpisodeId: episode.id
+          }
         }));
       },
 
@@ -443,7 +431,6 @@ export const usePodcastStore = create<PodcastStore>()(
               seekRequested: false,
             },
             selectedPodcastId: null,
-            selectedEpisodeId: null,
             showNotesOpen: false,
             currentPage: 'podcasts' as const,
             error: null

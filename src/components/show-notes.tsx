@@ -6,11 +6,12 @@ import { processTimestamps } from '@/lib/utils';
 import DOMPurify from 'dompurify';
 
 export function ShowNotes() {
-  const { episodes, selectedEpisodeId, seekToTime, playbackState } = usePodcastStore();
+  const { seekToTime, playbackState } = usePodcastStore();
   const contentRef = useRef<HTMLDivElement>(null);
   
-  const selectedEpisode = episodes.find(e => e.id === selectedEpisodeId);
-  const content = selectedEpisode?.content || selectedEpisode?.description || '';
+  // Use the currently playing episode instead of selected episode
+  const currentEpisode = playbackState.currentEpisode;
+  const content = currentEpisode?.content || currentEpisode?.description || '';
 
   // Configure DOMPurify to allow safe HTML elements and attributes
   const sanitizeHtml = (html: string) => {
@@ -43,13 +44,12 @@ export function ShowNotes() {
 
   // Handle timestamp clicks
   const handleTimestampClick = useCallback((seconds: number) => {
-    if (playbackState.currentEpisode && playbackState.currentEpisode.id === selectedEpisode?.id) {
+    if (currentEpisode) {
       seekToTime(seconds);
     } else {
-      // If the episode isn't currently playing, we could optionally start playing it
-      console.log(`Would jump to ${seconds} seconds, but episode is not currently playing`);
+      console.log(`Would jump to ${seconds} seconds, but no episode is currently playing`);
     }
-  }, [playbackState.currentEpisode, selectedEpisode?.id, seekToTime]);
+  }, [currentEpisode, seekToTime]);
 
   // Set up click handlers for timestamp buttons
   useEffect(() => {
@@ -69,7 +69,7 @@ export function ShowNotes() {
         contentElement.removeEventListener('click', handleClick);
       };
     }
-  }, [content, selectedEpisode, playbackState.currentEpisode, handleTimestampClick]);
+  }, [content, currentEpisode, handleTimestampClick]);
 
   return (
     <div className="h-full flex flex-col">
@@ -78,13 +78,13 @@ export function ShowNotes() {
       </div>
       
       <div className="flex-1 overflow-y-auto p-4">
-        {selectedEpisode ? (
+        {currentEpisode ? (
           <div className="space-y-4">
             <div>
-              <h3 className="font-medium mb-2">{selectedEpisode.title}</h3>
-              {selectedEpisode.publishedAt && (
+              <h3 className="font-medium mb-2">{currentEpisode.title}</h3>
+              {currentEpisode.publishedAt && (
                 <p className="text-sm text-muted-foreground">
-                  {new Date(selectedEpisode.publishedAt).toLocaleDateString()}
+                  {new Date(currentEpisode.publishedAt).toLocaleDateString()}
                 </p>
               )}
             </div>
@@ -117,7 +117,7 @@ export function ShowNotes() {
           </div>
         ) : (
           <div className="text-center text-muted-foreground py-8">
-            <p>Select an episode to view show notes</p>
+            <p>Start playing an episode to view show notes</p>
           </div>
         )}
       </div>
