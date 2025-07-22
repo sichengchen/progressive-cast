@@ -56,12 +56,13 @@ export function OPMLManager() {
   };
 
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       <Button
         variant="outline"
         size="sm"
         onClick={exportOPML}
         disabled={podcasts.length === 0}
+        className="whitespace-nowrap"
       >
         <Download className="h-3 w-3 mr-1" />
         Export OPML
@@ -71,6 +72,7 @@ export function OPMLManager() {
         variant="outline"
         size="sm"
         onClick={handleImportClick}
+        className="whitespace-nowrap"
       >
         <Upload className="h-3 w-3 mr-1" />
         Import OPML
