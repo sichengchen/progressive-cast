@@ -44,6 +44,9 @@ pnpm start
 2. **Import Existing Subscriptions**: Use "Import OPML" to bulk-add from another app
 3. **Start Listening**: Click any episode to begin playback
 
+### Additional Docs
+- [Export OPML from Cosmos (小宇宙)](docs/opml-cosmos.md)
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
