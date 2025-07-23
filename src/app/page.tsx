@@ -1,7 +1,7 @@
 "use client"
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { PodcastSidebar } from "@/components/podcast-sidebar";
+import { PodcastSidebar } from "@/components/sidebar";
 import { MainContent } from "@/components/main-content";
 import { AudioPlayer } from "@/components/audio-player";
 import { LoadingScreen } from "@/components/loading-screen";
