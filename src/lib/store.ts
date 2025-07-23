@@ -26,6 +26,7 @@ interface PodcastStore {
   showNotesOpen: boolean;
   currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings';
   isLoading: boolean;
+  isRefreshing: boolean;
   error: string | null;
 
   // Cache for latest episodes to improve performance
@@ -121,6 +122,7 @@ export const usePodcastStore = create<PodcastStore>()(
       showNotesOpen: false,
       currentPage: 'whats-new' as const,
       isLoading: false,
+      isRefreshing: false,
       error: null,
       latestEpisodesCache: null,
 
@@ -263,8 +265,15 @@ export const usePodcastStore = create<PodcastStore>()(
 
       // Refresh all podcasts
       refreshAllPodcasts: async () => {
-        const { podcasts } = get();
-        await Promise.all(podcasts.map(podcast => get().refreshPodcast(podcast.id)));
+        try {
+          set({ isRefreshing: true, error: null });
+          const { podcasts } = get();
+          await Promise.all(podcasts.map(podcast => get().refreshPodcast(podcast.id)));
+        } catch (error) {
+          set({ error: `Failed to refresh podcasts: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        } finally {
+          set({ isRefreshing: false });
+        }
       },
 
       // Set selected podcast

@@ -48,6 +48,7 @@ export function PodcastSidebar() {
     podcasts, 
     selectedPodcastId, 
     isLoading,
+    isRefreshing,
     currentPage,
     setSelectedPodcast,
     refreshAllPodcasts,
@@ -144,18 +145,20 @@ export function PodcastSidebar() {
                   onClick={handleRefreshAll}
                   size="sm"
                   variant="ghost"
-                  disabled={isLoading}
-                  className="h-5 w-5 p-0 flex-shrink-0"
+                  disabled={isRefreshing}
+                  className="flex-shrink-0 hover:bg-accent transition-colors"
                 >
-                  <RefreshCw className={`h-3 w-3 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+                  <span className="sr-only">Refresh podcasts</span>
                 </Button>
                 <Button
                   onClick={() => setIsAddDialogOpen(true)}
                   size="sm"
                   variant="ghost"
-                  className="h-5 w-5 p-0 flex-shrink-0"
+                  className="flex-shrink-0 hover:bg-accent transition-colors"
                 >
                   <Plus className="h-3 w-3" />
+                  <span className="sr-only">Add podcast</span>
                 </Button>
               </div>
             </div>
