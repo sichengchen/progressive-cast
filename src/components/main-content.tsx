@@ -9,10 +9,12 @@ import { SettingsPage } from './settings-page';
 import { WhatsNew } from './whats-new';
 import { ResumePlaying } from './resume-playing';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function MainContent() {
-  const { podcasts, selectedPodcastId, showNotesOpen, currentPage } = usePodcastStore();
+  const { podcasts, selectedPodcastId, currentPage, showNotesOpen, toggleShowNotes } = usePodcastStore();
   const isMobile = useIsMobile();
 
   // Mobile header component
@@ -25,12 +27,26 @@ export function MainContent() {
     </div>
   );
 
+  // Global Mobile Show Notes Overlay
+  const MobileShowNotesOverlay = () => (
+    isMobile && showNotesOpen && (
+      <div className="absolute inset-0 z-50 bg-background">
+        <div className="h-full flex flex-col">
+          <ShowNotes />
+        </div>
+      </div>
+    )
+  );
+
   // If there are no podcasts at all, always show welcome screen regardless of currentPage
   if (podcasts.length === 0 && currentPage !== 'settings') {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <WelcomeScreen />
+        <div className="relative flex-1">
+          <WelcomeScreen />
+          <MobileShowNotesOverlay />
+        </div>
       </>
     );
   }
@@ -40,7 +56,29 @@ export function MainContent() {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <WhatsNew />
+        {isMobile ? (
+          // Mobile layout - simplified
+          <div className="flex-1 overflow-hidden relative">
+            <WhatsNew />
+            <MobileShowNotesOverlay />
+          </div>
+        ) : (
+          // Desktop layout - with sidebar
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1">
+              <WhatsNew />
+            </div>
+            
+            {/* Show Notes Sidebar for What's New page */}
+            <div 
+              className={`border-l bg-background transition-all duration-300 ease-in-out ${
+                showNotesOpen ? 'w-96' : 'w-0 overflow-hidden'
+              }`}
+            >
+              {showNotesOpen && <ShowNotes />}
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -49,7 +87,29 @@ export function MainContent() {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <ResumePlaying />
+        {isMobile ? (
+          // Mobile layout - simplified
+          <div className="flex-1 overflow-hidden relative">
+            <ResumePlaying />
+            <MobileShowNotesOverlay />
+          </div>
+        ) : (
+          // Desktop layout - with sidebar
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1">
+              <ResumePlaying />
+            </div>
+            
+            {/* Show Notes Sidebar for Resume Playing page */}
+            <div 
+              className={`border-l bg-background transition-all duration-300 ease-in-out ${
+                showNotesOpen ? 'w-96' : 'w-0 overflow-hidden'
+              }`}
+            >
+              {showNotesOpen && <ShowNotes />}
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -58,7 +118,29 @@ export function MainContent() {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <SettingsPage />
+        {isMobile ? (
+          // Mobile layout - simplified
+          <div className="flex-1 overflow-hidden relative">
+            <SettingsPage />
+            <MobileShowNotesOverlay />
+          </div>
+        ) : (
+          // Desktop layout - with sidebar
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1">
+              <SettingsPage />
+            </div>
+            
+            {/* Show Notes Sidebar for Settings page */}
+            <div 
+              className={`border-l bg-background transition-all duration-300 ease-in-out ${
+                showNotesOpen ? 'w-96' : 'w-0 overflow-hidden'
+              }`}
+            >
+              {showNotesOpen && <ShowNotes />}
+            </div>
+          </div>
+        )}
       </>
     );
   }
@@ -69,13 +151,35 @@ export function MainContent() {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <p className="text-lg">Select a podcast to view details</p>
+        {isMobile ? (
+          // Mobile layout - simplified
+          <div className="flex-1 overflow-hidden relative">
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-muted-foreground">
+                <p className="text-lg">Select a podcast to view details</p>
+              </div>
+            </div>
+            <MobileShowNotesOverlay />
+          </div>
+        ) : (
+          // Desktop layout - with sidebar
+          <div className="flex flex-1 overflow-hidden">
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center text-muted-foreground">
+                <p className="text-lg">Select a podcast to view details</p>
+              </div>
+            </div>
+            
+            {/* Show Notes Sidebar for empty state */}
+            <div 
+              className={`border-l bg-background transition-all duration-300 ease-in-out ${
+                showNotesOpen ? 'w-96' : 'w-0 overflow-hidden'
+              }`}
+            >
+              {showNotesOpen && <ShowNotes />}
             </div>
           </div>
-        </div>
+        )}
       </>
     );
   }
@@ -88,7 +192,10 @@ export function MainContent() {
     return (
       <>
         {isMobile && <MobileHeader />}
-        <WelcomeScreen />
+        <div className="relative flex-1">
+          <WelcomeScreen />
+          <MobileShowNotesOverlay />
+        </div>
       </>
     );
   }
@@ -96,7 +203,7 @@ export function MainContent() {
   return (
     <>
       {isMobile && <MobileHeader />}
-      <div className="flex flex-1 overflow-hidden relative">
+      <div className="flex flex-1 overflow-hidden">
         <div className="flex-1 overflow-hidden">
           <div className="h-full overflow-y-auto">
             {/* Podcast Details Section - Fixed height to prevent layout shifts */}
@@ -113,26 +220,19 @@ export function MainContent() {
           </div>
         </div>
         
-        {/* Show notes panel - responsive design */}
-        {isMobile ? (
-          // Mobile: Full overlay
+        {/* Show Notes Sidebar for podcast details */}
+        {!isMobile && (
           <div 
-            className={`absolute inset-0 z-10 bg-background transition-all duration-300 ease-in-out ${
-              showNotesOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            }`}
-          >
-            {showNotesOpen && <ShowNotes />}
-          </div>
-        ) : (
-          // Desktop: Side panel
-          <div 
-            className={`border-l h-full transition-all duration-300 ease-in-out ${
-              showNotesOpen ? 'w-96 opacity-100' : 'w-0 opacity-0 overflow-hidden'
+            className={`border-l bg-background transition-all duration-300 ease-in-out ${
+              showNotesOpen ? 'w-96' : 'w-0 overflow-hidden'
             }`}
           >
             {showNotesOpen && <ShowNotes />}
           </div>
         )}
+        
+        {/* Mobile Show Notes overlay for podcast details */}
+        <MobileShowNotesOverlay />
       </div>
     </>
   );

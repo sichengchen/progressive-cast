@@ -71,7 +71,7 @@ export function WhatsNew() {
   if (isLoading) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="px-6 py-3 mt-6">
+        <div className="px-4 md:px-6 py-3 mt-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">What&apos;s New</h1>
           </div>
@@ -85,7 +85,7 @@ export function WhatsNew() {
   if (latestEpisodes.length === 0) {
     return (
       <div className="h-full overflow-y-auto">
-        <div className="px-6 py-3 mt-6">
+        <div className="px-4 md:px-6 py-3 mt-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold">What&apos;s New</h1>
           </div>
@@ -102,7 +102,7 @@ export function WhatsNew() {
 
   return (
     <div className="h-full overflow-y-auto">
-      <div className="px-6 py-3 mt-6">
+      <div className="px-4 md:px-6 py-3 mt-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">What&apos;s New</h1>
         </div>
@@ -117,12 +117,12 @@ export function WhatsNew() {
                   className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none bg-transparent"
                   onClick={() => handlePlayEpisode(episode)}
                 >
-                  <CardContent className="px-3">
-                    <div className="flex items-center gap-4">
+                  <CardContent className="px-2 md:px-3">
+                    <div className="flex items-center gap-3 md:gap-4">
                       <CoverImage
                         src={episode.imageUrl || podcast?.imageUrl}
                         alt={episode.title}
-                        className="w-20 h-20"
+                        className="w-16 h-16 md:w-20 md:h-20 flex-shrink-0"
                       >
                         {/* Play icon overlay only on cover area */}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
@@ -143,7 +143,7 @@ export function WhatsNew() {
                           {format(new Date(episode.publishedAt), 'MMM d, yyyy')}
                         </p>
 
-                        <h3 className="font-medium line-clamp-2 mb-1">
+                        <h3 className="font-medium line-clamp-2 mb-1 text-sm md:text-base">
                           {episode.title}
                         </h3>
 

@@ -73,48 +73,49 @@ export function ShowNotes() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="p-4 border-b flex-shrink-0">
-        <h2 className="text-lg font-semibold">Show Notes</h2>
-      </div>
+      {/* Episode header info */}
+      {currentEpisode && (
+        <div className="p-4 border-b flex-shrink-0">
+          <h3 className="font-semibold text-base mb-2 leading-tight">{currentEpisode.title}</h3>
+          {currentEpisode.publishedAt && (
+            <p className="text-sm text-muted-foreground">
+              {new Date(currentEpisode.publishedAt).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+      )}
       
       <div className="flex-1 overflow-y-auto p-4">
         {currentEpisode ? (
-          <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-2">{currentEpisode.title}</h3>
-              {currentEpisode.publishedAt && (
-                <p className="text-sm text-muted-foreground">
-                  {new Date(currentEpisode.publishedAt).toLocaleDateString()}
-                </p>
-              )}
+          content ? (
+            <div 
+              ref={contentRef}
+              className="prose prose-sm dark:prose-invert max-w-none leading-relaxed
+                        prose-headings:text-foreground prose-headings:font-semibold
+                        prose-p:text-foreground prose-p:leading-relaxed
+                        prose-a:text-primary prose-a:underline prose-a:decoration-solid prose-a:underline-offset-2
+                        hover:prose-a:text-primary/80 hover:prose-a:decoration-primary/80
+                        prose-strong:text-foreground prose-strong:font-semibold
+                        prose-em:text-foreground prose-em:italic
+                        prose-ul:text-foreground prose-ol:text-foreground
+                        prose-li:text-foreground prose-li:my-1
+                        prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
+                        prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
+                        prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none
+                        prose-pre:bg-muted prose-pre:text-foreground prose-pre:border
+                        [&_a]:text-primary [&_a]:underline [&_a]:decoration-solid [&_a]:underline-offset-2
+                        [&_a:hover]:text-primary/80
+                        [&_.timestamp-link]:text-primary [&_.timestamp-link]:underline [&_.timestamp-link]:decoration-solid
+                        [&_.timestamp-link]:underline-offset-2 [&_.timestamp-link]:font-mono [&_.timestamp-link]:bg-transparent
+                        [&_.timestamp-link]:border-0 [&_.timestamp-link]:p-0 [&_.timestamp-link]:cursor-pointer
+                        [&_.timestamp-link:hover]:text-primary/80"
+              dangerouslySetInnerHTML={{ __html: processContent(content) }}
+            />
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              <p>No show notes available for this episode</p>
             </div>
-            
-            {content && (
-              <div 
-                ref={contentRef}
-                className="prose prose-sm dark:prose-invert max-w-none leading-relaxed
-                          prose-headings:text-foreground prose-headings:font-semibold
-                          prose-p:text-foreground prose-p:leading-relaxed
-                          prose-a:text-primary prose-a:underline prose-a:decoration-solid prose-a:underline-offset-2
-                          hover:prose-a:text-primary/80 hover:prose-a:decoration-primary/80
-                          prose-strong:text-foreground prose-strong:font-semibold
-                          prose-em:text-foreground prose-em:italic
-                          prose-ul:text-foreground prose-ol:text-foreground
-                          prose-li:text-foreground prose-li:my-1
-                          prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground
-                          prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded
-                          prose-code:text-foreground prose-code:before:content-none prose-code:after:content-none
-                          prose-pre:bg-muted prose-pre:text-foreground prose-pre:border
-                          [&_a]:text-primary [&_a]:underline [&_a]:decoration-solid [&_a]:underline-offset-2
-                          [&_a:hover]:text-primary/80
-                          [&_.timestamp-link]:text-primary [&_.timestamp-link]:underline [&_.timestamp-link]:decoration-solid
-                          [&_.timestamp-link]:underline-offset-2 [&_.timestamp-link]:font-mono [&_.timestamp-link]:bg-transparent
-                          [&_.timestamp-link]:border-0 [&_.timestamp-link]:p-0 [&_.timestamp-link]:cursor-pointer
-                          [&_.timestamp-link:hover]:text-primary/80"
-                dangerouslySetInnerHTML={{ __html: processContent(content) }}
-              />
-            )}
-          </div>
+          )
         ) : (
           <div className="text-center text-muted-foreground py-8">
             <p>Start playing an episode to view show notes</p>
