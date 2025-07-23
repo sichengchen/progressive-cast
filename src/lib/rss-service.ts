@@ -144,13 +144,9 @@ export class RSSService {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static extractImageUrl(item: any): string | undefined {
-    // Try different image sources
-    if (item.image?.url) return item.image.url;
-    if (item.image?.href) return item.image.href;
-    if (item['itunes:image']?.href) return item['itunes:image'].href;
-    if (item['itunes:image']) return item['itunes:image'];
+    if (item.itunes?.image) return item.itunes.image;
     if (item.image) return item.image;
-
+    
     return undefined;
   }
 
