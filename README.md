@@ -7,6 +7,8 @@ A PWA podcast player.
 - [Next.js](https://nextjs.org/)
 - [shadcn/ui](https://ui.shadcn.com/)
 - [Tailwind CSS](https://tailwindcss.com/)
+- [Zustand](https://github.com/pmndrs/zustand)
+- [Dexie.js](https://dexie.org/)
 
 ## Quick Start
 
