@@ -198,7 +198,7 @@ export function SettingsPage() {
                 <div>
                   <Label>Search from iTunes</Label>
                   <p className="text-sm text-muted-foreground">
-                    Enable iTunes search tab in the "Add New Podcast"
+                    Enable iTunes search tab in the &quot;Add New Podcast&quot;
                   </p>
                 </div>
                 <div className="flex-shrink-0">

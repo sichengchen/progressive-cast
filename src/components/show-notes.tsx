@@ -37,7 +37,7 @@ export function ShowNotes() {
     );
     
     // Process timestamps
-    sanitized = processTimestamps(sanitized, () => {});
+    sanitized = processTimestamps(sanitized);
     
     return sanitized;
   };

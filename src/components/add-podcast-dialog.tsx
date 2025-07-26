@@ -257,7 +257,7 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
                       <div className="flex items-center justify-center py-8">
                         <div className="text-center text-muted-foreground">
                           <div className="mb-2">Search iTunes for new podcasts</div>
-                          <div className="text-sm">Enter keywords to discover podcasts you haven't subscribed to</div>
+                          <div className="text-sm">Enter keywords to discover podcasts you haven&apos;t subscribed to</div>
                         </div>
                       </div>
                     )}

@@ -74,10 +74,7 @@ export function isValidTimestamp(timestamp: string): boolean {
 }
 
 // Replace timestamps in text with clickable elements
-export function processTimestamps(
-  text: string, 
-  onTimestampClick: (seconds: number) => void
-): string {
+export function processTimestamps(text: string): string {
   // Match timestamp patterns: MM:SS or H:MM:SS or HH:MM:SS
   // Updated regex to be more precise and avoid false positives
   const timestampRegex = /\b(\d{1,2}:[0-5]\d:[0-5]\d|\d{1,3}:[0-5]\d)\b/g;

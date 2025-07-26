@@ -64,7 +64,7 @@ export function PodcastSidebar() {
     try {
       await refreshAllPodcasts();
       toast.success('Podcasts refreshed successfully!');
-    } catch (error) {
+    } catch {
       toast.error('Failed to refresh podcasts');
     }
   };

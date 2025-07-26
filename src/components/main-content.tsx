@@ -9,12 +9,10 @@ import { SettingsPage } from './settings-page';
 import { WhatsNew } from './whats-new';
 import { ResumePlaying } from './resume-playing';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { Button } from '@/components/ui/button';
-import { X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export function MainContent() {
-  const { podcasts, selectedPodcastId, currentPage, showNotesOpen, toggleShowNotes } = usePodcastStore();
+  const { podcasts, selectedPodcastId, currentPage, showNotesOpen } = usePodcastStore();
   const isMobile = useIsMobile();
 
   // Mobile header component

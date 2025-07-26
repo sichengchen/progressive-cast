@@ -1,9 +1,9 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Globe, Trash2, Play, Headphones, Tag, FileText, User } from 'lucide-react';
+import { Globe, Trash2, Play, Headphones, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardHeader } from '@/components/ui/card';
 import { CoverImage } from '@/components/ui/cover-image';
 import {
   AlertDialog,
@@ -25,7 +25,6 @@ import {
 } from '@/components/ui/dialog';
 import { usePodcastStore } from '@/lib/store';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import type { Podcast } from '@/lib/types';
 
 interface PodcastDetailsProps {
@@ -107,12 +106,6 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
   };
 
   const totalEpisodes = podcastEpisodes.length;
-
-  // Description processing - remove all line breaks and always show "Show More"
-  const cleanDescription = podcast.description
-    ? podcast.description.replace(/\s+/g, ' ').trim()
-    : '';
-  const shouldShowMore = cleanDescription.length > 0;
 
   return (
     <Card className="border-0 shadow-none bg-transparent">

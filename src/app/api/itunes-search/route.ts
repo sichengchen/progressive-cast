@@ -1,5 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+interface ITunesSearchResult {
+  collectionId?: number;
+  trackId?: number;
+  collectionName?: string;
+  trackName?: string;
+  artistName?: string;
+  description?: string;
+  artworkUrl600?: string;
+  artworkUrl100?: string;
+  feedUrl?: string;
+  primaryGenreName?: string;
+  trackCount?: number;
+  releaseDate?: string;
+  country?: string;
+  language?: string;
+  collectionViewUrl?: string;
+  trackViewUrl?: string;
+  contentAdvisoryRating?: string;
+}
+
+interface ITunesAPIResponse {
+  resultCount: number;
+  results: ITunesSearchResult[];
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const term = searchParams.get('term');
@@ -40,9 +65,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await response.json();
+    const data: ITunesAPIResponse = await response.json();
 
-    const transformedResults = data.results?.map((item: any) => ({
+    const transformedResults = data.results?.map((item: ITunesSearchResult) => ({
       id: item.collectionId?.toString() || item.trackId?.toString(),
       title: item.collectionName || item.trackName,
       author: item.artistName,
