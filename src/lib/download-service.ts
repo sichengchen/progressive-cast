@@ -319,6 +319,20 @@ export class DownloadService {
   }
 
   /**
+   * Set progress callback for an episode
+   */
+  static setProgressCallback(episodeId: string, callback: (progress: DownloadProgress) => void): void {
+    this.downloadCallbacks.set(episodeId, callback);
+  }
+
+  /**
+   * Remove progress callback for an episode  
+   */
+  static removeProgressCallback(episodeId: string): void {
+    this.downloadCallbacks.delete(episodeId);
+  }
+
+  /**
    * Get storage statistics
    */
   static async getStorageStats() {
@@ -330,7 +344,7 @@ export class DownloadService {
    */
   static async clearAllDownloads(): Promise<void> {
     // Cancel all active downloads
-    for (const [episodeId, controller] of this.activeDownloads) {
+    for (const [, controller] of this.activeDownloads) {
       controller.abort();
     }
     this.activeDownloads.clear();

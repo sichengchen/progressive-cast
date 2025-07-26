@@ -53,9 +53,7 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
             {isMobile ? (
                 // Mobile layout - simplified
                 <div className="flex-1 overflow-hidden relative">
-                    <div className="max-w-6xl mx-auto px-4">
-                        {children}
-                    </div>
+                    <div className="max-w-6xl mx-auto px-4">{children}</div>
                     <MobileShowNotesOverlay />
                 </div>
             ) : (
@@ -127,10 +125,7 @@ export const MainContent = () => {
 
     if (currentPage === "downloaded") {
         return (
-            <MainContentLayout
-                title="Downloaded"
-                description="Manage your downloaded episodes for offline playback"
-            >
+            <MainContentLayout title="Downloaded">
                 <DownloadedPage />
             </MainContentLayout>
         );

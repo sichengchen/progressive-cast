@@ -1,29 +1,17 @@
 "use client";
 
-import { useState } from "react";
-import { Trash2, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
+import { useState, useEffect } from "react";
+import { Trash2, AlertTriangle, HardDrive, AlertCircle } from "lucide-react";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import {
-    AlertDialog,
-    AlertDialogTrigger,
-    AlertDialogContent,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogAction,
-    AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
+    SettingsGroup,
+    SettingsItem,
+    SettingsSwitch,
+    SettingsSelect,
+    SettingsAction,
+    SettingsStats,
+    SettingsDivider,
+    SettingsAlert,
+} from "@/components/ui-custom/settings";
 import { usePodcastStore } from "@/lib/store";
 import { APP_VERSION } from "@/lib/constants";
 import { useTheme } from "next-themes";
@@ -32,6 +20,7 @@ import { toast } from "sonner";
 
 export function SettingsPage() {
     const [isClearingData, setIsClearingData] = useState(false);
+    const [isClearingDownloads, setIsClearingDownloads] = useState(false);
     const { theme, setTheme } = useTheme();
 
     const {
@@ -42,7 +31,23 @@ export function SettingsPage() {
         setItunesSearchEnabled,
         clearAllData,
         podcasts,
+        storageStats,
+        refreshStorageStats,
+        clearAllDownloads,
     } = usePodcastStore();
+
+    // Load storage stats on mount
+    useEffect(() => {
+        refreshStorageStats();
+    }, [refreshStorageStats]);
+
+    const formatFileSize = (bytes: number): string => {
+        if (bytes === 0) return "0 B";
+        const k = 1024;
+        const sizes = ["B", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+    };
 
     const handleSkipIntervalChange = (value: string) => {
         setSkipInterval(parseInt(value));
@@ -64,6 +69,20 @@ export function SettingsPage() {
         setTheme(value);
     };
 
+    const handleClearAllDownloads = async () => {
+        setIsClearingDownloads(true);
+        try {
+            await clearAllDownloads();
+            await refreshStorageStats();
+            toast.success("All downloads have been cleared successfully!");
+        } catch (error) {
+            toast.error("Failed to clear downloads. Please try again.");
+            console.error("Clear downloads error:", error);
+        } finally {
+            setIsClearingDownloads(false);
+        }
+    };
+
     const handleClearAllData = async () => {
         setIsClearingData(true);
         try {
@@ -81,288 +100,155 @@ export function SettingsPage() {
         <>
             <div className="space-y-6 py-4 px-2">
                 {/* Theme Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Appearance</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>Theme</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Choose your preferred theme
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <Select
-                                    value={theme || "system"}
-                                    onValueChange={handleThemeChange}
-                                >
-                                    <SelectTrigger className="w-[140px]">
-                                        <SelectValue placeholder="Select theme" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="system">
-                                            Follow System
-                                        </SelectItem>
-                                        <SelectItem value="light">
-                                            Light
-                                        </SelectItem>
-                                        <SelectItem value="dark">
-                                            Dark
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <SettingsGroup title="Appearance">
+                    <SettingsSelect
+                        label="Theme"
+                        description="Choose your preferred theme"
+                        value={theme || "system"}
+                        onValueChange={handleThemeChange}
+                        options={[
+                            { value: "system", label: "Follow System" },
+                            { value: "light", label: "Light" },
+                            { value: "dark", label: "Dark" },
+                        ]}
+                        placeholder="Select theme"
+                    />
+                </SettingsGroup>
 
                 {/* Playback Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Playback</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Skip Interval */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>Skip Interval</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Time to skip forward/backward
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <Select
-                                    value={(
-                                        preferences.skipInterval || 30
-                                    ).toString()}
-                                    onValueChange={handleSkipIntervalChange}
-                                >
-                                    <SelectTrigger className="w-[140px]">
-                                        <SelectValue placeholder="Select interval" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="5">
-                                            5 seconds
-                                        </SelectItem>
-                                        <SelectItem value="10">
-                                            10 seconds
-                                        </SelectItem>
-                                        <SelectItem value="15">
-                                            15 seconds
-                                        </SelectItem>
-                                        <SelectItem value="30">
-                                            30 seconds
-                                        </SelectItem>
-                                        <SelectItem value="60">
-                                            60 seconds
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
+                <SettingsGroup title="Playback">
+                    <SettingsSelect
+                        label="Skip Interval"
+                        description="Time to skip forward/backward"
+                        value={(preferences.skipInterval || 30).toString()}
+                        onValueChange={handleSkipIntervalChange}
+                        options={[
+                            { value: "5", label: "5 seconds" },
+                            { value: "10", label: "10 seconds" },
+                            { value: "15", label: "15 seconds" },
+                            { value: "30", label: "30 seconds" },
+                            { value: "60", label: "60 seconds" },
+                        ]}
+                        placeholder="Select interval"
+                    />
 
-                        {/* Auto Play */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>Auto Play</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Automatically play next episode
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <Switch
-                                    checked={preferences.autoPlay || false}
-                                    onCheckedChange={handleAutoPlayChange}
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <SettingsSwitch
+                        label="Auto Play"
+                        description="Automatically play next episode"
+                        checked={preferences.autoPlay || false}
+                        onCheckedChange={handleAutoPlayChange}
+                    />
+                </SettingsGroup>
 
                 {/* What's New Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>What&apos;s New</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* Number of Episodes */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>Number of Episodes</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Number of latest episodes to show in the
-                                    What&apos;s New section
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <Select
-                                    value={(
-                                        preferences.whatsNewCount || 10
-                                    ).toString()}
-                                    onValueChange={handleWhatsNewCountChange}
-                                >
-                                    <SelectTrigger className="w-[140px]">
-                                        <SelectValue placeholder="Select count" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="5">
-                                            5 episodes
-                                        </SelectItem>
-                                        <SelectItem value="10">
-                                            10 episodes
-                                        </SelectItem>
-                                        <SelectItem value="20">
-                                            20 episodes
-                                        </SelectItem>
-                                        <SelectItem value="50">
-                                            50 episodes
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <SettingsGroup title="What's New">
+                    <SettingsSelect
+                        label="Number of Episodes"
+                        description="Number of latest episodes to show in the What's New section"
+                        value={(preferences.whatsNewCount || 10).toString()}
+                        onValueChange={handleWhatsNewCountChange}
+                        options={[
+                            { value: "5", label: "5 episodes" },
+                            { value: "10", label: "10 episodes" },
+                            { value: "20", label: "20 episodes" },
+                            { value: "50", label: "50 episodes" },
+                        ]}
+                        placeholder="Select count"
+                    />
+                </SettingsGroup>
 
                 {/* Search Settings */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Search</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>Search from iTunes</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Enable iTunes search tab in the &quot;Add
-                                    New Podcast&quot;
+                <SettingsGroup title="Search">
+                    <SettingsSwitch
+                        label="Search from iTunes"
+                        description='Enable iTunes search tab in the "Add New Podcast"'
+                        checked={preferences.itunesSearchEnabled ?? true}
+                        onCheckedChange={handleItunesSearchEnabledChange}
+                    />
+                </SettingsGroup>
+
+                {/* Storage Management */}
+                <SettingsGroup title="Storage Management">
+                    <SettingsStats
+                        label="Storage Statistics"
+                        stats={[
+                            {
+                                label: "Downloaded Episodes",
+                                value: storageStats?.downloadedEpisodes || 0,
+                            },
+                            {
+                                label: "Storage Used",
+                                value: formatFileSize(
+                                    storageStats?.totalSize || 0
+                                ),
+                            },
+                        ]}
+                    />
+
+                    {storageStats &&
+                        storageStats.totalSize > 500 * 1024 * 1024 && (
+                            <SettingsAlert variant="warning" icon={AlertCircle}>
+                                <p className="text-yellow-800 dark:text-yellow-200">
+                                    You're using over 500MB of storage. Consider
+                                    removing some downloads to free up space.
                                 </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <Switch
-                                    checked={
-                                        preferences.itunesSearchEnabled ?? true
-                                    }
-                                    onCheckedChange={
-                                        handleItunesSearchEnabledChange
-                                    }
-                                />
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                            </SettingsAlert>
+                        )}
+
+                    <SettingsDivider>
+                        <SettingsAction
+                            label="Clear All Downloads"
+                            description="Delete all downloaded episodes to free up storage space"
+                            actionLabel="Clear Downloads"
+                            loadingLabel="Clearing..."
+                            onAction={handleClearAllDownloads}
+                            variant="destructive"
+                            icon={Trash2}
+                            disabled={
+                                !storageStats?.downloadedEpisodes ||
+                                storageStats.downloadedEpisodes === 0 ||
+                                isClearingDownloads
+                            }
+                            loading={isClearingDownloads}
+                            confirmDialog={{
+                                title: "Clear All Downloads",
+                                description: `This action will permanently delete all downloaded episodes. This will free up ${formatFileSize(
+                                    storageStats?.totalSize || 0
+                                )} of storage space. You can re-download them later from the podcast pages.`,
+                                actionLabel: "Clear Downloads",
+                            }}
+                        />
+                    </SettingsDivider>
+                </SettingsGroup>
 
                 {/* Data Management */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Data Management</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                        {/* OPML Import/Export */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <div>
-                                <Label>OPML Management</Label>
-                                <p className="text-sm text-muted-foreground">
-                                    Import or export your podcast subscriptions
-                                </p>
-                            </div>
-                            <div className="flex-shrink-0">
-                                <OPMLManager />
-                            </div>
-                        </div>
+                <SettingsGroup title="Data Management">
+                    <SettingsItem
+                        label="OPML Management"
+                        description="Import or export your podcast subscriptions"
+                    >
+                        <OPMLManager />
+                    </SettingsItem>
 
-                        {/* Clear All Data */}
-                        <div className="pt-4 border-t">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                <div>
-                                    <Label>Reset Application</Label>
-                                    <p className="text-sm text-muted-foreground">
-                                        Permanently delete all podcasts,
-                                        episodes, and playback progress
-                                    </p>
-                                </div>
-
-                                <div className="flex-shrink-0">
-                                    <AlertDialog>
-                                        <AlertDialogTrigger asChild>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                disabled={
-                                                    podcasts.length === 0 ||
-                                                    isClearingData
-                                                }
-                                                className="flex items-center gap-2"
-                                            >
-                                                <Trash2 className="h-3 w-3" />
-                                                {isClearingData
-                                                    ? "Clearing..."
-                                                    : "Clear All Data"}
-                                            </Button>
-                                        </AlertDialogTrigger>
-                                        <AlertDialogContent>
-                                            <AlertDialogHeader>
-                                                <div className="flex items-center gap-2">
-                                                    <AlertTriangle className="h-5 w-5 text-destructive" />
-                                                    <AlertDialogTitle>
-                                                        Clear All Data
-                                                    </AlertDialogTitle>
-                                                </div>
-                                                <AlertDialogDescription>
-                                                    This action will permanently
-                                                    delete:
-                                                </AlertDialogDescription>
-                                            </AlertDialogHeader>
-
-                                            <div className="space-y-3">
-                                                <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                                                    <li>
-                                                        All podcast
-                                                        subscriptions (
-                                                        {podcasts.length}{" "}
-                                                        podcasts)
-                                                    </li>
-                                                    <li>
-                                                        All downloaded episode
-                                                        information
-                                                    </li>
-                                                    <li>
-                                                        All playback progress
-                                                        and history
-                                                    </li>
-                                                    <li>
-                                                        All app preferences
-                                                        (except theme)
-                                                    </li>
-                                                </ul>
-                                                <div className="font-medium text-destructive text-sm">
-                                                    This action cannot be
-                                                    undone.
-                                                </div>
-                                            </div>
-                                            <AlertDialogFooter>
-                                                <AlertDialogCancel>
-                                                    Cancel
-                                                </AlertDialogCancel>
-                                                <AlertDialogAction
-                                                    onClick={handleClearAllData}
-                                                    className="bg-destructive hover:bg-destructive/90"
-                                                    disabled={isClearingData}
-                                                >
-                                                    {isClearingData
-                                                        ? "Clearing..."
-                                                        : "Clear All Data"}
-                                                </AlertDialogAction>
-                                            </AlertDialogFooter>
-                                        </AlertDialogContent>
-                                    </AlertDialog>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                    <SettingsDivider>
+                        <SettingsAction
+                            label="Reset Application"
+                            description="Permanently delete all podcasts, episodes, and playback progress"
+                            actionLabel="Clear All Data"
+                            loadingLabel="Clearing..."
+                            onAction={handleClearAllData}
+                            variant="destructive"
+                            icon={Trash2}
+                            disabled={podcasts.length === 0 || isClearingData}
+                            loading={isClearingData}
+                            confirmDialog={{
+                                title: "Clear All Data",
+                                description: `This action will permanently delete:\n• All podcast subscriptions (${podcasts.length} podcasts)\n• All downloaded episode information\n• All playback progress and history\n• All app preferences (except theme)\n\nThis action cannot be undone.`,
+                                actionLabel: "Clear All Data",
+                            }}
+                        />
+                    </SettingsDivider>
+                </SettingsGroup>
 
                 <div className="text-xs text-muted-foreground text-center">
                     Version {APP_VERSION} · Created by{" "}

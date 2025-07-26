@@ -33,6 +33,7 @@ interface PodcastStore {
 
   // Download state
   downloadProgress: Map<string, DownloadProgress>;
+  downloadedEpisodes: Episode[];
   storageStats: StorageStats | null;
 
   // Cache for latest episodes to improve performance
@@ -110,6 +111,7 @@ interface PodcastStore {
   downloadEpisode: (episode: Episode) => Promise<void>;
   cancelDownload: (episodeId: string) => Promise<void>;
   deleteDownload: (episodeId: string) => Promise<void>;
+  getDownloadedEpisodes: () => Promise<Episode[]>;
   retryDownload: (episode: Episode) => Promise<void>;
   refreshStorageStats: () => Promise<void>;
   clearAllDownloads: () => Promise<void>;
@@ -144,6 +146,7 @@ export const usePodcastStore = create<PodcastStore>()(
 
       // Download state
       downloadProgress: new Map(),
+      downloadedEpisodes: [],
       storageStats: null,
 
       // Progress dialog initial state
@@ -160,10 +163,11 @@ export const usePodcastStore = create<PodcastStore>()(
         try {
           set({ isLoading: true });
 
-          const [podcasts, allProgress, downloadProgress, storageStats] = await Promise.all([
+          const [podcasts, allProgress, downloadProgress, downloadedEpisodes, storageStats] = await Promise.all([
             DatabaseService.getPodcasts(),
             DatabaseService.exportData().then(data => data.playbackProgress),
             DatabaseService.getAllDownloadProgress(),
+            DatabaseService.getDownloadedEpisodes(),
             DownloadService.getStorageStats()
           ]);
 
@@ -181,6 +185,7 @@ export const usePodcastStore = create<PodcastStore>()(
             podcasts,
             playbackProgress: progressMap,
             downloadProgress: downloadProgressMap,
+            downloadedEpisodes,
             storageStats,
             isLoading: false
           });
@@ -769,8 +774,17 @@ export const usePodcastStore = create<PodcastStore>()(
       // Download actions
       downloadEpisode: async (episode: Episode) => {
         try {
+          // Set up progress callback before queuing download
+          DownloadService.setProgressCallback(episode.id, (progress: DownloadProgress) => {
+            get().updateDownloadProgress(episode.id, progress);
+            
+            // If download completed, refresh storage stats and downloaded episodes
+            if (progress.status === 'completed') {
+              get().refreshStorageStats();
+            }
+          });
+          
           await DownloadService.queueDownload(episode);
-          get().refreshStorageStats();
         } catch (error) {
           set({ error: `Failed to download episode: ${error instanceof Error ? error.message : 'Unknown error'}` });
         }
@@ -779,6 +793,9 @@ export const usePodcastStore = create<PodcastStore>()(
       cancelDownload: async (episodeId: string) => {
         try {
           await DownloadService.cancelDownload(episodeId);
+          // Remove progress callback
+          DownloadService.removeProgressCallback(episodeId);
+          
           set(state => {
             const newDownloadProgress = new Map(state.downloadProgress);
             newDownloadProgress.delete(episodeId);
@@ -793,6 +810,8 @@ export const usePodcastStore = create<PodcastStore>()(
       deleteDownload: async (episodeId: string) => {
         try {
           await DownloadService.deleteDownload(episodeId);
+          // Remove progress callback
+          DownloadService.removeProgressCallback(episodeId);
           
           // Update episode in local state
           set(state => ({
@@ -801,6 +820,7 @@ export const usePodcastStore = create<PodcastStore>()(
                 ? { ...ep, isDownloaded: false, downloadedPath: undefined, downloadedAt: undefined, fileSize: undefined }
                 : ep
             ),
+            downloadedEpisodes: state.downloadedEpisodes.filter(ep => ep.id !== episodeId),
             downloadProgress: new Map([...state.downloadProgress].filter(([key]) => key !== episodeId))
           }));
           
@@ -818,6 +838,17 @@ export const usePodcastStore = create<PodcastStore>()(
         }
       },
 
+      getDownloadedEpisodes: async () => {
+        try {
+          const downloadedEpisodes = await DatabaseService.getDownloadedEpisodes();
+          set({ downloadedEpisodes });
+          return downloadedEpisodes;
+        } catch (error) {
+          set({ error: `Failed to get downloaded episodes: ${error instanceof Error ? error.message : 'Unknown error'}` });
+          return [];
+        }
+      },
+
       refreshStorageStats: async () => {
         try {
           const stats = await DownloadService.getStorageStats();
@@ -831,6 +862,7 @@ export const usePodcastStore = create<PodcastStore>()(
         try {
           await DownloadService.clearAllDownloads();
           
+          // Clear all progress callbacks (already done in DownloadService.clearAllDownloads)
           // Update local state
           set(state => ({
             episodes: state.episodes.map(ep => ({
@@ -840,6 +872,7 @@ export const usePodcastStore = create<PodcastStore>()(
               downloadedAt: undefined,
               fileSize: undefined
             })),
+            downloadedEpisodes: [],
             downloadProgress: new Map(),
             storageStats: { totalSize: 0, downloadedEpisodes: 0 }
           }));
@@ -853,16 +886,25 @@ export const usePodcastStore = create<PodcastStore>()(
           const newDownloadProgress = new Map(state.downloadProgress);
           newDownloadProgress.set(episodeId, progress);
           
-          // If download completed, update episode
+          // If download completed, update episode and downloadedEpisodes
           if (progress.status === 'completed') {
             const updatedEpisodes = state.episodes.map(ep => 
               ep.id === episodeId 
                 ? { ...ep, isDownloaded: true }
                 : ep
             );
+            
+            // Add to downloadedEpisodes if not already there
+            const completedEpisode = updatedEpisodes.find(ep => ep.id === episodeId);
+            const updatedDownloadedEpisodes = completedEpisode && 
+              !state.downloadedEpisodes.find(ep => ep.id === episodeId)
+              ? [...state.downloadedEpisodes, completedEpisode]
+              : state.downloadedEpisodes;
+              
             return { 
               downloadProgress: newDownloadProgress,
-              episodes: updatedEpisodes
+              episodes: updatedEpisodes,
+              downloadedEpisodes: updatedDownloadedEpisodes
             };
           }
           

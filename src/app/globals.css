@@ -140,4 +140,93 @@
   .no-transition, .no-transition * {
     transition: none !important;
   }
+
+  /* Custom Scrollbar Styles */
+  /* WebKit browsers (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0 / 0.3);
+    border-radius: 3px;
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.708 0 0 / 0.5);
+  }
+
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.708 0 0 / 0.3) transparent;
+  }
+
+  /* Dark mode scrollbar adjustments */
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.556 0 0 / 0.4);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.556 0 0 / 0.6);
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.556 0 0 / 0.4) transparent;
+  }
+
+  /* Utility classes for different scrollbar styles */
+  
+  /* Completely hide scrollbar but keep scroll functionality */
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Extra thin scrollbar */
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+
+  .thin-scrollbar {
+    scrollbar-width: thin;
+  }
+
+  /* Invisible scrollbar that appears on hover */
+  .hover-scrollbar::-webkit-scrollbar {
+    width: 0px;
+    transition: width 0.2s ease-in-out;
+  }
+
+  .hover-scrollbar:hover::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .hover-scrollbar::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0 / 0.0);
+    transition: background-color 0.2s ease-in-out;
+  }
+
+  .hover-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0 / 0.5);
+  }
+
+  .dark .hover-scrollbar:hover::-webkit-scrollbar-thumb {
+    background: oklch(0.556 0 0 / 0.6);
+  }
 }

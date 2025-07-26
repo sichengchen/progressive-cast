@@ -20,12 +20,12 @@ import {
   ListItemMeta,
 } from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
-import { DownloadButton } from "@/components/ui-custom/download-button";
 import { formatTime } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
 import { EpisodeSkeleton } from "./episode-skeleton";
+import { DownloadButton } from "./download-button";
 
 interface EpisodeListProps {
     isLoadingEpisodes: boolean;
