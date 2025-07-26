@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { usePodcastStore } from "@/lib/store";
 import { EpisodeList } from "@/components/common/episode-list";
-import type { Episode } from "@/lib/types";
 
 export function DownloadedPage() {
     const {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, AlertTriangle, HardDrive, AlertCircle } from "lucide-react";
+import { Trash2, AlertCircle } from "lucide-react";
 import {
     SettingsGroup,
     SettingsItem,
@@ -189,7 +189,7 @@ export function SettingsPage() {
                         storageStats.totalSize > 500 * 1024 * 1024 && (
                             <SettingsAlert variant="warning" icon={AlertCircle}>
                                 <p className="text-yellow-800 dark:text-yellow-200">
-                                    You're using over 500MB of storage. Consider
+                                    You&apos;re using over 500MB of storage. Consider
                                     removing some downloads to free up space.
                                 </p>
                             </SettingsAlert>

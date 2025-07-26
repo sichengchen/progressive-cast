@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { getServiceWorkerManager, ServiceWorkerManager } from '@/lib/service-worker';
 import { toast } from 'sonner';
 
@@ -38,6 +38,22 @@ export function ServiceWorkerProvider({ children }: ServiceWorkerProviderProps) 
   const [isUpdateAvailable, setIsUpdateAvailable] = useState(false);
   const [version, setVersion] = useState<string | null>(null);
   const [manager] = useState(() => isSupported ? getServiceWorkerManager() : null);
+
+  const updateApp = useCallback(async () => {
+    if (!manager) return;
+
+    try {
+      toast.loading('Updating app...');
+      // Send skip waiting message to SW
+      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      }
+      setIsUpdateAvailable(false);
+    } catch (error) {
+      console.error('Failed to update app:', error);
+      toast.error('Failed to update app');
+    }
+  }, [manager]);
 
   useEffect(() => {
     if (!isSupported || !manager) {
@@ -94,23 +110,7 @@ export function ServiceWorkerProvider({ children }: ServiceWorkerProviderProps) 
     return () => {
       mounted = false;
     };
-  }, [isSupported, manager]);
-
-  const updateApp = async () => {
-    if (!manager) return;
-
-    try {
-      toast.loading('Updating app...');
-      // Send skip waiting message to SW
-      if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-      }
-      setIsUpdateAvailable(false);
-    } catch (error) {
-      console.error('Failed to update app:', error);
-      toast.error('Failed to update app');
-    }
-  };
+  }, [isSupported, manager, updateApp]);
 
   const clearCache = async () => {
     if (!manager) return;
