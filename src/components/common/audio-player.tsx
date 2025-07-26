@@ -213,12 +213,22 @@ export function AudioPlayer() {
       setLoading(false);
       // Auto-play if user intended to play this episode
       if (isPlaying && audio.paused) {
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.warn('Auto-play failed:', error);
-            pausePlayback();
-          });
+        // Add a small delay for downloaded files to ensure blob URL is ready
+        const playAudio = () => {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.warn('Auto-play failed:', error);
+              pausePlayback();
+            });
+          }
+        };
+        
+        // For blob URLs (downloaded files), add a small delay
+        if (audio.src.startsWith('blob:')) {
+          setTimeout(playAudio, 100);
+        } else {
+          playAudio();
         }
       }
     };
@@ -283,13 +293,22 @@ export function AudioPlayer() {
     if (isPlaying) {
       // Only try to play if audio is ready and not already playing
       if (audio.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && audio.paused) {
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.catch((error) => {
-            console.warn('Play request failed:', error);
-            // If play fails due to user interaction policy, just pause
-            pausePlayback();
-          });
+        const attemptPlay = () => {
+          const playPromise = audio.play();
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.warn('Play request failed:', error);
+              // If play fails due to user interaction policy, just pause
+              pausePlayback();
+            });
+          }
+        };
+
+        // For blob URLs (downloaded files), ensure a small delay
+        if (audio.src.startsWith('blob:')) {
+          setTimeout(attemptPlay, 50);
+        } else {
+          attemptPlay();
         }
       }
       // If audio is not ready, the canplay handler in the episode loading effect will handle it

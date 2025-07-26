@@ -5,6 +5,9 @@ import { ThemeProvider } from "@/components/common/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { AppInitializer } from "@/components/common/app-initializer";
 import { KeyboardShortcuts } from "@/components/common/keyboard-shortcuts";
+import { ServiceWorkerProvider } from "@/components/common/service-worker-provider";
+import { OfflineIndicator } from "@/components/common/offline-indicator";
+import { ClientOnly } from "@/components/common/client-only";
 import { APP_DESCRIPTION, APP_NAME } from "@/lib/constants";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -36,10 +39,15 @@ export default function RootLayout({
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <AppInitializer />
-                    <KeyboardShortcuts />
-                    {children}
-                    <Toaster />
+                    <ClientOnly>
+                        <ServiceWorkerProvider>
+                            <AppInitializer />
+                            <KeyboardShortcuts />
+                            {children}
+                            <OfflineIndicator />
+                            <Toaster />
+                        </ServiceWorkerProvider>
+                    </ClientOnly>
                 </ThemeProvider>
             </body>
         </html>

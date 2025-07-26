@@ -1,5 +1,6 @@
 import { DatabaseService } from './database';
 import type { Episode, DownloadProgress, DownloadQueue } from './types';
+import { cacheDownloadedAudio } from './service-worker';
 
 export class DownloadService {
   private static activeDownloads = new Map<string, AbortController>();
@@ -158,6 +159,15 @@ export class DownloadService {
 
       await DatabaseService.saveAudioFile(audioKey, blob);
       await DatabaseService.markEpisodeAsDownloaded(episode.id, audioKey, blob.size);
+
+      // Cache in Service Worker for offline access
+      try {
+        await cacheDownloadedAudio(episode.audioUrl);
+        console.log('Audio cached in Service Worker:', episode.audioUrl);
+      } catch (error) {
+        console.warn('Failed to cache audio in Service Worker:', error);
+        // Don't fail the download if SW caching fails
+      }
 
       // Update progress as completed
       const completedProgress: DownloadProgress = {
