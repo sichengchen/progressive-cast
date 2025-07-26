@@ -34,7 +34,7 @@ export function SettingsPage() {
   const [isClearingData, setIsClearingData] = useState(false);
   const { theme, setTheme } = useTheme();
 
-  const { preferences, setSkipInterval, setAutoPlay, setWhatsNewCount, clearAllData, podcasts } = usePodcastStore();
+  const { preferences, setSkipInterval, setAutoPlay, setWhatsNewCount, setItunesSearchEnabled, clearAllData, podcasts } = usePodcastStore();
 
   const handleSkipIntervalChange = (value: string) => {
     setSkipInterval(parseInt(value));
@@ -46,6 +46,10 @@ export function SettingsPage() {
 
   const handleWhatsNewCountChange = (value: string) => {
     setWhatsNewCount(parseInt(value));
+  };
+
+  const handleItunesSearchEnabledChange = (checked: boolean) => {
+    setItunesSearchEnabled(checked);
   };
 
   const handleThemeChange = (value: string) => {
@@ -179,6 +183,29 @@ export function SettingsPage() {
                       <SelectItem value="50">50 episodes</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Search Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Search</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <Label>Search from iTunes</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable iTunes search tab in the "Add New Podcast"
+                  </p>
+                </div>
+                <div className="flex-shrink-0">
+                  <Switch
+                    checked={preferences.itunesSearchEnabled ?? true}
+                    onCheckedChange={handleItunesSearchEnabledChange}
+                  />
                 </div>
               </div>
             </CardContent>

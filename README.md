@@ -40,7 +40,7 @@ pnpm start
 
 ## Usage
 
-1. **Add Your First Podcast**: Click "Add Podcast" and paste an RSS feed URL
+1. **Add Your First Podcast**: Click "Add Podcast" to search podcasts from iTunes or add with URL
 2. **Import Existing Subscriptions**: Use "Import OPML" to bulk-add from another app
 3. **Start Listening**: Click any episode to begin playback
 

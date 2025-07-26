@@ -123,7 +123,7 @@ export function PodcastSidebar() {
               <div className="relative px-2 min-w-0 max-w-full">
                 <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                 <Input
-                  placeholder="Search podcasts..."
+                  placeholder="Search subsribed podcasts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10 h-8 w-full min-w-0"

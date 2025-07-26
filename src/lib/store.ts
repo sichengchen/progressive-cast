@@ -9,6 +9,7 @@ const defaultPreferences: UserPreferences = {
   skipInterval: 30,
   autoPlay: false,
   whatsNewCount: 10,
+  itunesSearchEnabled: true,
 };
 
 const ensureCompletePreferences = (preferences: Partial<UserPreferences> = {}): UserPreferences => {
@@ -83,6 +84,7 @@ interface PodcastStore {
   setSkipInterval: (interval: number) => void;
   setWhatsNewCount: (count: number) => void;
   setAutoPlay: (autoPlay: boolean) => void;
+  setItunesSearchEnabled: (enabled: boolean) => void;
 
   // Error handling
   setError: (error: string | null) => void;
@@ -570,6 +572,16 @@ export const usePodcastStore = create<PodcastStore>()(
           preferences: {
             ...state.preferences,
             autoPlay
+          }
+        }));
+      },
+
+      // Set iTunes search enabled
+      setItunesSearchEnabled: (enabled: boolean) => {
+        set(state => ({
+          preferences: {
+            ...state.preferences,
+            itunesSearchEnabled: enabled
           }
         }));
       },

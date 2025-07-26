@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
-import { Calendar, Globe, Trash2, Play, Headphones, Tag, FileText } from 'lucide-react';
+import { Calendar, Globe, Trash2, Play, Headphones, Tag, FileText, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { CoverImage } from '@/components/ui/cover-image';
@@ -143,6 +143,13 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
               <div className="space-y-2">
                 {/* First row: Episodes and Language */}
                 <div className="flex flex-col gap-2 md:flex-row text-sm text-muted-foreground">
+                  {podcast.author && (
+                    <div className="flex items-center justify-center md:justify-start gap-1">
+                      <User className="w-4 h-4" />
+                      <span>{podcast.author}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-center md:justify-start gap-1">
                     <Headphones className="w-4 h-4" />
                     <span>{totalEpisodes} episodes</span>
@@ -162,12 +169,6 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                 <h1 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-2">
                   {podcast.title}
                 </h1>
-
-                {podcast.author && (
-                  <p className="text-lg md:text-xl text-muted-foreground">
-                    by {podcast.author}
-                  </p>
-                )}
               </div>
 
               {/* Description: Only 1 line, with a link "Show Description" at the end */}
