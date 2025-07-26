@@ -193,19 +193,48 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                         </div>
 
                         {/* Description */}
-                        <div className="flex items-start gap-2 w-5/6 md:w-3/5 text-sm text-muted-foreground mx-auto md:mx-0">
-                            <div className="line-clamp-1 flex-1">
-                                {podcast.description}
+                        <div className="text-sm text-muted-foreground mx-auto md:mx-0">
+                            {/* Mobile: Only show button */}
+                            <div className="md:hidden flex justify-center">
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className="text-sm p-0 h-auto"
+                                        >
+                                            Show Description
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-2xl">
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                {podcast.title}
+                                            </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="max-h-96 overflow-y-auto">
+                                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                                {podcast.description ||
+                                                    "No description available."}
+                                            </p>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
-                            <Dialog>
-                                <DialogTrigger asChild>
-                                    <Button
-                                        variant="link"
-                                        className="text-sm p-0 h-auto"
-                                    >
-                                        Show Description
-                                    </Button>
-                                </DialogTrigger>
+                            
+                            {/* Desktop: Show truncated text with button */}
+                            <div className="hidden md:flex items-start gap-2 w-3/5">
+                                <div className="line-clamp-1 flex-1">
+                                    {podcast.description}
+                                </div>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button
+                                            variant="link"
+                                            className="text-sm p-0 h-auto"
+                                        >
+                                            Show Description
+                                        </Button>
+                                    </DialogTrigger>
                                 <DialogContent className="max-w-2xl">
                                     <DialogHeader>
                                         <DialogTitle>
@@ -219,7 +248,8 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                         </p>
                                     </div>
                                 </DialogContent>
-                            </Dialog>
+                                </Dialog>
+                            </div>
                         </div>
                     </div>
 
