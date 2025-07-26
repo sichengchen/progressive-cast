@@ -22,7 +22,7 @@ export default function HomePage() {
         "--sidebar-width": "20rem"
       } as React.CSSProperties}
     >
-      <div className="flex h-screen w-full">
+      <div className="flex min-h-screen w-full">
         <PodcastSidebar />
         <SidebarInset className="flex flex-col">
           <MainContent />
