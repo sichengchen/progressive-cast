@@ -98,8 +98,9 @@ export class DownloadService {
       await DatabaseService.saveDownloadProgress(progress);
       this.notifyProgress(episode.id, progress);
 
-      // Download the file
-      const response = await fetch(episode.audioUrl, {
+      // Download the file through proxy to avoid CORS
+      const proxyUrl = `/api/download?url=${encodeURIComponent(episode.audioUrl)}`;
+      const response = await fetch(proxyUrl, {
         signal: abortController.signal
       });
 

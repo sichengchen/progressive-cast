@@ -1,8 +1,14 @@
 "use client"
 
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
+import {
+  List,
+  ListItem,
+  ListItemLeading,
+  ListItemContent,
+  ListItemTrailing,
+  ListItemMeta,
+} from "@/components/ui-custom/list";
 
 interface EpisodeSkeletonProps {
   count?: number;
@@ -10,50 +16,53 @@ interface EpisodeSkeletonProps {
 
 export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
   return (
-    <div className="h-full overflow-y-auto">
-      <div className="p-3">
-        <div className="space-y-0">
-          {Array.from({ length: count }, (_, index) => (
-            <div key={index}>
-              <Card className="border-0 shadow-none bg-transparent">
-                <CardContent className="px-3">
-                  <div className="flex items-center gap-4">
-                    {/* Cover image skeleton - matches w-20 h-20 */}
-                    <Skeleton className="w-20 h-20 rounded" />
+    <List className="px-0">
+      {Array.from({ length: count }, (_, index) => (
+        <ListItem key={index} className="px-2">
+          <ListItemLeading>
+            {/* Cover image skeleton - matches w-20 h-20 */}
+            <Skeleton className="w-20 h-20 rounded" />
+          </ListItemLeading>
 
-                    <div className="flex-1 min-w-0">
-                      {/* Date skeleton - matches text-xs above title */}
-                      <Skeleton className="h-3 w-20 mb-1" />
-                      
-                      {/* Episode title skeleton - matches font-medium line-clamp-2 */}
-                      <Skeleton className="h-4 w-full max-w-md mb-1" />
-                      <Skeleton className="h-4 w-3/4 mb-1" />
+          <ListItemContent className="space-y-1">
+            {/* Date and duration skeleton - matches ListItemMeta with date + duration */}
+            <ListItemMeta>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-3 w-20" />
+                <span className="flex items-center gap-1">
+                  <Skeleton className="w-3 h-3 rounded-full" />
+                  <Skeleton className="h-3 w-16" />
+                </span>
+              </div>
+            </ListItemMeta>
 
-                      {/* Duration skeleton - matches Clock icon + time */}
-                      <Skeleton className="h-3 w-16 mb-2" />
-
-                      {/* Description skeleton - matches text-sm line-clamp-2 */}
-                      <Skeleton className="h-3 w-full mb-2" />
-                      <Skeleton className="h-3 w-4/5 mb-2" />
-
-                      {/* Progress bar skeleton (optional) */}
-                      <div className="flex items-center gap-2">
-                        <Skeleton className="flex-1 h-1 rounded-full" />
-                        <Skeleton className="h-3 w-16" />
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              {/* Separator except for the last item */}
-              {index < count - 1 && (
-                <Separator className="my-2" />
-              )}
+            {/* Episode title skeleton - matches ListItemTitle with line-clamp-2 */}
+            <div className="font-medium leading-none tracking-tight">
+              <Skeleton className="h-4 w-full max-w-md mb-1" />
+              <Skeleton className="h-4 w-3/4" />
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
+
+            {/* Description skeleton - matches ListItemDescription with line-clamp-2 */}
+            <div className="text-sm text-muted-foreground mt-1">
+              <Skeleton className="h-3 w-full mb-1" />
+              <Skeleton className="h-3 w-4/5" />
+            </div>
+
+            {/* Progress bar skeleton (optional) - matches actual progress bar */}
+            <div className="flex items-center gap-2 pt-1">
+              <div className="flex-1">
+                <Skeleton className="h-1 w-full rounded-full" />
+              </div>
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </ListItemContent>
+
+          <ListItemTrailing>
+            {/* Download button skeleton */}
+            <Skeleton className="w-8 h-8 rounded-full" />
+          </ListItemTrailing>
+        </ListItem>
+      ))}
+    </List>
   );
 } 

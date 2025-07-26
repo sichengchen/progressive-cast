@@ -60,21 +60,15 @@ export function WhatsNewPage() {
     }, [latestEpisodes, podcasts, playbackProgress]);
 
     return (
-        <div className="h-full overflow-y-auto">
-            <div className="px-4 md:px-6 py-3 mt-6">
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold">What&apos;s New</h1>
-                </div>
-
-                <EpisodeList
-                    isLoadingEpisodes={isLoading}
-                    episodes={processedEpisodes}
-                    playbackProgress={playbackProgress}
-                    playEpisode={playEpisode}
-                    noEpisodesMessage="No episodes found"
-                    noEpisodesMessageDescription="Subscribe to some podcasts to see the latest episodes here"
-                />
-            </div>
-        </div>
+        <>
+            <EpisodeList
+                isLoadingEpisodes={isLoading}
+                episodes={processedEpisodes}
+                playbackProgress={playbackProgress}
+                playEpisode={playEpisode}
+                noEpisodesMessage="No episodes found"
+                noEpisodesMessageDescription="Subscribe to some podcasts to see the latest episodes here"
+            />
+        </>
     );
 }

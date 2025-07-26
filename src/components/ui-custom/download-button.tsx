@@ -95,7 +95,7 @@ export function DownloadButton({ episode, className = '', showProgress = true, s
         icon: <CheckCircle className="w-4 h-4" />,
         tooltip: 'Downloaded - Click to remove',
         action: handleDelete,
-        variant: 'default' as const,
+        variant: 'ghost' as const,
         className: 'text-green-600 hover:text-red-600'
       };
     }
@@ -105,7 +105,7 @@ export function DownloadButton({ episode, className = '', showProgress = true, s
         icon: <X className="w-4 h-4" />,
         tooltip: `Downloading ${downloadProgress.progress}% - Click to cancel`,
         action: handleCancel,
-        variant: 'outline' as const,
+        variant: 'ghost' as const,
         className: 'text-blue-600 hover:text-red-600'
       };
     }
@@ -115,7 +115,7 @@ export function DownloadButton({ episode, className = '', showProgress = true, s
         icon: <RotateCcw className="w-4 h-4" />,
         tooltip: `Download failed: ${downloadProgress.error || 'Unknown error'} - Click to retry`,
         action: handleRetry,
-        variant: 'outline' as const,
+        variant: 'ghost' as const,
         className: 'text-red-600 hover:text-blue-600'
       };
     }

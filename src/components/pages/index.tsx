@@ -1,6 +1,6 @@
 "use client";
 
-import { PropsWithChildren } from "react";
+import { ReactNode } from "react";
 
 import { APP_NAME } from "@/lib/constants";
 import { usePodcastStore } from "@/lib/store";
@@ -17,10 +17,16 @@ import { ResumePlayingPage } from "./resume-playing";
 import { DownloadedPage } from "./downloaded";
 import { PodcastPage } from "./podcast";
 
-const MainContentLayout = (props: PropsWithChildren) => {
+interface MainContentLayoutProps {
+    children?: ReactNode;
+    title?: string;
+    description?: string;
+}
+
+const MainContentLayout = (props: MainContentLayoutProps) => {
     const isMobile = useIsMobile();
     const { showNotesOpen } = usePodcastStore();
-    const { children } = props;
+    const { children, title, description } = props;
 
     const MobileHeader = () => (
         <div className="md:hidden border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex items-center justify-between p-4">
@@ -47,13 +53,34 @@ const MainContentLayout = (props: PropsWithChildren) => {
             {isMobile ? (
                 // Mobile layout - simplified
                 <div className="flex-1 overflow-hidden relative">
-                    {children}
+                    <div className="max-w-6xl mx-auto px-4">
+                        {children}
+                    </div>
                     <MobileShowNotesOverlay />
                 </div>
             ) : (
                 // Desktop layout - with sidebar
                 <div className="flex flex-1 overflow-hidden">
-                    <div className="flex-1">{children}</div>
+                    <div className="flex-1">
+                        <div className="h-full overflow-y-auto">
+                            <div className="px-4 py-3 max-w-6xl mx-auto">
+                                {title ? (
+                                    <>
+                                        <h1 className="text-2xl font-bold px-2 mt-6">
+                                            {title}
+                                        </h1>
+                                        <p className="text-muted-foreground mt-2 px-2">
+                                            {description}
+                                        </p>
+                                    </>
+                                ) : (
+                                    <></>
+                                )}
+
+                                {children}
+                            </div>
+                        </div>
+                    </div>
 
                     {/* Show Notes Sidebar for Resume Playing page */}
                     <div
@@ -69,39 +96,58 @@ const MainContentLayout = (props: PropsWithChildren) => {
     );
 };
 
-const MainContentInner = () => {
+export const MainContent = () => {
     const { podcasts, currentPage } = usePodcastStore();
 
     // If there are no podcasts at all, always show welcome screen regardless of currentPage
     if (podcasts.length === 0 && currentPage !== "settings") {
-        return <WelcomeScreen />;
+        return (
+            <MainContentLayout>
+                <WelcomeScreen />
+            </MainContentLayout>
+        );
     }
 
     // Handle different page views (only when user has podcasts)
     if (currentPage === "whats-new") {
-        return <WhatsNewPage />;
+        return (
+            <MainContentLayout title="What's New">
+                <WhatsNewPage />
+            </MainContentLayout>
+        );
     }
 
     if (currentPage === "resume-playing") {
-        return <ResumePlayingPage />;
+        return (
+            <MainContentLayout title="Resume Playing">
+                <ResumePlayingPage />
+            </MainContentLayout>
+        );
     }
 
     if (currentPage === "downloaded") {
-        return <DownloadedPage />;
+        return (
+            <MainContentLayout
+                title="Downloaded"
+                description="Manage your downloaded episodes for offline playback"
+            >
+                <DownloadedPage />
+            </MainContentLayout>
+        );
     }
 
     if (currentPage === "settings") {
-        return <SettingsPage />;
+        return (
+            <MainContentLayout title="Settings">
+                <SettingsPage />
+            </MainContentLayout>
+        );
     }
 
     // Default podcast view
-    return <PodcastPage />;
-};
-
-export const MainContent = () => {
     return (
         <MainContentLayout>
-            <MainContentInner />
+            <PodcastPage />
         </MainContentLayout>
     );
 };

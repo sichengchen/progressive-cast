@@ -5,11 +5,8 @@ const parser = new Parser();
 
 export class RSSService {
   static async parseFeed(feedUrl: string): Promise<RSSFeed> {
-    try {
-      console.log('Parsing feed via local API:', feedUrl);
-      
+    try {      
       const apiUrl = `/api/rss?url=${encodeURIComponent(feedUrl)}`;
-      console.log('Making request to:', apiUrl);
       
       const response = await fetch(apiUrl, {
         method: 'GET',
@@ -17,10 +14,7 @@ export class RSSService {
           'Content-Type': 'application/json',
         },
       });
-      
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
-      
+            
       if (!response.ok) {
         let errorData;
         try {
@@ -44,8 +38,6 @@ export class RSSService {
 
       // Parse the returned XML content directly
       const xmlContent = await response.text();
-      console.log('Received XML content length:', xmlContent.length);
-      console.log('XML content starts with:', xmlContent.substring(0, 200));
       
       if (!xmlContent || xmlContent.trim().length === 0) {
         throw new Error('Empty response from RSS feed');
@@ -59,19 +51,18 @@ export class RSSService {
       }
       
       const feed = await parser.parseString(xmlContent);
-      console.log('Parsed feed:', feed.title, 'with', feed.items?.length || 0, 'episodes');
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const episodes: RSSEpisode[] = feed.items?.map((item: any) => ({
         title: item.title || 'Untitled Episode',
         description: item.description || item.contentSnippet || '',
-        content: item.content || item['content:encoded'] || item.description || '',
+        content: item.content || item.content.encoded || item.description || '',
         audioUrl: this.extractAudioUrl(item),
-        duration: this.parseDuration(item['itunes:duration']),
+        duration: this.parseDuration(item.itunes.duration),
         publishedAt: item.pubDate ? new Date(item.pubDate) : new Date(),
         imageUrl: this.extractImageUrl(item) || this.extractImageUrl(feed),
-        episodeNumber: item['itunes:episode'] ? parseInt(item['itunes:episode'], 10) : undefined,
-        seasonNumber: item['itunes:season'] ? parseInt(item['itunes:season'], 10) : undefined,
+        episodeNumber: item.itunes.episode ? parseInt(item.itunes.episode, 10) : undefined,
+        seasonNumber: item.itunes.season ? parseInt(item.itunes.season, 10) : undefined,
       })) || [];
 
       return {
@@ -80,7 +71,7 @@ export class RSSService {
         feedUrl,
         imageUrl: this.extractImageUrl(feed),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        author: (feed as any)['itunes:author'] || (feed as any).author || undefined,
+        author: (feed as any).itunes.author || (feed as any).author || undefined,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         language: (feed as any).language || undefined,
         categories: this.extractCategories(feed),
@@ -162,12 +153,12 @@ export class RSSService {
       }
     }
 
-    if (feed['itunes:category']) {
-      if (Array.isArray(feed['itunes:category'])) {
+    if (feed.itunes.category) {
+      if (Array.isArray(feed.itunes.category)) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        categories.push(...feed['itunes:category'].map((cat: any) => cat.text || cat));
+        categories.push(...feed.itunes.category.map((cat: any) => cat.text || cat));
       } else {
-        categories.push(feed['itunes:category'].text || feed['itunes:category']);
+        categories.push(feed.itunes.category.text || feed.itunes.category);
       }
     }
 

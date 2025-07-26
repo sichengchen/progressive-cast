@@ -25,7 +25,8 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
     }, [podcastId, loadEpisodes]);
 
     return (
-        <div className="p-3">
+        <div>
+            <h2 className="text-xl font-semibold px-2">Episodes</h2>
             <EpisodeList
                 isLoadingEpisodes={isLoadingEpisodes}
                 episodes={episodes}

@@ -59,21 +59,15 @@ export function ResumePlayingPage() {
     }, [unfinishedEpisodes, podcasts, playbackProgress]);
 
     return (
-        <div className="h-full overflow-y-auto">
-            <div className="px-6 py-3 mt-6">
-                <div className="mb-6">
-                    <h1 className="text-2xl font-bold">Resume Playing</h1>
-                </div>
-
-                <EpisodeList
-                    isLoadingEpisodes={isLoading}
-                    episodes={processedEpisodes}
-                    playbackProgress={playbackProgress}
-                    playEpisode={playEpisode}
-                    noEpisodesMessage="No episodes to resume"
-                    noEpisodesMessageDescription="Start playing some episodes to see them here"
-                />
-            </div>
-        </div>
+        <>
+            <EpisodeList
+                isLoadingEpisodes={isLoading}
+                episodes={processedEpisodes}
+                playbackProgress={playbackProgress}
+                playEpisode={playEpisode}
+                noEpisodesMessage="No episodes to resume"
+                noEpisodesMessageDescription="Start playing some episodes to see them here"
+            />
+        </>
     );
 }

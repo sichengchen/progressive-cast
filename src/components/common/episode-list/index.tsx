@@ -1,10 +1,26 @@
 "use client";
 
+/**
+ * EpisodeList Component
+ * 
+ * IMPORTANT: When modifying this component's structure, also update the corresponding
+ * EpisodeSkeleton component at /components/common/episode-list/episode-skeleton.tsx
+ * to maintain visual consistency during loading states.
+ */
+
 import { Play, Clock } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import {
+  List,
+  ListItem,
+  ListItemLeading,
+  ListItemContent,
+  ListItemTrailing,
+  ListItemTitle,
+  ListItemDescription,
+  ListItemMeta,
+} from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
-import { DownloadButton } from "@/components/ui/download-button";
+import { DownloadButton } from "@/components/ui-custom/download-button";
 import { formatTime } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Episode, PlaybackProgress } from "@/lib/types";
@@ -55,96 +71,83 @@ export function EpisodeList({
     }
 
     return (
-        <div className="space-y-0">
-            {episodes.map((episode, index) => {
+        <List className="px-0">
+            {episodes.map((episode) => {
                 const progress = playbackProgress.get(episode.id);
 
                 return (
-                    <div key={episode.id}>
-                        <Card
-                            className="relative cursor-pointer transition-colors hover:bg-accent group border-0 shadow-none bg-transparent"
-                            onClick={() => handlePlayEpisode(episode)}
-                        >
-                            <CardContent className="px-3">
-                                <div className="flex items-center gap-4">
-                                    <CoverImage
-                                        src={episode.imageUrl}
-                                        alt={episode.title}
-                                        className="w-20 h-20"
-                                    >
-                                        {/* Play icon overlay only on cover area */}
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                                            <Play className="w-6 h-6 text-white fill-current" />
-                                        </div>
-                                    </CoverImage>
-
-                                    <div className="flex-1 min-w-0">
-                                        {/* Date above title */}
-                                        <p className="text-xs text-muted-foreground mb-1">
-                                            {format(
-                                                new Date(episode.publishedAt),
-                                                "MMM d, yyyy"
-                                            )}
-                                        </p>
-
-                                        <h3 className="font-medium line-clamp-2 mb-1">
-                                            {episode.title}
-                                        </h3>
-
-                                        {episode.duration && (
-                                            <div className="flex items-center gap-1 text-sm text-muted-foreground mb-2">
-                                                <Clock className="w-3 h-3" />
-                                                {formatTime(episode.duration)}
-                                            </div>
-                                        )}
-
-                                        <p className="text-sm text-muted-foreground line-clamp-2 mb-2">
-                                            {episode.description}
-                                        </p>
-
-                                        {progress &&
-                                            progress.currentTime > 0 && (
-                                                <div className="flex items-center gap-2">
-                                                    <div className="flex-1 bg-secondary rounded-full h-1">
-                                                        <div
-                                                            className="bg-primary h-1 rounded-full"
-                                                            style={{
-                                                                width: `${
-                                                                    (progress.currentTime /
-                                                                        progress.duration) *
-                                                                    100
-                                                                }%`,
-                                                            }}
-                                                        />
-                                                    </div>
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {formatTime(
-                                                            progress.currentTime
-                                                        )}{" "}
-                                                        /{" "}
-                                                        {formatTime(
-                                                            progress.duration
-                                                        )}
-                                                    </span>
-                                                </div>
-                                            )}
-                                    </div>
-
-                                    {/* Download button */}
-                                    <div className="flex-shrink-0 ml-2">
-                                        <DownloadButton episode={episode} />
-                                    </div>
+                    <ListItem
+                        key={episode.id}
+                        interactive
+                        className="group relative px-2"
+                        onClick={() => handlePlayEpisode(episode)}
+                    >
+                        <ListItemLeading>
+                            <CoverImage
+                                src={episode.imageUrl}
+                                alt={episode.title}
+                                className="w-20 h-20 relative"
+                            >
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                                    <Play className="w-6 h-6 text-white fill-current" />
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </CoverImage>
+                        </ListItemLeading>
 
-                        {/* Add separator except for the last item */}
-                        {index < episodes.length - 1 && (
-                            <Separator className="my-2" />
-                        )}
-                    </div>
+                        <ListItemContent className="space-y-1">
+                            <ListItemMeta>
+                                <div className="flex items-center gap-2">
+                                    <span>
+                                        {format(
+                                            new Date(episode.publishedAt),
+                                            "MMM d, yyyy"
+                                        )}
+                                    </span>
+                                    {episode.duration && (
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            {formatTime(episode.duration)}
+                                        </span>
+                                    )}
+                                </div>
+                            </ListItemMeta>
+
+                            <ListItemTitle className="line-clamp-2">
+                                {episode.title}
+                            </ListItemTitle>
+
+                            <ListItemDescription className="line-clamp-2">
+                                {episode.description}
+                            </ListItemDescription>
+
+                            {progress && progress.currentTime > 0 && (
+                                <div className="flex items-center gap-2 pt-1">
+                                    <div className="flex-1 bg-secondary rounded-full h-1">
+                                        <div
+                                            className="bg-primary h-1 rounded-full"
+                                            style={{
+                                                width: `${
+                                                    (progress.currentTime /
+                                                        progress.duration) *
+                                                    100
+                                                }%`,
+                                            }}
+                                        />
+                                    </div>
+                                    <span className="text-xs text-muted-foreground">
+                                        {formatTime(progress.currentTime)} /{" "}
+                                        {formatTime(progress.duration)}
+                                    </span>
+                                </div>
+                            )}
+                        </ListItemContent>
+
+                        <ListItemTrailing>
+                            <DownloadButton episode={episode} />
+                        </ListItemTrailing>
+                    </ListItem>
                 );
             })}
-        </div>
+        </List>
     );
 }
