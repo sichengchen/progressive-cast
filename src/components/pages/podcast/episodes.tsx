@@ -25,15 +25,13 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
     }, [podcastId, loadEpisodes]);
 
     return (
-        <div className="h-full overflow-y-auto">
-            <div className="p-3">
-                <EpisodeList
-                    isLoadingEpisodes={isLoadingEpisodes}
-                    episodes={episodes}
-                    playbackProgress={playbackProgress}
-                    playEpisode={playEpisode}
-                />
-            </div>
+        <div className="p-3">
+            <EpisodeList
+                isLoadingEpisodes={isLoadingEpisodes}
+                episodes={episodes}
+                playbackProgress={playbackProgress}
+                playEpisode={playEpisode}
+            />
         </div>
     );
 }

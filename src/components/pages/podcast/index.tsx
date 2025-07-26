@@ -42,22 +42,16 @@ export const PodcastPage = () => {
     }
 
     return (
-        <>
-            <div className="flex-1 overflow-hidden">
-                <div className="h-full overflow-y-auto">
-                    {/* Podcast Details Section - Fixed height to prevent layout shifts */}
-                    <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
-                        <div className="p-6">
-                            <PodcastDetails podcast={selectedPodcast} />
-                        </div>
-                    </div>
-
-                    {/* Episodes List Section */}
-                    <div className="flex-1 min-h-0">
-                        <PodcastEpisodes podcastId={selectedPodcastId} />
-                    </div>
+        <div className="h-full overflow-y-auto">
+            {/* Podcast Details Section - Fixed height to prevent layout shifts */}
+            <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
+                <div className="p-6">
+                    <PodcastDetails podcast={selectedPodcast} />
                 </div>
             </div>
-        </>
+
+            {/* Episodes List Section */}
+            <PodcastEpisodes podcastId={selectedPodcastId} />
+        </div>
     );
 };
