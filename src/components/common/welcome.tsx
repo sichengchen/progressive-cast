@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { Radio, Plus, Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddPodcastDialog } from './add-podcast-dialog';
+import { AddPodcastDialog } from '@/components/common/add-podcast-dialog';
 import { usePodcastStore } from '@/lib/store';
 import { toast } from 'sonner';
 

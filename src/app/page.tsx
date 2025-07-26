@@ -1,11 +1,11 @@
 "use client"
 
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
-import { PodcastSidebar } from "@/components/sidebar";
-import { MainContent } from "@/components/main-content";
-import { AudioPlayer } from "@/components/audio-player";
-import { LoadingScreen } from "@/components/loading-screen";
-import { ProgressDialog } from "@/components/progress-dialog";
+import { PodcastSidebar } from "@/components/common/sidebar";
+import { MainContent } from "@/components/pages";
+import { AudioPlayer } from "@/components/common/audio-player";
+import { LoadingScreen } from "@/components/common/loading-screen";
+import { ProgressDialog } from "@/components/common/progress-dialog";
 import { usePodcastStore } from "@/lib/store";
 
 export default function HomePage() {

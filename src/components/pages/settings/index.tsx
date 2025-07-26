@@ -27,7 +27,7 @@ import {
 import { usePodcastStore } from '@/lib/store';
 import { APP_VERSION } from '@/lib/constants';
 import { useTheme } from 'next-themes';
-import { OPMLManager } from './opml-manager';
+import { OPMLManager } from '../../common/opml-manager';
 import { toast } from 'sonner';
 
 export function SettingsPage() {

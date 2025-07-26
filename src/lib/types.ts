@@ -23,6 +23,11 @@ export interface Episode {
   imageUrl?: string;
   episodeNumber?: number;
   seasonNumber?: number;
+  // Download-related fields
+  isDownloaded?: boolean;
+  downloadedPath?: string; // Local path or blob key
+  downloadedAt?: Date;
+  fileSize?: number; // in bytes
 }
 
 export interface PlaybackProgress {
@@ -88,4 +93,29 @@ export interface RSSEpisode {
   imageUrl?: string;
   episodeNumber?: number;
   seasonNumber?: number;
+}
+
+// New download-related types
+export interface DownloadProgress {
+  episodeId: string;
+  progress: number; // 0-100
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'paused';
+  error?: string;
+  startedAt: Date;
+  completedAt?: Date;
+}
+
+export interface DownloadQueue {
+  id: string;
+  episodeId: string;
+  podcastId: string;
+  priority: number; // Higher number = higher priority
+  addedAt: Date;
+  status: 'queued' | 'downloading' | 'completed' | 'failed';
+}
+
+export interface StorageStats {
+  totalSize: number; // in bytes
+  downloadedEpisodes: number;
+  availableSpace?: number;
 } 

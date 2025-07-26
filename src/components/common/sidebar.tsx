@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react';
-import { Plus, Radio, Search, RefreshCw, Settings, Sparkles, History } from 'lucide-react';
+import { Plus, Radio, Search, RefreshCw, Settings, Sparkles, History, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -32,6 +32,11 @@ const menuItems = [
     title: "Resume Playing",
     icon: History,
     action: "resume-playing",
+  },
+  {
+    title: "Downloaded",
+    icon: Download,
+    action: "downloaded",
   },
   {
     title: "Settings",
@@ -76,6 +81,9 @@ export function PodcastSidebar() {
         break;
       case 'resume-playing':
         setCurrentPage('resume-playing');
+        break;
+      case 'downloaded':
+        setCurrentPage('downloaded');
         break;
       case 'settings':
         setCurrentPage('settings');

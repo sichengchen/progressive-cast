@@ -1,10 +1,13 @@
 import Dexie, { type EntityTable } from 'dexie';
-import type { Podcast, Episode, PlaybackProgress } from './types';
+import type { Podcast, Episode, PlaybackProgress, DownloadProgress, DownloadQueue } from './types';
 
 export interface PodcastDB {
   podcasts: EntityTable<Podcast, 'id'>;
   episodes: EntityTable<Episode, 'id'>;
   playbackProgress: EntityTable<PlaybackProgress, 'id'>;
+  downloadProgress: EntityTable<DownloadProgress, 'episodeId'>;
+  downloadQueue: EntityTable<DownloadQueue, 'id'>;
+  audioFiles: EntityTable<{ key: string; blob: Blob; size: number; createdAt: Date }, 'key'>;
 }
 
 const db = new Dexie('PodcastPlayerDB') as Dexie & PodcastDB;
@@ -21,6 +24,16 @@ db.version(2).stores({
   podcasts: '&id, title, feedUrl, subscriptionDate, lastUpdated',
   episodes: '&id, podcastId, title, publishedAt, audioUrl, [publishedAt+podcastId]', // Compound index for latest episodes query
   playbackProgress: '&id, episodeId, podcastId, lastPlayedAt, isCompleted'
+});
+
+// Add compound indexes for better query performance
+db.version(3).stores({
+  podcasts: '&id, title, feedUrl, subscriptionDate, lastUpdated',
+  episodes: '&id, podcastId, title, publishedAt, audioUrl, [publishedAt+podcastId], isDownloaded', // Added isDownloaded index
+  playbackProgress: '&id, episodeId, podcastId, lastPlayedAt, isCompleted',
+  downloadProgress: '&episodeId, status, startedAt',
+  downloadQueue: '&id, episodeId, priority, status, addedAt',
+  audioFiles: '&key, size, createdAt'
 });
 
 export class DatabaseService {
@@ -168,6 +181,121 @@ export class DatabaseService {
       await db.podcasts.bulkAdd(data.podcasts);
       await db.episodes.bulkAdd(data.episodes);
       await db.playbackProgress.bulkAdd(data.playbackProgress);
+    });
+  }
+
+  // Download-related operations
+  static async saveAudioFile(key: string, blob: Blob): Promise<void> {
+    await db.audioFiles.put({
+      key,
+      blob,
+      size: blob.size,
+      createdAt: new Date()
+    });
+  }
+
+  static async getAudioFile(key: string): Promise<Blob | undefined> {
+    const record = await db.audioFiles.get(key);
+    return record?.blob;
+  }
+
+  static async deleteAudioFile(key: string): Promise<void> {
+    await db.audioFiles.delete(key);
+  }
+
+  static async markEpisodeAsDownloaded(episodeId: string, localPath: string, fileSize: number): Promise<void> {
+    await db.episodes.update(episodeId, {
+      isDownloaded: true,
+      downloadedPath: localPath,
+      downloadedAt: new Date(),
+      fileSize
+    });
+  }
+
+  static async markEpisodeAsNotDownloaded(episodeId: string): Promise<void> {
+    const episode = await db.episodes.get(episodeId);
+    if (episode?.downloadedPath) {
+      // Delete the audio file
+      await this.deleteAudioFile(episode.downloadedPath);
+    }
+    
+    await db.episodes.update(episodeId, {
+      isDownloaded: false,
+      downloadedPath: undefined,
+      downloadedAt: undefined,
+      fileSize: undefined
+    });
+  }
+
+  static async getDownloadedEpisodes(): Promise<Episode[]> {
+    return await db.episodes.filter(episode => episode.isDownloaded === true).toArray();
+  }
+
+  static async getStorageStats(): Promise<{ totalSize: number; downloadedEpisodes: number }> {
+    const downloadedEpisodes = await this.getDownloadedEpisodes();
+    const totalSize = downloadedEpisodes.reduce((sum, episode) => sum + (episode.fileSize || 0), 0);
+    
+    return {
+      totalSize,
+      downloadedEpisodes: downloadedEpisodes.length
+    };
+  }
+
+  // Download progress operations
+  static async saveDownloadProgress(progress: DownloadProgress): Promise<void> {
+    await db.downloadProgress.put(progress);
+  }
+
+  static async getDownloadProgress(episodeId: string): Promise<DownloadProgress | undefined> {
+    return await db.downloadProgress.get(episodeId);
+  }
+
+  static async deleteDownloadProgress(episodeId: string): Promise<void> {
+    await db.downloadProgress.delete(episodeId);
+  }
+
+  static async getAllDownloadProgress(): Promise<DownloadProgress[]> {
+    return await db.downloadProgress.toArray();
+  }
+
+  // Download queue operations
+  static async addToDownloadQueue(queueItem: DownloadQueue): Promise<void> {
+    await db.downloadQueue.add(queueItem);
+  }
+
+  static async getDownloadQueue(): Promise<DownloadQueue[]> {
+    return await db.downloadQueue.orderBy('priority').reverse().toArray();
+  }
+
+  static async updateDownloadQueueStatus(id: string, status: DownloadQueue['status']): Promise<void> {
+    await db.downloadQueue.update(id, { status });
+  }
+
+  static async removeFromDownloadQueue(id: string): Promise<void> {
+    await db.downloadQueue.delete(id);
+  }
+
+  static async clearAllDownloads(): Promise<void> {
+    await db.transaction('rw', db.episodes, db.audioFiles, db.downloadProgress, db.downloadQueue, async () => {
+      // Get all downloaded episodes
+      const downloadedEpisodes = await this.getDownloadedEpisodes();
+      
+      // Delete all audio files
+      await db.audioFiles.clear();
+      
+      // Mark all episodes as not downloaded
+      for (const episode of downloadedEpisodes) {
+        await db.episodes.update(episode.id, {
+          isDownloaded: false,
+          downloadedPath: undefined,
+          downloadedAt: undefined,
+          fileSize: undefined
+        });
+      }
+      
+      // Clear download progress and queue
+      await db.downloadProgress.clear();
+      await db.downloadQueue.clear();
     });
   }
 } 

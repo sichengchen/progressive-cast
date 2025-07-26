@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CoverImage } from '@/components/ui/cover-image';
 import { usePodcastStore } from '@/lib/store';
+import { DownloadService } from '@/lib/download-service';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { formatTime } from '@/lib/utils';
 
@@ -161,6 +162,29 @@ export function AudioPlayer() {
     audio.pause();
     audio.currentTime = 0;
 
+    const loadAudioSource = async () => {
+      let audioUrl = currentEpisode.audioUrl;
+      
+      // Try to get local audio file first if episode is downloaded
+      if (currentEpisode.isDownloaded) {
+        try {
+          const localUrl = await DownloadService.getLocalAudioUrl(currentEpisode);
+          if (localUrl) {
+            audioUrl = localUrl;
+            console.log('Using local audio file for offline playback');
+          } else {
+            console.log('Local file missing, falling back to streaming');
+          }
+        } catch (error) {
+          console.warn('Failed to load local audio file, falling back to streaming:', error);
+        }
+      }
+      
+      // Set the audio source
+      audio.src = audioUrl;
+      audio.load();
+    };
+
     const handleLoadedMetadata = () => {
       setDuration(audio.duration);
       // Restore saved playback position if available
@@ -203,11 +227,24 @@ export function AudioPlayer() {
       pausePlayback();
       // Save final progress
       saveProgress(currentEpisode.id, duration, duration);
+      
+      // Clean up blob URL if it was created for local playback
+      if (audio.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audio.src);
+      }
     };
 
     const handleError = (e: Event) => {
       console.warn('Audio error:', e);
       setLoading(false);
+      
+      // If this was a local file and it failed, try to fallback to streaming
+      if (audio.src.startsWith('blob:') && currentEpisode.isDownloaded) {
+        console.log('Local playback failed, attempting to fallback to streaming');
+        URL.revokeObjectURL(audio.src);
+        audio.src = currentEpisode.audioUrl;
+        audio.load();
+      }
     };
 
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
@@ -217,13 +254,18 @@ export function AudioPlayer() {
     audio.addEventListener('ended', handleEnded);
     audio.addEventListener('error', handleError);
 
-    // Load the audio source
-    audio.src = currentEpisode.audioUrl;
-    audio.load();
+    // Load the audio source (local or remote)
+    loadAudioSource();
 
     return () => {
       // Clean up: pause audio and remove event listeners
       audio.pause();
+      
+      // Clean up blob URL if it was created
+      if (audio.src.startsWith('blob:')) {
+        URL.revokeObjectURL(audio.src);
+      }
+      
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('loadstart', handleLoadStart);

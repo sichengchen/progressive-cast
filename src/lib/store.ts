@@ -1,8 +1,9 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { Podcast, Episode, PlaybackProgress, PlaybackState, UserPreferences } from './types';
+import type { Podcast, Episode, PlaybackProgress, PlaybackState, UserPreferences, DownloadProgress, StorageStats } from './types';
 import { DatabaseService } from './database';
 import { RSSService } from './rss-service';
+import { DownloadService } from './download-service';
 
 const defaultPreferences: UserPreferences = {
   theme: 'system',
@@ -25,10 +26,14 @@ interface PodcastStore {
   preferences: UserPreferences;
   selectedPodcastId: string | null;
   showNotesOpen: boolean;
-  currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings';
+  currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded';
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
+
+  // Download state
+  downloadProgress: Map<string, DownloadProgress>;
+  storageStats: StorageStats | null;
 
   // Cache for latest episodes to improve performance
   latestEpisodesCache: {
@@ -64,7 +69,7 @@ interface PodcastStore {
   toggleShowNotes: () => void;
 
   // Page navigation
-  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings') => void;
+  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded') => void;
 
   // Playback actions
   playEpisode: (episode: Episode) => void;
@@ -100,6 +105,15 @@ interface PodcastStore {
 
   // Data management
   clearAllData: () => Promise<void>;
+
+  // Download actions
+  downloadEpisode: (episode: Episode) => Promise<void>;
+  cancelDownload: (episodeId: string) => Promise<void>;
+  deleteDownload: (episodeId: string) => Promise<void>;
+  retryDownload: (episode: Episode) => Promise<void>;
+  refreshStorageStats: () => Promise<void>;
+  clearAllDownloads: () => Promise<void>;
+  updateDownloadProgress: (episodeId: string, progress: DownloadProgress) => void;
 }
 
 export const usePodcastStore = create<PodcastStore>()(
@@ -128,6 +142,10 @@ export const usePodcastStore = create<PodcastStore>()(
       error: null,
       latestEpisodesCache: null,
 
+      // Download state
+      downloadProgress: new Map(),
+      storageStats: null,
+
       // Progress dialog initial state
       progressDialog: {
         isOpen: false,
@@ -142,9 +160,11 @@ export const usePodcastStore = create<PodcastStore>()(
         try {
           set({ isLoading: true });
 
-          const [podcasts, allProgress] = await Promise.all([
+          const [podcasts, allProgress, downloadProgress, storageStats] = await Promise.all([
             DatabaseService.getPodcasts(),
-            DatabaseService.exportData().then(data => data.playbackProgress)
+            DatabaseService.exportData().then(data => data.playbackProgress),
+            DatabaseService.getAllDownloadProgress(),
+            DownloadService.getStorageStats()
           ]);
 
           const progressMap = new Map<string, PlaybackProgress>();
@@ -152,9 +172,16 @@ export const usePodcastStore = create<PodcastStore>()(
             progressMap.set(progress.episodeId, progress);
           });
 
+          const downloadProgressMap = new Map<string, DownloadProgress>();
+          downloadProgress.forEach(progress => {
+            downloadProgressMap.set(progress.episodeId, progress);
+          });
+
           set({
             podcasts,
             playbackProgress: progressMap,
+            downloadProgress: downloadProgressMap,
+            storageStats,
             isLoading: false
           });
         } catch (error) {
@@ -385,7 +412,7 @@ export const usePodcastStore = create<PodcastStore>()(
       },
 
       // Set current page
-      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings') => {
+      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded') => {
         set({ currentPage: page });
       },
 
@@ -724,6 +751,8 @@ export const usePodcastStore = create<PodcastStore>()(
             currentPage: 'whats-new' as const,
             error: null,
             latestEpisodesCache: null,
+            downloadProgress: new Map(),
+            storageStats: { totalSize: 0, downloadedEpisodes: 0 },
             progressDialog: {
               isOpen: false,
               title: '',
@@ -735,7 +764,111 @@ export const usePodcastStore = create<PodcastStore>()(
         } catch (error) {
           set({ error: `Failed to clear data: ${error instanceof Error ? error.message : 'Unknown error'}` });
         }
-      }
+      },
+
+      // Download actions
+      downloadEpisode: async (episode: Episode) => {
+        try {
+          await DownloadService.queueDownload(episode);
+          get().refreshStorageStats();
+        } catch (error) {
+          set({ error: `Failed to download episode: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        }
+      },
+
+      cancelDownload: async (episodeId: string) => {
+        try {
+          await DownloadService.cancelDownload(episodeId);
+          set(state => {
+            const newDownloadProgress = new Map(state.downloadProgress);
+            newDownloadProgress.delete(episodeId);
+            return { downloadProgress: newDownloadProgress };
+          });
+          get().refreshStorageStats();
+        } catch (error) {
+          set({ error: `Failed to cancel download: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        }
+      },
+
+      deleteDownload: async (episodeId: string) => {
+        try {
+          await DownloadService.deleteDownload(episodeId);
+          
+          // Update episode in local state
+          set(state => ({
+            episodes: state.episodes.map(ep => 
+              ep.id === episodeId 
+                ? { ...ep, isDownloaded: false, downloadedPath: undefined, downloadedAt: undefined, fileSize: undefined }
+                : ep
+            ),
+            downloadProgress: new Map([...state.downloadProgress].filter(([key]) => key !== episodeId))
+          }));
+          
+          get().refreshStorageStats();
+        } catch (error) {
+          set({ error: `Failed to delete download: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        }
+      },
+
+      retryDownload: async (episode: Episode) => {
+        try {
+          await DownloadService.retryDownload(episode);
+        } catch (error) {
+          set({ error: `Failed to retry download: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        }
+      },
+
+      refreshStorageStats: async () => {
+        try {
+          const stats = await DownloadService.getStorageStats();
+          set({ storageStats: stats });
+        } catch (error) {
+          console.error('Failed to refresh storage stats:', error);
+        }
+      },
+
+      clearAllDownloads: async () => {
+        try {
+          await DownloadService.clearAllDownloads();
+          
+          // Update local state
+          set(state => ({
+            episodes: state.episodes.map(ep => ({
+              ...ep,
+              isDownloaded: false,
+              downloadedPath: undefined,
+              downloadedAt: undefined,
+              fileSize: undefined
+            })),
+            downloadProgress: new Map(),
+            storageStats: { totalSize: 0, downloadedEpisodes: 0 }
+          }));
+        } catch (error) {
+          set({ error: `Failed to clear downloads: ${error instanceof Error ? error.message : 'Unknown error'}` });
+        }
+      },
+
+      updateDownloadProgress: (episodeId: string, progress: DownloadProgress) => {
+        set(state => {
+          const newDownloadProgress = new Map(state.downloadProgress);
+          newDownloadProgress.set(episodeId, progress);
+          
+          // If download completed, update episode
+          if (progress.status === 'completed') {
+            const updatedEpisodes = state.episodes.map(ep => 
+              ep.id === episodeId 
+                ? { ...ep, isDownloaded: true }
+                : ep
+            );
+            return { 
+              downloadProgress: newDownloadProgress,
+              episodes: updatedEpisodes
+            };
+          }
+          
+          return { downloadProgress: newDownloadProgress };
+        });
+      },
     }),
     {
       name: 'podcast-player-preferences',
