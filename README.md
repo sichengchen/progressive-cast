@@ -14,7 +14,7 @@ A PWA podcast player.
 
 ### Deploy with Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsichengchen%2Fprogressive-cast&demo-title=Progressive%20Cast&demo-description=A%20PWA%20podcast%20player.&demo-url=https%3A%2F%2Fcast.scchan.moe)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsichengchen%2Fprogressive-cast&demo-title=Progressive%20Cast%20Demo&demo-description=A%20PWA%20podcast%20player.&demo-url=https%3A%2F%2Fcast.scchan.moe)
 
 ### Development
 
