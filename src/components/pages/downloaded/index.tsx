@@ -15,6 +15,14 @@ export function DownloadedPage() {
     } = usePodcastStore();
     const [isLoading, setIsLoading] = useState(true);
 
+    const handleRefresh = async () => {
+        try {
+            await getDownloadedEpisodes();
+        } catch (error) {
+            console.error("Failed to refresh download data:", error);
+        }
+    };
+
     useEffect(() => {
         setIsLoading(true);
 
@@ -57,6 +65,9 @@ export function DownloadedPage() {
             playEpisode={playEpisode}
             noEpisodesMessage="No episodes downloaded yet"
             noEpisodesMessageDescription="Download episodes to play them offline"
+            showDeleteButton={true}
+            pageType="downloaded"
+            onDeleteComplete={handleRefresh}
         />
     );
 }

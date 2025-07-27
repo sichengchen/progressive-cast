@@ -14,6 +14,14 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
     const { episodes, playbackProgress, loadEpisodes, playEpisode } =
         usePodcastStore();
 
+    const handleDownloadComplete = async () => {
+        try {
+            await loadEpisodes(podcastId);
+        } catch (error) {
+            console.error("Failed to refresh episodes after download:", error);
+        }
+    };
+
     useEffect(() => {
         const loadPodcastEpisodes = async () => {
             setIsLoadingEpisodes(true);
@@ -32,6 +40,9 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
                 episodes={episodes}
                 playbackProgress={playbackProgress}
                 playEpisode={playEpisode}
+                showDownloadButton={true}
+                pageType="podcast"
+                onDownloadComplete={handleDownloadComplete}
             />
         </div>
     );

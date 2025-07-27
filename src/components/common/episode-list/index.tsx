@@ -34,6 +34,11 @@ interface EpisodeListProps {
     playEpisode: (episode: Episode) => void;
     noEpisodesMessage?: string;
     noEpisodesMessageDescription?: string;
+    showDownloadButton?: boolean;
+    showDeleteButton?: boolean;
+    pageType?: 'podcast' | 'downloaded' | 'other';
+    onDownloadComplete?: () => void;
+    onDeleteComplete?: () => void;
 }
 
 export function EpisodeList({
@@ -43,6 +48,11 @@ export function EpisodeList({
     playEpisode,
     noEpisodesMessage,
     noEpisodesMessageDescription,
+    showDownloadButton = false,
+    showDeleteButton = false,
+    pageType = 'other',
+    onDownloadComplete,
+    onDeleteComplete,
 }: EpisodeListProps) {
     const handlePlayEpisode = (episode: Episode, event?: React.MouseEvent) => {
         if (event) {
@@ -143,7 +153,14 @@ export function EpisodeList({
                         </ListItemContent>
 
                         <ListItemTrailing>
-                            <DownloadButton episode={episode} />
+                            {(showDownloadButton || showDeleteButton) && (
+                                <DownloadButton 
+                                    episode={episode} 
+                                    pageType={pageType}
+                                    onDownloadComplete={onDownloadComplete}
+                                    onDeleteComplete={onDeleteComplete}
+                                />
+                            )}
                         </ListItemTrailing>
                     </ListItem>
                 );

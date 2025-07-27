@@ -78,6 +78,7 @@ interface PodcastStore {
   playEpisode: (episode: Episode) => void;
   pausePlayback: () => void;
   resumePlayback: () => void;
+  clearPlayback: () => void;
   setCurrentTime: (time: number) => void;
   seekToTime: (time: number) => void;
   clearSeekRequest: () => void;
@@ -467,6 +468,22 @@ export const usePodcastStore = create<PodcastStore>()(
         }));
       },
 
+      // Clear playback state
+      clearPlayback: () => {
+        set(state => ({
+          playbackState: {
+            ...state.playbackState,
+            currentEpisode: null,
+            isPlaying: false,
+            currentTime: 0,
+            duration: 0,
+            isLoading: false,
+            showNotes: '',
+            seekRequested: false,
+          }
+        }));
+      },
+
       // Set current playback time
       setCurrentTime: (time: number) => {
         set(state => ({
@@ -821,6 +838,10 @@ export const usePodcastStore = create<PodcastStore>()(
           // Remove progress callback
           DownloadService.removeProgressCallback(episodeId);
           
+          // Check if the deleted episode is currently playing and clear playback state if so
+          const { playbackState } = get();
+          const shouldClearPlayback = playbackState.currentEpisode?.id === episodeId;
+          
           // Update episode in local state
           set(state => ({
             episodes: state.episodes.map(ep => 
@@ -829,7 +850,20 @@ export const usePodcastStore = create<PodcastStore>()(
                 : ep
             ),
             downloadedEpisodes: state.downloadedEpisodes.filter(ep => ep.id !== episodeId),
-            downloadProgress: new Map([...state.downloadProgress].filter(([key]) => key !== episodeId))
+            downloadProgress: new Map([...state.downloadProgress].filter(([key]) => key !== episodeId)),
+            // Clear playback state if the deleted episode was currently playing
+            ...(shouldClearPlayback && {
+              playbackState: {
+                currentEpisode: null,
+                isPlaying: false,
+                currentTime: 0,
+                duration: 0,
+                volume: state.playbackState.volume, // Preserve volume setting
+                isLoading: false,
+                showNotes: '',
+                seekRequested: false,
+              }
+            })
           }));
           
           get().refreshStorageStats();
