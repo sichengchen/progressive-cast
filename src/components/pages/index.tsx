@@ -1,11 +1,18 @@
 "use client";
 
 import React, { ReactNode } from "react";
+import { toast } from "sonner";
 
 import { usePodcastStore } from "@/lib/store";
-
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sparkles, Settings, Radio, ArrowLeft, Plus } from "lucide-react";
+import {
+    Sparkles,
+    Settings,
+    Radio,
+    ArrowLeft,
+    Plus,
+    RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     MobileTabBar,
@@ -26,6 +33,7 @@ import { ScrollingText } from "../ui/scrolling-text";
 interface ToolBarItemButton {
     inner: ReactNode;
     action: () => void;
+    disabled?: boolean;
 }
 
 interface MainContentLayoutProps {
@@ -115,6 +123,7 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
                                                         item.action();
                                                     }}
                                                     className="p-2"
+                                                    disabled={item.disabled}
                                                 >
                                                     {item.inner}
                                                 </Button>
@@ -177,6 +186,8 @@ export const MainContent = () => {
         currentPage,
         selectedPodcastId,
         setShowAddPodcastDialog,
+        refreshAllPodcasts,
+        isRefreshing,
     } = usePodcastStore();
     const isMobile = useIsMobile();
 
@@ -221,9 +232,29 @@ export const MainContent = () => {
         },
     };
 
+    const refreshButton: ToolBarItemButton = {
+        inner: (
+            <RefreshCw
+                className={`h-3 w-3 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+        ),
+        action: async () => {
+            try {
+                await refreshAllPodcasts();
+                toast.success("Podcasts refreshed successfully!");
+            } catch {
+                toast.error("Failed to refresh podcasts");
+            }
+        },
+        disabled: isRefreshing,
+    };
+
     if (currentPage === "library") {
         return (
-            <MainContentLayout title="Library" toolBar={[addButton]}>
+            <MainContentLayout
+                title="Library"
+                toolBar={[refreshButton, addButton]}
+            >
                 <LibraryPage />
             </MainContentLayout>
         );
@@ -243,7 +274,10 @@ export const MainContent = () => {
         : null;
 
     return (
-        <MainContentLayout title={isMobile ? selectedPodcast?.title : undefined} backTo="library">
+        <MainContentLayout
+            title={isMobile ? selectedPodcast?.title : undefined}
+            backTo="library"
+        >
             <PodcastPage />
         </MainContentLayout>
     );
