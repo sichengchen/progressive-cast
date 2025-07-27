@@ -1,14 +1,14 @@
-"use client"
+"use client";
 
-import { useEffect } from 'react';
-import { usePodcastStore } from '@/lib/store';
+import { useEffect } from "react";
+import { usePodcastStore } from "@/lib/store";
 
 export function AppInitializer() {
-  const initializeStore = usePodcastStore(state => state.initializeStore);
+    const initializeStore = usePodcastStore((state) => state.initializeStore);
 
-  useEffect(() => {
-    initializeStore();
-  }, [initializeStore]);
+    useEffect(() => {
+        initializeStore();
+    }, [initializeStore]);
 
-  return null; // This component doesn't render anything
-} 
+    return null; // This component doesn't render anything
+}

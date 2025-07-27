@@ -1,21 +1,11 @@
 "use client";
 
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode } from "react";
 
-import { APP_NAME } from "@/lib/constants";
 import { usePodcastStore } from "@/lib/store";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-    Sparkles,
-    History,
-    Download,
-    Settings,
-    Radio,
-    ArrowLeft,
-    LucideIcon,
-    Plus,
-} from "lucide-react";
+import { Sparkles, Settings, Radio, ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
     MobileTabBar,
@@ -31,7 +21,6 @@ import { ResumePlayingPage } from "./resume-playing";
 import { DownloadedPage } from "./downloaded";
 import { PodcastPage } from "./podcast";
 import { LibraryPage } from "./library";
-import { ScrollingText } from "../ui/scrolling-text";
 
 interface ToolBarItemButton {
     inner: ReactNode;
@@ -47,7 +36,13 @@ interface MainContentLayoutProps {
 
 const MainContentLayout = (props: MainContentLayoutProps) => {
     const isMobile = useIsMobile();
-    const { playbackState, currentPage, setCurrentPage, showAddPodcastDialog, setShowAddPodcastDialog } = usePodcastStore();
+    const {
+        playbackState,
+        currentPage,
+        setCurrentPage,
+        showAddPodcastDialog,
+        setShowAddPodcastDialog,
+    } = usePodcastStore();
     const { children, title, backTo, toolBar } = props;
 
     // Check if audio player should be shown and space reserved
@@ -97,6 +92,7 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
                                             variant="outline"
                                             size="sm"
                                             onClick={() =>
+                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                                                 setCurrentPage(backTo as any)
                                             }
                                             className="p-2 -ml-2"
@@ -155,7 +151,9 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
                             "resume-playing",
                             "downloaded",
                         ] as const;
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
                         if (validPages.includes(tabId as any)) {
+                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             setCurrentPage(tabId as any);
                         }
                     }}
@@ -173,7 +171,12 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
 };
 
 export const MainContent = () => {
-    const { podcasts, currentPage, selectedPodcastId, setShowAddPodcastDialog } = usePodcastStore();
+    const {
+        podcasts,
+        currentPage,
+        selectedPodcastId,
+        setShowAddPodcastDialog,
+    } = usePodcastStore();
 
     // If there are no podcasts at all, always show welcome screen regardless of currentPage
     if (podcasts.length === 0 && currentPage !== "settings") {

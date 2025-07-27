@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { PodcastSidebar } from "@/components/common/sidebar";
 import { MainContent } from "@/components/pages";
@@ -10,22 +10,22 @@ import { ProgressDialog } from "@/components/common/progress-dialog";
 import { usePodcastStore } from "@/lib/store";
 
 export default function HomePage() {
-  const { isLoading } = usePodcastStore();
+    const { isLoading } = usePodcastStore();
 
-  // Show loading screen during app initialization
-  if (isLoading) {
-    return <LoadingScreen />;
-  }
+    // Show loading screen during app initialization
+    if (isLoading) {
+        return <LoadingScreen />;
+    }
 
-  return (
-    <>
-      <AppLayout
-        sidebar={<PodcastSidebar />}
-        mainContent={<MainContent />}
-        rightPanel={<ShowNotes />}
-        controlBar={<AudioPlayer />}
-      />
-      <ProgressDialog />
-    </>
-  );
+    return (
+        <>
+            <AppLayout
+                sidebar={<PodcastSidebar />}
+                mainContent={<MainContent />}
+                rightPanel={<ShowNotes />}
+                controlBar={<AudioPlayer />}
+            />
+            <ProgressDialog />
+        </>
+    );
 }

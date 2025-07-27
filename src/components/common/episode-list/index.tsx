@@ -2,7 +2,7 @@
 
 /**
  * EpisodeList Component
- * 
+ *
  * IMPORTANT: When modifying this component's structure, also update the corresponding
  * EpisodeSkeleton component at /components/common/episode-list/episode-skeleton.tsx
  * to maintain visual consistency during loading states.
@@ -10,14 +10,14 @@
 
 import { Play, Clock } from "lucide-react";
 import {
-  List,
-  ListItem,
-  ListItemLeading,
-  ListItemContent,
-  ListItemTrailing,
-  ListItemTitle,
-  ListItemDescription,
-  ListItemMeta,
+    List,
+    ListItem,
+    ListItemLeading,
+    ListItemContent,
+    ListItemTrailing,
+    ListItemTitle,
+    ListItemDescription,
+    ListItemMeta,
 } from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
 import { formatTime } from "@/lib/utils";
@@ -36,7 +36,7 @@ interface EpisodeListProps {
     noEpisodesMessageDescription?: string;
     showDownloadButton?: boolean;
     showDeleteButton?: boolean;
-    pageType?: 'podcast' | 'downloaded' | 'other';
+    pageType?: "podcast" | "downloaded" | "other";
     onDownloadComplete?: () => void;
     onDeleteComplete?: () => void;
 }
@@ -50,7 +50,7 @@ export function EpisodeList({
     noEpisodesMessageDescription,
     showDownloadButton = false,
     showDeleteButton = false,
-    pageType = 'other',
+    pageType = "other",
     onDownloadComplete,
     onDeleteComplete,
 }: EpisodeListProps) {
@@ -154,8 +154,8 @@ export function EpisodeList({
 
                         <ListItemTrailing>
                             {(showDownloadButton || showDeleteButton) && (
-                                <DownloadButton 
-                                    episode={episode} 
+                                <DownloadButton
+                                    episode={episode}
                                     pageType={pageType}
                                     onDownloadComplete={onDownloadComplete}
                                     onDeleteComplete={onDeleteComplete}

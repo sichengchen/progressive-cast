@@ -65,8 +65,8 @@ export class RSSService {
 
             const feed = await parser.parseString(xmlContent);
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const episodes: RSSEpisode[] =
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 feed.items?.map((item: any) => {
                     return {
                         title: item.title || "Untitled Episode",
@@ -106,9 +106,10 @@ export class RSSService {
                 description: feed.description || "",
                 feedUrl,
                 imageUrl: this.extractImageUrl(feed),
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 author:
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (feed as any).itunes.author ||
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (feed as any).author ||
                     undefined,
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -208,8 +209,8 @@ export class RSSService {
 
         if (feed.itunes.category) {
             if (Array.isArray(feed.itunes.category)) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 categories.push(
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     ...feed.itunes.category.map((cat: any) => cat.text || cat)
                 );
             } else {

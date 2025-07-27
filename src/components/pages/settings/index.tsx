@@ -175,7 +175,9 @@ export function SettingsPage() {
                         label="Storage Statistics"
                         stats={[
                             {
-                                label: isMobile ? "Downloaded" : "Downloaded Episodes",
+                                label: isMobile
+                                    ? "Downloaded"
+                                    : "Downloaded Episodes",
                                 value: storageStats?.downloadedEpisodes || 0,
                             },
                             {
@@ -191,8 +193,9 @@ export function SettingsPage() {
                         storageStats.totalSize > 500 * 1024 * 1024 && (
                             <SettingsAlert variant="warning" icon={AlertCircle}>
                                 <p className="text-yellow-800 dark:text-yellow-200">
-                                    You&apos;re using over 500MB of storage. Consider
-                                    removing some downloads to free up space.
+                                    You&apos;re using over 500MB of storage.
+                                    Consider removing some downloads to free up
+                                    space.
                                 </p>
                             </SettingsAlert>
                         )}

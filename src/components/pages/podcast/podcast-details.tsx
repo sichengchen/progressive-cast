@@ -220,7 +220,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                     </DialogContent>
                                 </Dialog>
                             </div>
-                            
+
                             {/* Desktop: Show truncated text with button */}
                             <div className="hidden md:flex items-start gap-2 w-3/5">
                                 <div className="line-clamp-1 flex-1">
@@ -235,19 +235,19 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                             Show Description
                                         </Button>
                                     </DialogTrigger>
-                                <DialogContent className="max-w-2xl">
-                                    <DialogHeader>
-                                        <DialogTitle>
-                                            {podcast.title}
-                                        </DialogTitle>
-                                    </DialogHeader>
-                                    <div className="max-h-96 overflow-y-auto">
-                                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                            {podcast.description ||
-                                                "No description available."}
-                                        </p>
-                                    </div>
-                                </DialogContent>
+                                    <DialogContent className="max-w-2xl">
+                                        <DialogHeader>
+                                            <DialogTitle>
+                                                {podcast.title}
+                                            </DialogTitle>
+                                        </DialogHeader>
+                                        <div className="max-h-96 overflow-y-auto">
+                                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                                {podcast.description ||
+                                                    "No description available."}
+                                            </p>
+                                        </div>
+                                    </DialogContent>
                                 </Dialog>
                             </div>
                         </div>

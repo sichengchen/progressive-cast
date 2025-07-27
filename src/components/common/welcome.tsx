@@ -1,101 +1,115 @@
-"use client"
+"use client";
 
-import { useRef } from 'react';
-import { Radio, Plus, Import } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { usePodcastStore } from '@/lib/store';
-import { toast } from 'sonner';
+import { useRef } from "react";
+import { Radio, Plus, Import } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePodcastStore } from "@/lib/store";
+import { toast } from "sonner";
 
 export function WelcomeScreen() {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const { importFromOPML, progressDialog, setShowAddPodcastDialog } = usePodcastStore();
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleImportClick = () => {
-    fileInputRef.current?.click();
-  };
+    const { importFromOPML, progressDialog, setShowAddPodcastDialog } =
+        usePodcastStore();
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
 
-    try {
-      const text = await file.text();
-      const result = await importFromOPML(text);
-      
-      if (result.imported > 0) {
-        toast.success(`Successfully imported ${result.imported} podcast(s)!`);
-        if (result.errors > 0) {
-          toast.warning(`${result.errors} podcast(s) failed to import. Check console for details.`);
+    const handleFileSelect = async (
+        event: React.ChangeEvent<HTMLInputElement>
+    ) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            const result = await importFromOPML(text);
+
+            if (result.imported > 0) {
+                toast.success(
+                    `Successfully imported ${result.imported} podcast(s)!`
+                );
+                if (result.errors > 0) {
+                    toast.warning(
+                        `${result.errors} podcast(s) failed to import. Check console for details.`
+                    );
+                }
+            } else {
+                toast.error(
+                    "No podcasts were imported. Please check the OPML file format."
+                );
+            }
+        } catch (error) {
+            console.error("OPML import error:", error);
+            toast.error(
+                `Failed to import OPML file: ${
+                    error instanceof Error ? error.message : "Unknown error"
+                }`
+            );
         }
-      } else {
-        toast.error('No podcasts were imported. Please check the OPML file format.');
-      }
-    } catch (error) {
-      console.error('OPML import error:', error);
-      toast.error(`Failed to import OPML file: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    }
-    
-    // Reset file input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
 
-  return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] p-8">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Radio className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle className="text-2xl">Welcome!</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4 px-8">
-          <p className="text-muted-foreground text-sm">
-            Progressive Cast is a progressive web app (PWA) podcast player. Get started by adding your first podcast.
-          </p>
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
 
-          <div className="space-y-2">
-            <Button 
-              className="w-full" 
-              size="lg" 
-              onClick={() => setShowAddPodcastDialog(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Podcast
-            </Button>
+    return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] p-8">
+            <Card className="max-w-md w-full">
+                <CardHeader className="text-center">
+                    <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
+                        <Radio className="w-8 h-8 text-primary" />
+                    </div>
+                    <CardTitle className="text-2xl">Welcome!</CardTitle>
+                </CardHeader>
+                <CardContent className="text-center space-y-4 px-8">
+                    <p className="text-muted-foreground text-sm">
+                        Progressive Cast is a progressive web app (PWA) podcast
+                        player. Get started by adding your first podcast.
+                    </p>
 
-            <p className="text-sm text-muted-foreground mt-2">
-              Or import your subscriptions from an OPML file
-            </p>
-          </div>
+                    <div className="space-y-2">
+                        <Button
+                            className="w-full"
+                            size="lg"
+                            onClick={() => setShowAddPodcastDialog(true)}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Add Podcast
+                        </Button>
 
-          <div className="space-y-2">
-            <Button 
-              className="w-full" 
-              size="lg" 
-              variant="outline"
-              onClick={handleImportClick}
-              disabled={progressDialog.isOpen}
-            >
-              <Import className="w-4 h-4 mr-2" />
-              {progressDialog.isOpen ? 'Importing...' : 'Import OPML'}
-            </Button>
-          </div>
+                        <p className="text-sm text-muted-foreground mt-2">
+                            Or import your subscriptions from an OPML file
+                        </p>
+                    </div>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".opml,.xml"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+                    <div className="space-y-2">
+                        <Button
+                            className="w-full"
+                            size="lg"
+                            variant="outline"
+                            onClick={handleImportClick}
+                            disabled={progressDialog.isOpen}
+                        >
+                            <Import className="w-4 h-4 mr-2" />
+                            {progressDialog.isOpen
+                                ? "Importing..."
+                                : "Import OPML"}
+                        </Button>
+                    </div>
 
-        </CardContent>
-      </Card>
-
-    </div>
-  );
-} 
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".opml,.xml"
+                        onChange={handleFileSelect}
+                        className="hidden"
+                    />
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

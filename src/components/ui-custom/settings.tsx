@@ -43,12 +43,16 @@ export function SettingsGroup({
     return (
         <Card className={className}>
             <CardHeader>
-                <CardTitle className={cn("flex items-center gap-2", Icon && "")}>
+                <CardTitle
+                    className={cn("flex items-center gap-2", Icon && "")}
+                >
                     {Icon && <Icon className="w-5 h-5" />}
                     {title}
                 </CardTitle>
                 {description && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
                 )}
             </CardHeader>
             <CardContent className="space-y-6">{children}</CardContent>
@@ -80,7 +84,9 @@ export function SettingsItem({
             <div className="space-y-1">
                 <Label className="text-sm font-medium">{label}</Label>
                 {description && (
-                    <p className="text-sm text-muted-foreground">{description}</p>
+                    <p className="text-sm text-muted-foreground">
+                        {description}
+                    </p>
                 )}
             </div>
             <div className="flex-shrink-0">{children}</div>
@@ -107,7 +113,11 @@ export function SettingsSwitch({
     className,
 }: SettingsSwitchProps) {
     return (
-        <SettingsItem label={label} description={description} className={className}>
+        <SettingsItem
+            label={label}
+            description={description}
+            className={className}
+        >
             <Switch
                 checked={checked}
                 onCheckedChange={onCheckedChange}
@@ -145,7 +155,11 @@ export function SettingsSelect({
     className,
 }: SettingsSelectProps) {
     return (
-        <SettingsItem label={label} description={description} className={className}>
+        <SettingsItem
+            label={label}
+            description={description}
+            className={className}
+        >
             <Select
                 value={value}
                 onValueChange={onValueChange}
@@ -173,7 +187,13 @@ interface SettingsActionProps {
     actionLabel: string;
     loadingLabel?: string;
     onAction: () => void;
-    variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+    variant?:
+        | "default"
+        | "destructive"
+        | "outline"
+        | "secondary"
+        | "ghost"
+        | "link";
     icon?: LucideIcon;
     confirmDialog?: {
         title: string;
@@ -212,13 +232,19 @@ export function SettingsAction({
     );
 
     const content = (
-        <SettingsItem label={label} description={description} className={className}>
+        <SettingsItem
+            label={label}
+            description={description}
+            className={className}
+        >
             {confirmDialog ? (
                 <AlertDialog>
                     <AlertDialogTrigger asChild>{button}</AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
-                            <AlertDialogTitle>{confirmDialog.title}</AlertDialogTitle>
+                            <AlertDialogTitle>
+                                {confirmDialog.title}
+                            </AlertDialogTitle>
                             <AlertDialogDescription>
                                 {confirmDialog.description}
                             </AlertDialogDescription>
@@ -228,15 +254,14 @@ export function SettingsAction({
                             <AlertDialogAction
                                 onClick={onAction}
                                 className={cn(
-                                    variant === "destructive" && 
-                                    "bg-destructive hover:bg-destructive/90"
+                                    variant === "destructive" &&
+                                        "bg-destructive hover:bg-destructive/90"
                                 )}
                                 disabled={loading}
                             >
-                                {loading 
-                                    ? loadingLabel || actionLabel 
-                                    : confirmDialog.actionLabel || actionLabel
-                                }
+                                {loading
+                                    ? loadingLabel || actionLabel
+                                    : confirmDialog.actionLabel || actionLabel}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -272,7 +297,9 @@ export function SettingsStats({
         <div className={cn("space-y-4", className)}>
             {(label || description) && (
                 <div>
-                    {label && <Label className="text-sm font-medium">{label}</Label>}
+                    {label && (
+                        <Label className="text-sm font-medium">{label}</Label>
+                    )}
                     {description && (
                         <p className="text-sm text-muted-foreground mt-1">
                             {description}
@@ -283,7 +310,9 @@ export function SettingsStats({
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 {stats.map((stat, index) => (
                     <div key={index} className={stat.className}>
-                        <p className="text-muted-foreground text-sm">{stat.label}</p>
+                        <p className="text-muted-foreground text-sm">
+                            {stat.label}
+                        </p>
                         <p className="text-2xl font-semibold">{stat.value}</p>
                     </div>
                 ))}
@@ -299,11 +328,7 @@ interface SettingsDividerProps {
 }
 
 export function SettingsDivider({ className, children }: SettingsDividerProps) {
-    return (
-        <div className={cn("pt-4 border-t", className)}>
-            {children}
-        </div>
-    );
+    return <div className={cn("pt-4 border-t", className)}>{children}</div>;
 }
 
 // Alert Setting - Warning or info display
@@ -321,9 +346,12 @@ export function SettingsAlert({
     className,
 }: SettingsAlertProps) {
     const variantStyles = {
-        default: "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950",
-        warning: "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950",
-        destructive: "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
+        default:
+            "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950",
+        warning:
+            "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950",
+        destructive:
+            "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
     };
 
     const iconStyles = {
@@ -341,7 +369,12 @@ export function SettingsAlert({
             )}
         >
             {Icon && (
-                <Icon className={cn("h-4 w-4 mt-0.5 flex-shrink-0", iconStyles[variant])} />
+                <Icon
+                    className={cn(
+                        "h-4 w-4 mt-0.5 flex-shrink-0",
+                        iconStyles[variant]
+                    )}
+                />
             )}
             <div className="text-sm">{children}</div>
         </div>

@@ -9,8 +9,13 @@ export function WhatsNewPage() {
     const [latestEpisodes, setLatestEpisodes] = useState<Episode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { podcasts, playEpisode, preferences, playbackProgress, isImporting } =
-        usePodcastStore();
+    const {
+        podcasts,
+        playEpisode,
+        preferences,
+        playbackProgress,
+        isImporting,
+    } = usePodcastStore();
 
     useEffect(() => {
         const loadLatestEpisodes = async () => {
