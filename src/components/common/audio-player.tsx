@@ -6,10 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { CoverImage } from "@/components/ui/cover-image";
 import { ScrollingText } from "@/components/ui/scrolling-text";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
 import { usePodcastStore } from "@/lib/store";
 import { DownloadService } from "@/lib/download-service";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { formatTime } from "@/lib/utils";
+import { ShowNotes } from "./show-notes";
 
 export function AudioPlayer() {
     const audioRef = useRef<HTMLAudioElement>(null);
@@ -472,9 +480,16 @@ export function AudioPlayer() {
     };
 
     const handleCoverClick = () => {
-        if (currentEpisode?.podcastId) {
-            setSelectedPodcast(currentEpisode.podcastId);
-            setCurrentPage("podcasts");
+        if (isMobile) {
+            // On mobile, clicking cover opens show notes drawer
+            // This will be handled by the DrawerTrigger wrapper
+            return;
+        } else {
+            // On desktop, clicking cover navigates to podcast page
+            if (currentEpisode?.podcastId) {
+                setSelectedPodcast(currentEpisode.podcastId);
+                setCurrentPage("podcasts");
+            }
         }
     };
 
@@ -483,63 +498,141 @@ export function AudioPlayer() {
     }
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/40 pb-safe">
+        <div className={`fixed left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-safe ${isMobile ? 'bottom-16' : 'bottom-0 border-t'}`}>
             <audio ref={audioRef} />
 
-            <div className="flex items-center gap-4 p-4">
-                {/* Left side: Episode image */}
-                <button
-                    onClick={handleCoverClick}
-                    className="flex-shrink-0 transition-transform hover:scale-105 focus:outline-none rounded-lg"
-                    title="Jump to podcast details"
-                >
-                    <CoverImage
-                        src={currentEpisode.imageUrl}
-                        alt={currentEpisode.title}
-                        size="md"
-                    />
-                </button>
-
-                {/* Mobile: Flexible space */}
-                {isMobile && <div className="flex-1" />}
-
-                {/* Playback Controls */}
-                <div className="flex items-center gap-2">
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleSkip(-preferences.skipInterval)}
-                    >
-                        <Rewind className="h-4 w-4" />
-                    </Button>
-
-                    <Button
-                        size="sm"
-                        onClick={handlePlayPause}
-                        disabled={playbackState.isLoading}
-                    >
-                        {playbackState.isLoading ? (
-                            <div className="h-4 w-4 animate-spin">
-                                <div className="h-full w-full border-2 border-current border-t-transparent rounded-full" />
+            {isMobile ? (
+                /* Mobile Layout */
+                <div className="flex items-center gap-3 p-4">
+                    {/* Left: Episode cover (clickable for show notes) */}
+                    <Drawer>
+                        <DrawerTrigger asChild>
+                            <button className="flex-shrink-0 transition-transform hover:scale-105 focus:outline-none rounded-lg">
+                                <CoverImage
+                                    src={currentEpisode.imageUrl}
+                                    alt={currentEpisode.title}
+                                    size="md"
+                                />
+                            </button>
+                        </DrawerTrigger>
+                        <DrawerContent className="h-[85vh]">
+                            <DrawerHeader className="flex-shrink-0">
+                                <DrawerTitle>Show Notes</DrawerTitle>
+                            </DrawerHeader>
+                            <div className="flex-1 overflow-y-auto">
+                                <ShowNotes />
                             </div>
-                        ) : isPlaying ? (
-                            <Pause className="h-4 w-4" />
-                        ) : (
-                            <Play className="h-4 w-4" />
+                        </DrawerContent>
+                    </Drawer>
+
+                    {/* Center: Episode and podcast titles */}
+                    <div className="flex-1 min-w-0">
+                        <div className="mb-1">
+                            <ScrollingText
+                                text={currentEpisode.title}
+                                className="font-medium text-sm leading-tight"
+                                speed={50}
+                            />
+                        </div>
+                        {currentPodcast && (
+                            <ScrollingText
+                                text={currentPodcast.title}
+                                className="text-xs text-muted-foreground leading-tight"
+                                speed={40}
+                            />
                         )}
-                    </Button>
+                    </div>
 
-                    <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleSkip(preferences.skipInterval)}
-                    >
-                        <FastForward className="h-4 w-4" />
-                    </Button>
+                    {/* Right: Playback controls */}
+                    <div className="flex items-center gap-1">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSkip(-preferences.skipInterval)}
+                            className="p-2"
+                        >
+                            <Rewind className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            onClick={handlePlayPause}
+                            disabled={playbackState.isLoading}
+                            className="p-2"
+                        >
+                            {playbackState.isLoading ? (
+                                <div className="h-4 w-4 animate-spin">
+                                    <div className="h-full w-full border-2 border-current border-t-transparent rounded-full" />
+                                </div>
+                            ) : isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                            ) : (
+                                <Play className="h-4 w-4" />
+                            )}
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSkip(preferences.skipInterval)}
+                            className="p-2"
+                        >
+                            <FastForward className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </div>
+            ) : (
+                /* Desktop Layout */
+                <div className="flex items-center gap-4 p-4">
+                    {/* Left side: Episode image */}
+                    <button
+                        onClick={handleCoverClick}
+                        className="flex-shrink-0 transition-transform hover:scale-105 focus:outline-none rounded-lg"
+                        title="Jump to podcast details"
+                    >
+                        <CoverImage
+                            src={currentEpisode.imageUrl}
+                            alt={currentEpisode.title}
+                            size="md"
+                        />
+                    </button>
 
-                {/* Center: Title and Progress (vertical layout) */}
-                {!isMobile && (
+                    {/* Playback Controls */}
+                    <div className="flex items-center gap-2">
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSkip(-preferences.skipInterval)}
+                        >
+                            <Rewind className="h-4 w-4" />
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            onClick={handlePlayPause}
+                            disabled={playbackState.isLoading}
+                        >
+                            {playbackState.isLoading ? (
+                                <div className="h-4 w-4 animate-spin">
+                                    <div className="h-full w-full border-2 border-current border-t-transparent rounded-full" />
+                                </div>
+                            ) : isPlaying ? (
+                                <Pause className="h-4 w-4" />
+                            ) : (
+                                <Play className="h-4 w-4" />
+                            )}
+                        </Button>
+
+                        <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleSkip(preferences.skipInterval)}
+                        >
+                            <FastForward className="h-4 w-4" />
+                        </Button>
+                    </div>
+
+                    {/* Center: Title and Progress (vertical layout) */}
                     <div className="flex-1 min-w-0 text-center">
                         {/* Title */}
                         <div className="mb-2">
@@ -569,13 +662,8 @@ export function AudioPlayer() {
                             </span>
                         </div>
                     </div>
-                )}
 
-                {/* Mobile: Flexible space */}
-                {isMobile && <div className="flex-1" />}
-
-                {/* Volume Controls */}
-                {!isMobile && (
+                    {/* Volume Controls */}
                     <div className="flex items-center gap-2 w-32">
                         <Volume2 className="h-4 w-4 text-muted-foreground" />
                         <Slider
@@ -586,22 +674,22 @@ export function AudioPlayer() {
                             className="flex-1 [&>[data-slot=slider-track]]:bg-foreground/20 [&>[data-slot=slider-range]]:bg-primary [&>[data-slot=slider-thumb]]:bg-primary [&>[data-slot=slider-thumb]]:border-primary [&>[data-slot=slider-thumb]]:shadow-lg"
                         />
                     </div>
-                )}
 
-                {/* Show Notes Toggle Button */}
-                <Button
-                    size="sm"
-                    variant={showNotesOpen ? "default" : "ghost"}
-                    onClick={toggleShowNotes}
-                    className={
-                        showNotesOpen
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground"
-                    }
-                >
-                    <Info className="h-4 w-4" />
-                </Button>
-            </div>
+                    {/* Show Notes Toggle Button */}
+                    <Button
+                        size="sm"
+                        variant={showNotesOpen ? "default" : "ghost"}
+                        onClick={toggleShowNotes}
+                        className={
+                            showNotesOpen
+                                ? "bg-primary text-primary-foreground"
+                                : "text-muted-foreground"
+                        }
+                    >
+                        <Info className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
         </div>
     );
 }

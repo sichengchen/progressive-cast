@@ -75,7 +75,7 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
                     style={{
                         paddingBottom: isMobile
                             ? hasActiveEpisode
-                                ? "calc(10rem + env(safe-area-inset-bottom))" // Space for both audio player and tabbar
+                                ? "calc(10rem + env(safe-area-inset-bottom))" // Space for both audio player (now above tabbar) and tabbar
                                 : "calc(4rem + env(safe-area-inset-bottom))" // Space for tabbar only
                             : hasActiveEpisode
                             ? "calc(6rem + env(safe-area-inset-bottom))" // Desktop audio player only

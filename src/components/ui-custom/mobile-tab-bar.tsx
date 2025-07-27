@@ -41,7 +41,7 @@ const MobileTabBar = React.forwardRef<HTMLDivElement, MobileTabBarProps>(
 
         const variantClasses = {
             default:
-                "border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+                "bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
             floating:
                 "mx-4 mb-4 rounded-2xl bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border shadow-lg",
         };
