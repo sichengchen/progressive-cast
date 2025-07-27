@@ -38,10 +38,7 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
         <div className="flex h-screen">
           {/* Desktop: Sidebar */}
           <div 
-            className="flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-            style={{ 
-              width: "20rem"
-            }}
+            className="flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground w-[20rem]"
           >
             {sidebar}
           </div>
