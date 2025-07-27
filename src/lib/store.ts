@@ -26,7 +26,8 @@ interface PodcastStore {
   preferences: UserPreferences;
   selectedPodcastId: string | null;
   showNotesOpen: boolean;
-  currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded';
+  showAddPodcastDialog: boolean;
+  currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded' | 'library';
   isLoading: boolean;
   isRefreshing: boolean;
   error: string | null;
@@ -68,9 +69,10 @@ interface PodcastStore {
   getUnfinishedEpisodes: () => Promise<Episode[]>;
   clearLatestEpisodesCache: () => void;
   toggleShowNotes: () => void;
+  setShowAddPodcastDialog: (show: boolean) => void;
 
   // Page navigation
-  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded') => void;
+  setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded' | 'library') => void;
 
   // Playback actions
   playEpisode: (episode: Episode) => void;
@@ -138,6 +140,7 @@ export const usePodcastStore = create<PodcastStore>()(
       preferences: defaultPreferences,
       selectedPodcastId: null,
       showNotesOpen: false,
+      showAddPodcastDialog: false,
       currentPage: 'whats-new' as const,
       isLoading: false,
       isRefreshing: false,
@@ -416,8 +419,13 @@ export const usePodcastStore = create<PodcastStore>()(
         set(state => ({ showNotesOpen: !state.showNotesOpen }));
       },
 
+      // Set show add podcast dialog
+      setShowAddPodcastDialog: (show: boolean) => {
+        set({ showAddPodcastDialog: show });
+      },
+
       // Set current page
-      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded') => {
+      setCurrentPage: (page: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded' | 'library') => {
         set({ currentPage: page });
       },
 

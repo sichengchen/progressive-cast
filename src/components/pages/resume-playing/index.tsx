@@ -59,15 +59,13 @@ export function ResumePlayingPage() {
     }, [unfinishedEpisodes, podcasts, playbackProgress]);
 
     return (
-        <>
-            <EpisodeList
-                isLoadingEpisodes={isLoading}
-                episodes={processedEpisodes}
-                playbackProgress={playbackProgress}
-                playEpisode={playEpisode}
-                noEpisodesMessage="No episodes to resume"
-                noEpisodesMessageDescription="Start playing some episodes to see them here"
-            />
-        </>
+        <EpisodeList
+            isLoadingEpisodes={isLoading}
+            episodes={processedEpisodes}
+            playbackProgress={playbackProgress}
+            playEpisode={playEpisode}
+            noEpisodesMessage="No episodes to resume"
+            noEpisodesMessageDescription="Start playing some episodes to see them here"
+        />
     );
 }

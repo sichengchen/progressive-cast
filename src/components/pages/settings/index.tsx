@@ -17,11 +17,13 @@ import { APP_VERSION } from "@/lib/constants";
 import { useTheme } from "next-themes";
 import { OPMLManager } from "../../common/opml-manager";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function SettingsPage() {
     const [isClearingData, setIsClearingData] = useState(false);
     const [isClearingDownloads, setIsClearingDownloads] = useState(false);
     const { theme, setTheme } = useTheme();
+    const isMobile = useIsMobile();
 
     const {
         preferences,
@@ -173,7 +175,7 @@ export function SettingsPage() {
                         label="Storage Statistics"
                         stats={[
                             {
-                                label: "Downloaded Episodes",
+                                label: isMobile ? "Downloaded" : "Downloaded Episodes",
                                 value: storageStats?.downloadedEpisodes || 0,
                             },
                             {

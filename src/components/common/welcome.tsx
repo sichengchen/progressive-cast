@@ -1,18 +1,16 @@
 "use client"
 
-import { useState, useRef } from 'react';
+import { useRef } from 'react';
 import { Radio, Plus, Import } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AddPodcastDialog } from '@/components/common/add-podcast-dialog';
 import { usePodcastStore } from '@/lib/store';
 import { toast } from 'sonner';
 
 export function WelcomeScreen() {
-  const [addPodcastOpen, setAddPodcastOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  const { importFromOPML, progressDialog } = usePodcastStore();
+  const { importFromOPML, progressDialog, setShowAddPodcastDialog } = usePodcastStore();
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -63,7 +61,7 @@ export function WelcomeScreen() {
             <Button 
               className="w-full" 
               size="lg" 
-              onClick={() => setAddPodcastOpen(true)}
+              onClick={() => setShowAddPodcastDialog(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Podcast
@@ -98,10 +96,6 @@ export function WelcomeScreen() {
         </CardContent>
       </Card>
 
-      <AddPodcastDialog 
-        open={addPodcastOpen} 
-        onOpenChange={setAddPodcastOpen} 
-      />
     </div>
   );
 } 

@@ -5,6 +5,7 @@ import { Play, Pause, Rewind, FastForward, Volume2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { CoverImage } from '@/components/ui/cover-image';
+import { ScrollingText } from '@/components/ui/scrolling-text';
 import { usePodcastStore } from '@/lib/store';
 import { DownloadService } from '@/lib/download-service';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -394,7 +395,7 @@ export function AudioPlayer() {
   }
 
   return (
-    <div className="border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/40 pb-safe">
       <audio ref={audioRef} />
 
       <div className="flex items-center gap-4 p-4">
@@ -453,9 +454,13 @@ export function AudioPlayer() {
         {!isMobile && (
           <div className="flex-1 min-w-0 text-center">
             {/* Title */}
-            <h4 className="font-medium text-sm truncate mb-2">
-              {currentEpisode.title}
-            </h4>
+            <div className="mb-2">
+              <ScrollingText 
+                text={currentEpisode.title}
+                className="font-medium text-sm"
+                speed={50}
+              />
+            </div>
 
             {/* Progress bar */}
             <div className="flex items-center justify-center gap-2">
@@ -468,7 +473,7 @@ export function AudioPlayer() {
                 max={duration || 100}
                 step={1}
                 onValueChange={handleProgressChange}
-                className="flex-1 max-w-md"
+                className="flex-1 max-w-md [&>[data-slot=slider-track]]:bg-foreground/20 [&>[data-slot=slider-range]]:bg-primary [&>[data-slot=slider-thumb]]:bg-primary [&>[data-slot=slider-thumb]]:border-primary [&>[data-slot=slider-thumb]]:shadow-lg"
               />
 
               <span className="text-xs text-muted-foreground w-12">
@@ -490,7 +495,7 @@ export function AudioPlayer() {
               max={1}
               step={0.01}
               onValueChange={handleVolumeChange}
-              className="flex-1"
+              className="flex-1 [&>[data-slot=slider-track]]:bg-foreground/20 [&>[data-slot=slider-range]]:bg-primary [&>[data-slot=slider-thumb]]:bg-primary [&>[data-slot=slider-thumb]]:border-primary [&>[data-slot=slider-thumb]]:shadow-lg"
             />
           </div>
         )}

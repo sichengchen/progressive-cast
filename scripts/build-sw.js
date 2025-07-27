@@ -5,6 +5,10 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 function getVersion() {
+  if (process.env.NODE_ENV !== 'development') {
+    return `dev-${Date.now()}`;
+  }
+
   try {
     // Get package.json version
     const packagePath = path.join(__dirname, '..', 'package.json');
@@ -17,7 +21,7 @@ function getVersion() {
     return `${version}-${commitHash}`;
   } catch (error) {
     console.warn('Could not determine version+commit, using fallback');
-    return `0.6.1-${Date.now()}`;
+    return `dev-${Date.now()}`;
   }
 }
 
@@ -72,7 +76,4 @@ function updateServiceWorker() {
 // Set environment variables first
 setEnvironmentVariables();
 
-// Run only if not in development
-if (process.env.NODE_ENV !== 'development') {
-  updateServiceWorker();
-}
+updateServiceWorker();

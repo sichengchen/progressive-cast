@@ -58,7 +58,7 @@ export function EpisodeList({
 
     if (episodes.length === 0) {
         return (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center min-h-[400px] py-12">
                 <div className="text-center text-muted-foreground">
                     <p>{noEpisodesMessage ?? "No episodes found"}</p>
                     <p className="text-sm">

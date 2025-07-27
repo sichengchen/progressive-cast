@@ -17,6 +17,7 @@ export interface Episode {
   title: string;
   description: string;
   content?: string; // Show notes / full content
+  showNotes?: string; // Rich content from content:encoded
   audioUrl: string;
   duration?: number; // in seconds
   publishedAt: Date;
@@ -87,6 +88,7 @@ export interface RSSEpisode {
   title: string;
   description: string;
   content?: string;
+  showNotes?: string; // Rich content from content:encoded
   audioUrl: string;
   duration?: number;
   publishedAt: Date;

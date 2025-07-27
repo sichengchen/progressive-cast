@@ -4,21 +4,9 @@ import { useState } from 'react';
 import { Plus, Radio, Search, RefreshCw, Settings, Sparkles, History, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { 
-  Sidebar, 
-  SidebarContent, 
-  SidebarHeader,
-  SidebarGroup,
-  SidebarGroupLabel,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarSeparator
-} from '@/components/ui/sidebar';
+import { Separator } from '@/components/ui/separator';
 import { CoverImage } from '@/components/ui/cover-image';
 import { usePodcastStore } from '@/lib/store';
-import { AddPodcastDialog } from './add-podcast-dialog';
 import { toast } from 'sonner';
 
 // Menu items
@@ -46,7 +34,6 @@ const menuItems = [
 ];
 
 export function PodcastSidebar() {
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
   const { 
@@ -55,15 +42,18 @@ export function PodcastSidebar() {
     isLoading,
     isRefreshing,
     currentPage,
+    playbackState,
     setSelectedPodcast,
     refreshAllPodcasts,
-    setCurrentPage 
+    setCurrentPage,
+    setShowAddPodcastDialog 
   } = usePodcastStore();
 
   const filteredPodcasts = podcasts.filter(podcast =>
     podcast.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     podcast.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
 
   const handleRefreshAll = async () => {
     try {
@@ -93,84 +83,93 @@ export function PodcastSidebar() {
 
   return (
     <>
-      <Sidebar className="border-r">
-        <SidebarHeader className="p-4 flex-shrink-0">
-          <div className="flex items-center min-w-0">
+      <div className="h-full flex flex-col">
+        <div className="flex flex-col gap-2 p-2 flex-shrink-0">
+          <div className="flex items-center min-w-0 px-2 py-2">
             <h2 className="text-lg font-semibold truncate">Progressive Cast</h2>
           </div>
-        </SidebarHeader>
+        </div>
 
-        <SidebarContent className="overflow-x-hidden overflow-y-auto">
-          {/* Menu Group */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Menu</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
+        <div 
+          className="flex min-h-0 flex-1 flex-col gap-2 overflow-auto"
+          style={{
+            paddingBottom: playbackState.currentEpisode ? "calc(6rem + env(safe-area-inset-bottom))" : "0"
+          }}
+        >
+          <div className="relative flex w-full min-w-0 flex-col p-2">
+            <div className="text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium">
+              Menu
+            </div>
+            <div className="w-full text-sm">
+              <ul className="flex w-full min-w-0 flex-col gap-1">
                 {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.action}>
-                    <SidebarMenuButton
+                  <li key={item.action} className="group/menu-item relative">
+                    <button
                       onClick={() => handleMenuClick(item.action)}
-                      isActive={currentPage === item.action}
-                      className="overflow-hidden min-w-0"
+                      className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 ${
+                        currentPage === item.action 
+                          ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground' 
+                          : ''
+                      }`}
                     >
                       <item.icon className="h-4 w-4 flex-shrink-0" />
                       <span className="truncate flex-1 min-w-0">{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                    </button>
+                  </li>
                 ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+              </ul>
+            </div>
+          </div>
 
-          <SidebarSeparator />
+          <Separator className="bg-sidebar-border mx-2 w-auto" />
 
-          {/* Search Group */}
-          <SidebarGroup>
-            <SidebarGroupLabel>Search</SidebarGroupLabel>
-            <SidebarGroupContent>
+          <div className="relative flex w-full min-w-0 flex-col p-2">
+            <div className="text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium">
+              Search
+            </div>
+            <div className="w-full text-sm">
               <div className="relative px-2 min-w-0 max-w-full">
                 <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                 <Input
                   placeholder="Search subsribed podcasts..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-8 w-full min-w-0"
+                  className="bg-background h-8 w-full shadow-none pl-10 min-w-0"
                 />
               </div>
-            </SidebarGroupContent>
-          </SidebarGroup>
+            </div>
+          </div>
 
-          <SidebarSeparator />
+          <Separator className="bg-sidebar-border mx-2 w-auto" />
 
-          {/* Podcasts Group */}
-          <SidebarGroup>
+          <div className="relative flex w-full min-w-0 flex-col p-2 flex-1">
             <div className="flex items-center justify-between h-8 px-2 min-w-0">
-              <SidebarGroupLabel className="p-0 flex-1 min-w-0">
+              <div className="text-sidebar-foreground/70 ring-sidebar-ring p-0 flex-1 min-w-0 text-xs font-medium">
                 <span className="truncate">Podcasts ({filteredPodcasts.length})</span>
-              </SidebarGroupLabel>
+              </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button
                   onClick={handleRefreshAll}
                   size="sm"
                   variant="ghost"
                   disabled={isRefreshing}
-                  className="flex-shrink-0 hover:bg-accent transition-colors"
+                  className="flex-shrink-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                 >
                   <RefreshCw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
                   <span className="sr-only">Refresh podcasts</span>
                 </Button>
                 <Button
-                  onClick={() => setIsAddDialogOpen(true)}
+                  onClick={() => setShowAddPodcastDialog(true)}
                   size="sm"
                   variant="ghost"
-                  className="flex-shrink-0 hover:bg-accent transition-colors"
+                  className="flex-shrink-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
                 >
                   <Plus className="h-3 w-3" />
                   <span className="sr-only">Add podcast</span>
                 </Button>
               </div>
             </div>
-            <SidebarGroupContent>
+            <div className="w-full text-sm flex-1">
               {isLoading ? (
                 <div className="text-center py-8 text-muted-foreground px-2">
                   <div className="h-6 w-6 mx-auto mb-4 animate-spin">
@@ -191,48 +190,47 @@ export function PodcastSidebar() {
                   )}
                 </div>
               ) : (
-                <SidebarMenu>
+                <ul className="flex w-full min-w-0 flex-col gap-1">
                   {filteredPodcasts.map((podcast) => (
-                    <SidebarMenuItem key={podcast.id}>
-                                             <SidebarMenuButton
-                         isActive={selectedPodcastId === podcast.id && currentPage === 'podcasts'}
-                         onClick={() => {
-                           setSelectedPodcast(podcast.id);
-                           setCurrentPage('podcasts');
-                         }}
-                         className="h-auto py-2 overflow-hidden"
-                       >
-                         <div className="flex items-center gap-2 w-full min-w-0">
-                           <CoverImage
-                             src={podcast.imageUrl}
-                             alt={podcast.title}
-                             className="w-8 h-8 flex-shrink-0"
-                           />
-                           <div className="flex-1 min-w-0 text-left overflow-hidden">
-                             <div className="font-medium text-sm truncate leading-tight">
-                               {podcast.title}
-                             </div>
-                             {podcast.author && (
-                               <div className="text-xs text-muted-foreground truncate leading-tight">
-                                 {podcast.author}
-                               </div>
-                             )}
-                           </div>
-                         </div>
-                       </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <li key={podcast.id} className="group/menu-item relative">
+                      <button
+                        onClick={() => {
+                          setSelectedPodcast(podcast.id);
+                          setCurrentPage('podcasts');
+                        }}
+                        className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 h-auto py-2 ${
+                          selectedPodcastId === podcast.id && currentPage === 'podcasts'
+                            ? 'bg-sidebar-accent font-medium text-sidebar-accent-foreground'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 w-full min-w-0">
+                          <CoverImage
+                            src={podcast.imageUrl}
+                            alt={podcast.title}
+                            className="w-8 h-8 flex-shrink-0"
+                          />
+                          <div className="flex-1 min-w-0 text-left overflow-hidden">
+                            <div className="font-medium text-sm truncate leading-tight">
+                              {podcast.title}
+                            </div>
+                            {podcast.author && (
+                              <div className="text-xs text-muted-foreground truncate leading-tight">
+                                {podcast.author}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    </li>
                   ))}
-                </SidebarMenu>
+                </ul>
               )}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-      </Sidebar>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <AddPodcastDialog 
-        open={isAddDialogOpen} 
-        onOpenChange={setIsAddDialogOpen} 
-      />
     </>
   );
 } 
