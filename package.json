@@ -1,6 +1,6 @@
 {
   "name": "progressive-cast",
-  "version": "0.8.3",
+  "version": "0.8.4",
   "private": true,
   "scripts": {
     "dev": "node scripts/build-sw.js && next dev",

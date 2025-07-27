@@ -178,11 +178,11 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                 <div className="flex items-center justify-start gap-1">
                                     <Clock className="w-4 h-4" />
                                     <span>
-                                        Updated{" "}
-                                        {formatDistanceToNow(
-                                            new Date(podcast.lastUpdated),
+                                        {isMobile ? "" : "Updated "}
+                                        {latestEpisode ? formatDistanceToNow(
+                                            new Date(latestEpisode.publishedAt),
                                             { addSuffix: true }
-                                        )}
+                                        ) : "No episodes"}
                                     </span>
                                 </div>
                             </div>
