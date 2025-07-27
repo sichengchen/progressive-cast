@@ -21,6 +21,7 @@ import { ResumePlayingPage } from "./resume-playing";
 import { DownloadedPage } from "./downloaded";
 import { PodcastPage } from "./podcast";
 import { LibraryPage } from "./library";
+import { ScrollingText } from "../ui/scrolling-text";
 
 interface ToolBarItemButton {
     inner: ReactNode;
@@ -101,7 +102,7 @@ const MainContentLayout = (props: MainContentLayoutProps) => {
                                         </Button>
                                     )}
                                     <h1 className="text-2xl font-bold flex-1 line-clamp-1">
-                                        {title}
+                                        <ScrollingText text={title} />
                                     </h1>
                                     {isMobile && toolBar && (
                                         <>
@@ -177,6 +178,7 @@ export const MainContent = () => {
         selectedPodcastId,
         setShowAddPodcastDialog,
     } = usePodcastStore();
+    const isMobile = useIsMobile();
 
     // If there are no podcasts at all, always show welcome screen regardless of currentPage
     if (podcasts.length === 0 && currentPage !== "settings") {
@@ -241,7 +243,7 @@ export const MainContent = () => {
         : null;
 
     return (
-        <MainContentLayout title={selectedPodcast?.title} backTo="library">
+        <MainContentLayout title={isMobile ? selectedPodcast?.title : undefined} backTo="library">
             <PodcastPage />
         </MainContentLayout>
     );

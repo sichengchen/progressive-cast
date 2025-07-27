@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Globe, Trash2, Play, User, Clock, Tag } from "lucide-react";
+import { Globe, Trash2, Play, User, Clock, Tag, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
 import {
@@ -27,6 +27,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import ISO6391 from "iso-639-1";
 import type { Podcast } from "@/lib/types";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface PodcastDetailsProps {
     podcast: Podcast;
@@ -37,6 +38,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
     const [buttonState, setButtonState] = useState<
         "loading" | "hasEpisodes" | "noEpisodes"
     >("loading");
+    const isMobile = useIsMobile();
 
     const {
         episodes,
@@ -114,9 +116,9 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
 
     return (
         <div className="py-6 px-2">
-            <div className="flex flex-col gap-6 md:flex-row md:gap-8 md:items-start">
+            <div className="flex flex-row gap-4 md:gap-8 md:items-start">
                 {/* Podcast Cover */}
-                <div className="flex-shrink-0 self-center md:self-start">
+                <div className="flex-shrink-0 self-start">
                     {podcast.imageUrl ? (
                         <img
                             src={podcast.imageUrl}
@@ -127,27 +129,27 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                         <CoverImage
                             src={undefined}
                             alt={podcast.title}
-                            className="w-32 h-32 md:w-40 md:h-40 rounded-lg shadow-md"
+                            className="w-40 h-40 rounded-lg shadow-md"
                         />
                     )}
                 </div>
 
                 {/* Podcast Info */}
-                <div className="flex-1 min-w-0 text-center md:text-left md:h-40 md:flex md:flex-col md:justify-between">
+                <div className="flex-1 min-w-0 text-left md:h-40 md:flex md:flex-col md:justify-between">
                     {/* Title, Author & Meta Info */}
                     <div className="space-y-2">
                         {/* Podcast Meta Info */}
                         <div className="space-y-2">
                             <div className="flex flex-col gap-2 md:flex-row text-sm text-muted-foreground">
                                 {podcast.author && (
-                                    <div className="flex items-center justify-center md:justify-start gap-1">
+                                    <div className="flex items-center justify-start gap-1">
                                         <User className="w-4 h-4" />
                                         <span>{podcast.author}</span>
                                     </div>
                                 )}
 
                                 {podcast.language && (
-                                    <div className="flex items-center justify-center md:justify-start gap-1">
+                                    <div className="flex items-center justify-start gap-1">
                                         <Globe className="w-4 h-4" />
                                         <span>
                                             {ISO6391.getName(
@@ -157,9 +159,10 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                     </div>
                                 )}
 
-                                {podcast.categories &&
+                                {!isMobile &&
+                                    podcast.categories &&
                                     podcast.categories.length > 0 && (
-                                        <div className="flex items-center justify-center md:justify-start gap-1">
+                                        <div className="flex items-center justify-start gap-1">
                                             <Tag className="w-4 h-4" />
                                             <span>
                                                 {podcast.categories
@@ -172,7 +175,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                         </div>
                                     )}
 
-                                <div className="flex items-center justify-center md:justify-start gap-1">
+                                <div className="flex items-center justify-start gap-1">
                                     <Clock className="w-4 h-4" />
                                     <span>
                                         Updated{" "}
@@ -186,41 +189,18 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                         </div>
 
                         {/* Title */}
-                        <div>
-                            <h1 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-2">
-                                {podcast.title}
-                            </h1>
-                        </div>
+                        {isMobile ? (
+                            <></>
+                        ) : (
+                            <div>
+                                <h1 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-2">
+                                    {podcast.title}
+                                </h1>
+                            </div>
+                        )}
 
                         {/* Description */}
-                        <div className="text-sm text-muted-foreground mx-auto md:mx-0">
-                            {/* Mobile: Only show button */}
-                            <div className="md:hidden flex justify-center">
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button
-                                            variant="link"
-                                            className="text-sm p-0 h-auto"
-                                        >
-                                            Show Description
-                                        </Button>
-                                    </DialogTrigger>
-                                    <DialogContent className="max-w-2xl">
-                                        <DialogHeader>
-                                            <DialogTitle>
-                                                {podcast.title}
-                                            </DialogTitle>
-                                        </DialogHeader>
-                                        <div className="max-h-96 overflow-y-auto">
-                                            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                                                {podcast.description ||
-                                                    "No description available."}
-                                            </p>
-                                        </div>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-
+                        <div className="text-sm text-muted-foreground md:mx-0">
                             {/* Desktop: Show truncated text with button */}
                             <div className="hidden md:flex items-start gap-2 w-3/5">
                                 <div className="line-clamp-1 flex-1">
@@ -254,12 +234,12 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col gap-3 md:flex-row md:gap-4 mt-4 md:mt-0">
+                    <div className="flex gap-3 md:gap-4 flex-row mt-4 md:mt-0 md:justify-start">
                         <Button
                             onClick={handlePlayLatest}
                             disabled={buttonState !== "hasEpisodes"}
                             size="default"
-                            className="flex items-center gap-2 w-full md:w-auto md:h-10 md:px-8"
+                            className="flex items-center gap-2 w-auto md:h-10 md:px-8"
                         >
                             {buttonState === "loading" ? (
                                 <>
@@ -280,7 +260,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                                         Play Latest Episode
                                     </span>
                                     <span className="sm:hidden">
-                                        Play Latest
+                                        Latest
                                     </span>
                                 </>
                             ) : (
@@ -296,16 +276,43 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                             )}
                         </Button>
 
+                        {/* Mobile: Only show button */}
+                        <div className="md:hidden flex justify-start">
+                            <Dialog>
+                                <DialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="text-sm p-0 h-auto"
+                                    >
+                                        <Info />
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="max-w-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle>
+                                            {podcast.title}
+                                        </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="max-h-96 overflow-y-auto">
+                                        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                                            {podcast.description ||
+                                                "No description available."}
+                                        </p>
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        </div>
+
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <Button
-                                    variant="ghost"
+                                    variant={isMobile ? "outline" : "ghost"}
                                     size="default"
-                                    className="flex items-center gap-2 text-destructive hover:text-destructive w-full md:w-auto md:h-10 md:px-3"
+                                    className="flex items-center gap-2 text-destructive hover:text-destructive w-auto md:h-10 md:px-3"
                                     disabled={isUnsubscribing}
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    <span>Unsubscribe</span>
+                                    {!isMobile && <span>Unsubscribe</span>}
                                 </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
