@@ -44,7 +44,7 @@ export function WelcomeScreen() {
   };
 
   return (
-    <div className="flex items-center justify-center h-full p-8">
+    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] p-8">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">

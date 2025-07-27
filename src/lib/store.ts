@@ -30,6 +30,7 @@ interface PodcastStore {
   currentPage: 'podcasts' | 'whats-new' | 'resume-playing' | 'settings' | 'downloaded' | 'library';
   isLoading: boolean;
   isRefreshing: boolean;
+  isImporting: boolean;
   error: string | null;
 
   // Download state
@@ -145,6 +146,7 @@ export const usePodcastStore = create<PodcastStore>()(
       currentPage: 'whats-new' as const,
       isLoading: false,
       isRefreshing: false,
+      isImporting: false,
       error: null,
       latestEpisodesCache: null,
 
@@ -689,6 +691,7 @@ export const usePodcastStore = create<PodcastStore>()(
       // Import from OPML
       importFromOPML: async (opmlContent: string) => {
         try {
+          set({ isImporting: true });
           const { setProgressDialog, updateProgress, closeProgressDialog } = get();
 
           // Parse OPML
@@ -747,11 +750,16 @@ export const usePodcastStore = create<PodcastStore>()(
             }
           }
 
+          // Clear cache once at the end to refresh What's New with all imported content
+          get().clearLatestEpisodesCache();
+
           closeProgressDialog();
+          set({ isImporting: false });
           return { imported, errors };
         } catch (error) {
           const { closeProgressDialog } = get();
           closeProgressDialog();
+          set({ isImporting: false });
           throw error;
         }
       },

@@ -9,7 +9,7 @@ export function WhatsNewPage() {
     const [latestEpisodes, setLatestEpisodes] = useState<Episode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    const { podcasts, playEpisode, preferences, playbackProgress } =
+    const { podcasts, playEpisode, preferences, playbackProgress, isImporting } =
         usePodcastStore();
 
     useEffect(() => {
@@ -46,9 +46,14 @@ export function WhatsNewPage() {
             return;
         }
 
+        // Don't reload during OPML import to prevent flicker
+        if (isImporting) {
+            return;
+        }
+
         // Start loading immediately
         loadLatestEpisodes();
-    }, [preferences.whatsNewCount, podcasts.length]);
+    }, [preferences.whatsNewCount, podcasts.length, isImporting]);
 
     // Memoize episode processing to avoid recalculation on re-renders
     const processedEpisodes = useMemo(() => {
