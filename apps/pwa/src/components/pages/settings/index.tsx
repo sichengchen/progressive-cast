@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AlertCircle, PlugZap, RefreshCw, Trash2 } from "lucide-react";
+import { AlertCircle, PlugZap, RefreshCw, Trash2, Unplug } from "lucide-react";
 import {
   SettingsGroup,
   SettingsItem,
@@ -151,6 +151,8 @@ export function SettingsPage() {
     setApiTokenInput("");
     toast.success("Sync backend disconnected.");
   };
+
+  const isBackendConnected = connectionStatus === "connected" || connectionStatus === "syncing";
 
   return (
     <>
@@ -326,18 +328,18 @@ export function SettingsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={
-                      connectionStatus === "connected" || connectionStatus === "syncing"
-                        ? handleDisconnectBackend
-                        : handleConnectBackend
-                    }
+                    onClick={isBackendConnected ? handleDisconnectBackend : handleConnectBackend}
                     className="whitespace-nowrap"
                     disabled={isConnectingBackend}
                   >
-                    <PlugZap className="h-4 w-4" />
+                    {isBackendConnected ? (
+                      <Unplug className="h-4 w-4" />
+                    ) : (
+                      <PlugZap className="h-4 w-4" />
+                    )}
                     {isConnectingBackend
                       ? "Connecting..."
-                      : connectionStatus === "connected" || connectionStatus === "syncing"
+                      : isBackendConnected
                         ? "Disconnect"
                         : connectionStatus === "error"
                           ? "Reconnect"
