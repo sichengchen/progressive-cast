@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, RefreshCw } from "lucide-react";
 
@@ -8,7 +9,12 @@ import { AppPageLayout, RequireSubscriptions } from "@/routes/content-layout";
 export function LibraryRoutePage() {
   const isRefreshing = usePodcastStore((state) => state.isRefreshing);
   const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
+  const setCurrentPage = usePodcastStore((state) => state.setCurrentPage);
   const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
+
+  useEffect(() => {
+    setCurrentPage("library");
+  }, [setCurrentPage]);
 
   return (
     <RequireSubscriptions>

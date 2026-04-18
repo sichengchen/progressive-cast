@@ -8,7 +8,7 @@ import { toast } from "sonner";
 
 export function OPMLManager() {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { podcasts, importFromOPML } = usePodcastStore();
+  const { podcasts, importFromOPML, progressDialog } = usePodcastStore();
 
   const exportOPML = () => {
     const opmlContent = generateOPML(podcasts);
@@ -70,9 +70,15 @@ export function OPMLManager() {
         Export OPML
       </Button>
 
-      <Button variant="outline" size="sm" onClick={handleImportClick} className="whitespace-nowrap">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleImportClick}
+        className="whitespace-nowrap"
+        disabled={progressDialog.isOpen}
+      >
         <Upload className="h-3 w-3 mr-1" />
-        Import OPML
+        {progressDialog.isOpen ? "Importing..." : "Import OPML"}
       </Button>
 
       <input

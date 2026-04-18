@@ -20,7 +20,7 @@ import {
   ListItemMeta,
 } from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
-import { formatTime } from "@/lib/utils";
+import { formatTime, richTextToPlainText } from "@/lib/utils";
 import { format } from "date-fns";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
@@ -81,6 +81,7 @@ export function EpisodeList({
     <List className="px-0">
       {episodes.map((episode) => {
         const progress = playbackProgress.get(episode.id);
+        const cleanedDescription = richTextToPlainText(episode.description);
 
         return (
           <ListItem
@@ -113,7 +114,7 @@ export function EpisodeList({
               <ListItemTitle className="line-clamp-2">{episode.title}</ListItemTitle>
 
               <ListItemDescription className="line-clamp-2">
-                {episode.description}
+                {cleanedDescription}
               </ListItemDescription>
 
               {progress && progress.currentTime > 0 && (

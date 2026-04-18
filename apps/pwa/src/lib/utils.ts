@@ -5,6 +5,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+export function richTextToPlainText(input: string | null | undefined): string {
+  if (!input) return "";
+
+  let output = input;
+
+  for (let i = 0; i < 2; i++) {
+    if (typeof DOMParser !== "undefined") {
+      const doc = new DOMParser().parseFromString(output, "text/html");
+      output = doc.body.textContent || output;
+    } else {
+      output = output.replace(/<[^>]+>/g, " ");
+    }
+  }
+
+  return output.replace(/\s+/g, " ").trim();
+}
+
 export function formatTime(seconds: number): string {
   if (!seconds || isNaN(seconds)) return "0:00";
 

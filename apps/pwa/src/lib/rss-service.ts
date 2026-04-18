@@ -37,31 +37,27 @@ export class RSSService {
         throw new Error("Invalid XML format in RSS response");
       }
 
-      const channel = xml.querySelector("channel");
-      const feed = xml.querySelector("feed");
-      const root = channel ?? feed ?? xml.documentElement;
+      const root =
+        this.findFirstElement(xml, ["channel"]) ||
+        this.findFirstElement(xml, ["feed"]) ||
+        xml.documentElement;
       const feedImage = this.extractFeedImage(root);
-
-      const episodes = Array.from(xml.querySelectorAll("item, entry")).map((item) =>
+      const episodes = this.findElements(xml, ["item", "entry"]).map((item) =>
         this.parseEpisode(item, feedImage),
       );
 
       return {
-        author: this.getTextContent(root, [
-          "itunes\\:author",
-          "author > name",
-          "author",
-          "managingEditor",
-        ]),
+        author: this.extractAuthor(root) || this.findText(root, ["managingeditor"]) || undefined,
         categories: this.extractCategories(root),
         description:
-          this.getTextContent(root, ["description", "subtitle", "itunes\\:summary", "summary"]) ||
+          this.toPlainText(this.findText(root, ["description", "subtitle", "summary"])) ||
+          this.toPlainText(this.findText(root, ["encoded"])) ||
           "",
         episodes,
         feedUrl,
-        imageUrl: feedImage,
-        language: this.getTextContent(root, ["language"]),
-        title: this.getTextContent(root, ["title", "itunes\\:title"]) || "Unknown Podcast",
+        imageUrl: feedImage || episodes.find((episode) => episode.imageUrl)?.imageUrl,
+        language: this.findText(root, ["language"]) || undefined,
+        title: this.findText(root, ["title"]) || "Unknown Podcast",
       };
     } catch (error) {
       console.error("Error parsing RSS feed:", {
@@ -105,66 +101,236 @@ export class RSSService {
     }
   }
 
+  static mapFeedToPodcast(feed: RSSFeed): { podcast: Podcast; episodes: Episode[] } {
+    const podcastId = this.generatePodcastId(feed.feedUrl);
+    const now = new Date();
+
+    const podcast: Podcast = {
+      author: feed.author,
+      categories: feed.categories,
+      description: feed.description,
+      feedUrl: feed.feedUrl,
+      id: podcastId,
+      imageUrl: feed.imageUrl,
+      language: feed.language,
+      lastUpdated: now,
+      subscriptionDate: now,
+      title: feed.title,
+    };
+
+    const episodes = this.rssEpisodesToEpisodes(feed.episodes, podcastId);
+
+    return { podcast, episodes };
+  }
+
+  static rssEpisodesToEpisodes(episodes: RSSEpisode[], podcastId: string): Episode[] {
+    return episodes.map((episode, index) => ({
+      audioUrl: episode.audioUrl,
+      content: episode.content,
+      description: episode.description,
+      duration: episode.duration,
+      episodeNumber: episode.episodeNumber,
+      id: this.generateEpisodeId(podcastId, episode.audioUrl, index),
+      imageUrl: episode.imageUrl,
+      podcastId,
+      publishedAt: episode.publishedAt,
+      seasonNumber: episode.seasonNumber,
+      showNotes: episode.showNotes,
+      title: episode.title,
+    }));
+  }
+
+  static rssFeedToPodcast(feed: RSSFeed): Podcast {
+    return this.mapFeedToPodcast(feed).podcast;
+  }
+
   private static extractAudioUrl(item: Element): string {
-    const enclosureUrl = item.querySelector("enclosure")?.getAttribute("url");
+    const enclosure = this.findFirstElement(item, ["enclosure"]);
+    const enclosureUrl = enclosure?.getAttribute("url");
     if (enclosureUrl) {
       return enclosureUrl;
     }
 
-    const enclosureLink = item.querySelector('link[rel="enclosure"]')?.getAttribute("href");
-    if (enclosureLink) {
-      return enclosureLink;
+    const enclosureLink = this.findElements(item, ["link"]).find(
+      (element) => element.getAttribute("rel") === "enclosure",
+    );
+    const enclosureHref = enclosureLink?.getAttribute("href");
+    if (enclosureHref) {
+      return enclosureHref;
     }
 
-    const mediaContent = item.querySelector("media\\:content, content")?.getAttribute("url");
-    if (mediaContent) {
-      return mediaContent;
+    const mediaContent = this.findFirstElement(item, ["content"]);
+    const mediaUrl = mediaContent?.getAttribute("url");
+    if (mediaUrl) {
+      return mediaUrl;
     }
 
     return (
-      this.getTextContent(item, ["link"]) || item.querySelector("link")?.getAttribute("href") || ""
+      this.findText(item, ["link"]) ||
+      this.findFirstElement(item, ["link"])?.getAttribute("href") ||
+      ""
     );
   }
 
-  private static extractCategories(root: Element): string[] {
-    const categoryNodes = Array.from(root.querySelectorAll("category, itunes\\:category"));
+  private static extractAuthor(root: ParentNode): string | undefined {
+    const itunesAuthor = this.findText(root, ["author"]);
+    if (itunesAuthor) {
+      return itunesAuthor;
+    }
 
-    return [
-      ...new Set(
-        categoryNodes
-          .map((node) => node.getAttribute("text") || node.textContent?.trim() || "")
-          .filter(Boolean),
-      ),
-    ];
+    const authorElement = this.findFirstElement(root, ["author"]);
+    if (!authorElement) {
+      return undefined;
+    }
+
+    return this.findText(authorElement, ["name"]) || authorElement.textContent?.trim() || undefined;
   }
 
-  private static extractFeedImage(root: Element): string | undefined {
-    return (
-      root.querySelector("itunes\\:image")?.getAttribute("href") ||
-      this.getTextContent(root, ["image > url"]) ||
-      root.querySelector("media\\:thumbnail")?.getAttribute("url") ||
-      undefined
+  private static extractCategories(root: ParentNode): string[] {
+    const categories = this.findElements(root, ["category"])
+      .map((element) => element.getAttribute("text") || element.textContent?.trim() || "")
+      .filter(Boolean);
+
+    return [...new Set(categories)];
+  }
+
+  private static extractFeedImage(root: ParentNode): string | undefined {
+    const itunesImage = this.findFirstElement(root, ["image"])?.getAttribute("href");
+    if (itunesImage) {
+      return itunesImage;
+    }
+
+    const mediaThumbnail = this.findFirstElement(root, ["thumbnail"])?.getAttribute("url");
+    if (mediaThumbnail) {
+      return mediaThumbnail;
+    }
+
+    const imageElement = this.findFirstElement(root, ["image"]);
+    const imageUrl =
+      imageElement?.getAttribute("href") ||
+      this.findText(imageElement || root, ["url"]) ||
+      undefined;
+    if (imageUrl) {
+      return imageUrl;
+    }
+
+    const logo = this.findText(root, ["logo", "icon"]);
+    if (logo) {
+      return logo;
+    }
+
+    return this.extractImageFromHtml(this.findText(root, ["description", "summary", "encoded"]));
+  }
+
+  private static extractImageFromHtml(html?: string): string | undefined {
+    if (!html) return undefined;
+
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.querySelector("img")?.getAttribute("src") || undefined;
+  }
+
+  private static extractItemImage(item: ParentNode, fallbackImage?: string): string | undefined {
+    const itunesImage = this.findFirstElement(item, ["image"])?.getAttribute("href");
+    if (itunesImage) {
+      return itunesImage;
+    }
+
+    const mediaThumbnail = this.findFirstElement(item, ["thumbnail"])?.getAttribute("url");
+    if (mediaThumbnail) {
+      return mediaThumbnail;
+    }
+
+    const mediaContent = this.findElements(item, ["content"]).find((element) => {
+      const medium = element.getAttribute("medium");
+      const type = element.getAttribute("type");
+      return medium === "image" || type?.startsWith("image/");
+    });
+    const mediaUrl = mediaContent?.getAttribute("url");
+    if (mediaUrl) {
+      return mediaUrl;
+    }
+
+    const imageUrl = this.extractImageFromHtml(
+      this.findText(item, ["encoded", "description", "summary", "content"]),
     );
+
+    return imageUrl || fallbackImage;
   }
 
-  private static extractItemImage(item: Element, fallbackImage?: string): string | undefined {
-    return (
-      item.querySelector("itunes\\:image")?.getAttribute("href") ||
-      item.querySelector("media\\:thumbnail")?.getAttribute("url") ||
-      this.getTextContent(item, ["image > url"]) ||
-      fallbackImage
-    );
+  private static extractTextFromHtml(html?: string): string | undefined {
+    if (!html) return undefined;
+
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    return doc.body.textContent?.trim() || undefined;
   }
 
-  private static getTextContent(root: ParentNode, selectors: string[]): string | undefined {
-    for (const selector of selectors) {
-      const content = root.querySelector(selector)?.textContent?.trim();
-      if (content) {
-        return content;
+  private static toPlainText(value?: string): string | undefined {
+    if (!value) return undefined;
+
+    let output = value;
+    for (let i = 0; i < 2; i++) {
+      output = this.extractTextFromHtml(output) || output;
+    }
+
+    const normalized = output.replace(/\s+/g, " ").trim();
+    return normalized || undefined;
+  }
+
+  private static findElements(root: ParentNode, names: string[]): Element[] {
+    const descendants =
+      root instanceof Element
+        ? [root, ...Array.from(root.querySelectorAll("*"))]
+        : Array.from(root.querySelectorAll("*"));
+
+    return descendants.filter((element) => names.some((name) => this.matchesName(element, name)));
+  }
+
+  private static findFirstElement(root: ParentNode, names: string[]): Element | undefined {
+    return this.findElements(root, names)[0];
+  }
+
+  private static findText(root: ParentNode, names: string[]): string | undefined {
+    for (const element of this.findElements(root, names)) {
+      const text = element.textContent?.trim();
+      if (text) {
+        return text;
       }
     }
 
     return undefined;
+  }
+
+  private static generateEpisodeId(podcastId: string, audioUrl: string, index: number): string {
+    const baseString = `${podcastId}_${audioUrl}_${index}`;
+    let hash = 0;
+    for (let i = 0; i < baseString.length; i++) {
+      const char = baseString.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0;
+    }
+    return `episode_${Math.abs(hash)}`;
+  }
+
+  private static generatePodcastId(feedUrl: string): string {
+    let hash = 0;
+    for (let i = 0; i < feedUrl.length; i++) {
+      const char = feedUrl.charCodeAt(i);
+      hash = (hash << 5) - hash + char;
+      hash |= 0;
+    }
+    return `podcast_${Math.abs(hash)}`;
+  }
+
+  private static matchesName(element: Element, name: string): boolean {
+    const normalizedName = name.toLowerCase();
+    const localName = element.localName?.toLowerCase();
+    const nodeName = element.nodeName.toLowerCase();
+
+    return (
+      localName === normalizedName ||
+      nodeName === normalizedName ||
+      nodeName.endsWith(`:${normalizedName}`)
+    );
   }
 
   private static parseDuration(value?: string): number | undefined {
@@ -191,108 +357,24 @@ export class RSSService {
   }
 
   private static parseEpisode(item: Element, fallbackImage?: string): RSSEpisode {
-    const description = this.getTextContent(item, ["description", "summary", "content"]) || "";
-    const showNotes =
-      this.getTextContent(item, [
-        "content\\:encoded",
-        "itunes\\:summary",
-        "summary",
-        "description",
-        "content",
-      ]) || "";
-    const publishedAt = this.getTextContent(item, ["pubDate", "published", "updated"]) || "";
-    const episodeNumber = this.getTextContent(item, ["itunes\\:episode"]);
-    const seasonNumber = this.getTextContent(item, ["itunes\\:season"]);
+    const description =
+      this.toPlainText(this.findText(item, ["description", "summary", "content"])) || "";
+    const showNotes = this.findText(item, ["encoded", "summary", "description", "content"]) || "";
+    const publishedAt = this.findText(item, ["pubdate", "published", "updated"]) || "";
+    const episodeNumber = this.findText(item, ["episode"]);
+    const seasonNumber = this.findText(item, ["season"]);
 
     return {
       audioUrl: this.extractAudioUrl(item),
-      content:
-        this.getTextContent(item, ["content\\:encoded", "content", "summary", "description"]) || "",
+      content: this.findText(item, ["encoded", "content", "summary", "description"]) || "",
       description,
-      duration: this.parseDuration(this.getTextContent(item, ["itunes\\:duration"])),
+      duration: this.parseDuration(this.findText(item, ["duration"])),
       episodeNumber: episodeNumber ? parseInt(episodeNumber, 10) : undefined,
       imageUrl: this.extractItemImage(item, fallbackImage),
       publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
       seasonNumber: seasonNumber ? parseInt(seasonNumber, 10) : undefined,
       showNotes,
-      title: this.getTextContent(item, ["title"]) || "Untitled Episode",
+      title: this.findText(item, ["title"]) || "Untitled Episode",
     };
-  }
-
-  static mapFeedToPodcast(feed: RSSFeed): { podcast: Podcast; episodes: Episode[] } {
-    const podcastId = this.generatePodcastId(feed.feedUrl);
-    const now = new Date();
-
-    const podcast: Podcast = {
-      author: feed.author,
-      categories: feed.categories,
-      description: feed.description,
-      feedUrl: feed.feedUrl,
-      id: podcastId,
-      imageUrl: feed.imageUrl,
-      language: feed.language,
-      lastUpdated: now,
-      subscriptionDate: now,
-      title: feed.title,
-    };
-
-    const episodes: Episode[] = feed.episodes.map((episode, index) => ({
-      audioUrl: episode.audioUrl,
-      content: episode.content,
-      description: episode.description,
-      duration: episode.duration,
-      episodeNumber: episode.episodeNumber,
-      id: this.generateEpisodeId(podcastId, episode.audioUrl, index),
-      imageUrl: episode.imageUrl,
-      podcastId,
-      publishedAt: episode.publishedAt,
-      seasonNumber: episode.seasonNumber,
-      showNotes: episode.showNotes,
-      title: episode.title,
-    }));
-
-    return { podcast, episodes };
-  }
-
-  static rssEpisodesToEpisodes(episodes: RSSEpisode[], podcastId: string): Episode[] {
-    return episodes.map((episode, index) => ({
-      audioUrl: episode.audioUrl,
-      content: episode.content,
-      description: episode.description,
-      duration: episode.duration,
-      episodeNumber: episode.episodeNumber,
-      id: this.generateEpisodeId(podcastId, episode.audioUrl, index),
-      imageUrl: episode.imageUrl,
-      podcastId,
-      publishedAt: episode.publishedAt,
-      seasonNumber: episode.seasonNumber,
-      showNotes: episode.showNotes,
-      title: episode.title,
-    }));
-  }
-
-  static rssFeedToPodcast(feed: RSSFeed): Podcast {
-    return this.mapFeedToPodcast(feed).podcast;
-  }
-
-  private static generatePodcastId(feedUrl: string): string {
-    let hash = 0;
-    for (let i = 0; i < feedUrl.length; i++) {
-      const char = feedUrl.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    return `podcast_${Math.abs(hash)}`;
-  }
-
-  private static generateEpisodeId(podcastId: string, audioUrl: string, index: number): string {
-    const baseString = `${podcastId}_${audioUrl}_${index}`;
-    let hash = 0;
-    for (let i = 0; i < baseString.length; i++) {
-      const char = baseString.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    return `episode_${Math.abs(hash)}`;
   }
 }

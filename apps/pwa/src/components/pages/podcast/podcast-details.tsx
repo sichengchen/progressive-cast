@@ -29,6 +29,7 @@ import { formatDistanceToNow } from "date-fns";
 import ISO6391 from "iso-639-1";
 import type { Podcast } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { richTextToPlainText } from "@/lib/utils";
 
 interface PodcastDetailsProps {
   podcast: Podcast;
@@ -41,6 +42,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
   );
   const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const cleanDescription = richTextToPlainText(podcast.description);
 
   const { episodes, playEpisode, unsubscribeFromPodcast } = usePodcastStore();
 
@@ -191,7 +193,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
             <div className="text-sm text-muted-foreground md:mx-0">
               {/* Desktop: Show truncated text with button */}
               <div className="hidden md:flex items-start gap-2 w-3/5">
-                <div className="line-clamp-1 flex-1">{podcast.description}</div>
+                <div className="line-clamp-1 flex-1">{cleanDescription}</div>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button variant="link" className="text-sm p-0 h-auto">
@@ -204,7 +206,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                     </DialogHeader>
                     <div className="max-h-96 overflow-y-auto">
                       <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                        {podcast.description || "No description available."}
+                        {cleanDescription || "No description available."}
                       </p>
                     </div>
                   </DialogContent>
@@ -258,7 +260,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
                   </DialogHeader>
                   <div className="max-h-96 overflow-y-auto">
                     <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {podcast.description || "No description available."}
+                      {cleanDescription || "No description available."}
                     </p>
                   </div>
                 </DialogContent>
