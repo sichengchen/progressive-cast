@@ -1,230 +1,211 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { describe, expect, it } from "vitest";
+import type { SyncStateResponse } from "@pgcast/contracts";
+import { createTestServer } from "./test/test-harness";
 
-import { createApp } from "./adapters/http/create-app";
-import type { AuthGuard } from "./core/auth";
-import { UnauthorizedError } from "./core/errors";
-import type {
-  CurrentPlaybackSyncRecord,
-  PlaybackCheckpointSyncRecord,
-  PlaybackRealtimeEvent,
-  RealtimeTicketResponse,
-  SubscriptionRecord,
-  SyncPreferences,
-  SyncStateResponse,
-} from "@pgcast/contracts";
-import { SyncService } from "./core/sync-service";
-import type { ServerRepositories } from "./core/repositories";
-import type { RealtimeCoordinator } from "./core/realtime";
+describe("createApp", () => {
+  it("GET /api/meta returns the portable server metadata", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/meta");
 
-class TestAuthGuard implements AuthGuard {
-  async authorize(request: Request): Promise<void> {
-    if (request.headers.get("Authorization") !== "Bearer test-token") {
-      throw new UnauthorizedError();
-    }
-  }
-}
-
-class TestRealtimeCoordinator implements RealtimeCoordinator {
-  readonly publishedEvents: PlaybackRealtimeEvent[] = [];
-
-  async issueTicket(): Promise<RealtimeTicketResponse> {
-    return {
-      expiresAt: new Date(Date.now() + 60_000).toISOString(),
-      ticket: "ticket",
-      wsUrl: "ws://example.test/ws/playback?ticket=ticket",
-    };
-  }
-
-  async connect(): Promise<Response> {
-    return new Response("switching", { status: 101 });
-  }
-
-  async publish(event: PlaybackRealtimeEvent): Promise<void> {
-    this.publishedEvents.push(event);
-  }
-}
-
-function createInMemoryRepositories(): ServerRepositories {
-  let subscriptions: SubscriptionRecord[] = [];
-  let playbackHistory: PlaybackCheckpointSyncRecord[] = [];
-  let currentPlayback: CurrentPlaybackSyncRecord | null = null;
-  let preferences: SyncPreferences | null = null;
-
-  return {
-    currentPlayback: {
-      async clear() {
-        currentPlayback = null;
-      },
-      async get() {
-        return currentPlayback;
-      },
-      async set(record) {
-        currentPlayback = record;
-      },
-    },
-    playbackCheckpoints: {
-      async list() {
-        return [...playbackHistory];
-      },
-      async upsert(record) {
-        playbackHistory = playbackHistory.filter(
-          (existing) =>
-            existing.locator.audioUrl !== record.locator.audioUrl ||
-            existing.locator.feedUrl !== record.locator.feedUrl ||
-            existing.locator.episodeGuid !== record.locator.episodeGuid,
-        );
-        playbackHistory.push(record);
-      },
-    },
-    subscriptions: {
-      async list() {
-        return [...subscriptions];
-      },
-      async upsert(record) {
-        subscriptions = subscriptions.filter((existing) => existing.feedUrl !== record.feedUrl);
-        subscriptions.push(record);
-      },
-    },
-    syncPreferences: {
-      async get() {
-        return preferences;
-      },
-      async set(record) {
-        preferences = record;
-      },
-    },
-  };
-}
-
-function createTestServer() {
-  const realtime = new TestRealtimeCoordinator();
-  const repositories = createInMemoryRepositories();
-  const syncService = new SyncService(repositories, realtime);
-  const app = createApp({
-    authGuard: new TestAuthGuard(),
-    realtimeCoordinator: realtime,
-    syncService,
-    version: "test",
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    await expect(response.json()).resolves.toEqual({
+      appVersion: "test",
+      protocolVersion: "1",
+      realtime: true,
+    });
   });
 
-  return { app, realtime };
-}
+  it("authenticated sync routes reject missing bearer tokens", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/state");
 
-test("GET /api/meta returns the portable server metadata", async () => {
-  const { app } = createTestServer();
-  const response = await app.request("http://example.test/api/meta");
-
-  assert.equal(response.status, 200);
-  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
-  assert.deepEqual(await response.json(), {
-    appVersion: "test",
-    protocolVersion: "1",
-    realtime: true,
-  });
-});
-
-test("authenticated sync routes reject missing bearer tokens", async () => {
-  const { app } = createTestServer();
-  const response = await app.request("http://example.test/api/sync/state");
-
-  assert.equal(response.status, 401);
-  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
-});
-
-test("authenticated sync routes answer CORS preflight", async () => {
-  const { app } = createTestServer();
-  const response = await app.request("http://example.test/api/sync/state", {
-    headers: {
-      "Access-Control-Request-Headers": "authorization,content-type",
-      "Access-Control-Request-Method": "GET",
-      Origin: "http://localhost:3000",
-    },
-    method: "OPTIONS",
+    expect(response.status).toBe(401);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
   });
 
-  assert.equal(response.status, 204);
-  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
-  assert.equal(response.headers.get("Access-Control-Allow-Headers"), "Authorization, Content-Type");
-  assert.equal(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, PUT, OPTIONS");
-});
-
-test("bootstrap merges subscriptions and preferences, then state is readable", async () => {
-  const { app } = createTestServer();
-  const response = await app.request("http://example.test/api/sync/bootstrap", {
-    body: JSON.stringify({
-      currentPlayback: null,
-      deviceId: "device-a",
-      playbackHistory: [],
-      preferences: {
-        autoPlay: true,
-        itunesSearchEnabled: true,
-        skipInterval: 45,
-        updatedAt: "2026-04-18T00:00:00.000Z",
-        whatsNewCount: 12,
+  it("authenticated sync routes answer CORS preflight", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        "Access-Control-Request-Headers": "authorization,content-type",
+        "Access-Control-Request-Method": "GET",
+        Origin: "http://localhost:3000",
       },
-      subscriptions: [
-        {
-          deletedAt: null,
-          feedUrl: "https://feed.example/rss.xml",
-          status: "active",
-          subscribedAt: "2026-04-18T00:00:00.000Z",
+      method: "OPTIONS",
+    });
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Authorization, Content-Type",
+    );
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, PUT, OPTIONS");
+  });
+
+  it("bootstrap merges subscriptions and preferences, then state is readable", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/bootstrap", {
+      body: JSON.stringify({
+        currentPlayback: null,
+        deviceId: "device-a",
+        playbackHistory: [],
+        preferences: {
+          autoPlay: true,
+          itunesSearchEnabled: true,
+          skipInterval: 45,
           updatedAt: "2026-04-18T00:00:00.000Z",
+          whatsNewCount: 12,
         },
-      ],
-    }),
-    headers: {
-      Authorization: "Bearer test-token",
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-  });
-
-  assert.equal(response.status, 200);
-  const state = (await response.json()) as SyncStateResponse;
-  assert.equal(state.subscriptions.length, 1);
-  assert.equal(state.subscriptions[0].feedUrl, "https://feed.example/rss.xml");
-  assert.equal(state.preferences.skipInterval, 45);
-  assert.equal(state.preferences.whatsNewCount, 12);
-});
-
-test("checkpoint updates state and publishes realtime events", async () => {
-  const { app, realtime } = createTestServer();
-  const checkpointResponse = await app.request("http://example.test/api/sync/playback/checkpoint", {
-    body: JSON.stringify({
-      checkpoint: {
-        currentTime: 120,
-        duration: 240,
-        isCompleted: false,
-        lastPlayedAt: "2026-04-18T00:00:00.000Z",
-        locator: {
-          audioUrl: "https://cdn.example/episode.mp3",
-          episodeGuid: "episode-guid",
-          feedUrl: "https://feed.example/rss.xml",
-        },
-        updatedAt: "2026-04-18T00:00:00.000Z",
+        subscriptions: [
+          {
+            deletedAt: null,
+            feedUrl: "https://feed.example/rss.xml",
+            status: "active",
+            subscribedAt: "2026-04-18T00:00:00.000Z",
+            updatedAt: "2026-04-18T00:00:00.000Z",
+          },
+        ],
+      }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
       },
-      deviceId: "device-a",
-    }),
-    headers: {
-      Authorization: "Bearer test-token",
-      "Content-Type": "application/json",
-    },
-    method: "POST",
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    const state = (await response.json()) as SyncStateResponse;
+    expect(state.subscriptions).toHaveLength(1);
+    expect(state.subscriptions[0]?.feedUrl).toBe("https://feed.example/rss.xml");
+    expect(state.preferences.skipInterval).toBe(45);
+    expect(state.preferences.whatsNewCount).toBe(12);
   });
 
-  assert.equal(checkpointResponse.status, 204);
+  it("checkpoint updates state and publishes realtime events", async () => {
+    const { app, realtime } = createTestServer();
+    const checkpointResponse = await app.request(
+      "http://example.test/api/sync/playback/checkpoint",
+      {
+        body: JSON.stringify({
+          checkpoint: {
+            currentTime: 120,
+            duration: 240,
+            isCompleted: false,
+            lastPlayedAt: "2026-04-18T00:00:00.000Z",
+            locator: {
+              audioUrl: "https://cdn.example/episode.mp3",
+              episodeGuid: "episode-guid",
+              feedUrl: "https://feed.example/rss.xml",
+            },
+            updatedAt: "2026-04-18T00:00:00.000Z",
+          },
+          deviceId: "device-a",
+        }),
+        headers: {
+          Authorization: "Bearer test-token",
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      },
+    );
 
-  const stateResponse = await app.request("http://example.test/api/sync/state", {
-    headers: {
-      Authorization: "Bearer test-token",
-    },
+    expect(checkpointResponse.status).toBe(204);
+
+    const stateResponse = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    });
+
+    expect(stateResponse.status).toBe(200);
+    const state = (await stateResponse.json()) as SyncStateResponse;
+    expect(state.currentPlayback?.sourceDeviceId).toBe("device-a");
+    expect(state.playbackHistory).toHaveLength(1);
+    expect(realtime.publishedEvents).toHaveLength(1);
+    expect(realtime.publishedEvents[0]?.type).toBe("playback.updated");
   });
 
-  assert.equal(stateResponse.status, 200);
-  const state = (await stateResponse.json()) as SyncStateResponse;
-  assert.equal(state.currentPlayback?.sourceDeviceId, "device-a");
-  assert.equal(state.playbackHistory.length, 1);
-  assert.equal(realtime.publishedEvents.length, 1);
-  assert.equal(realtime.publishedEvents[0].type, "playback.updated");
+  it("returns a structured 400 when sync routes receive invalid JSON", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/bootstrap", {
+      body: "{not-json",
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Request body must be valid JSON",
+    });
+  });
+
+  it("subscription mutation endpoints update readable state", async () => {
+    const { app } = createTestServer();
+
+    const upsertResponse = await app.request("http://example.test/api/sync/subscriptions/upsert", {
+      body: JSON.stringify({ feedUrl: " https://feed.example/rss.xml " }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    expect(upsertResponse.status).toBe(204);
+
+    const deleteResponse = await app.request("http://example.test/api/sync/subscriptions/delete", {
+      body: JSON.stringify({ feedUrl: "https://feed.example/rss.xml" }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+    expect(deleteResponse.status).toBe(204);
+
+    const stateResponse = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    });
+
+    const state = (await stateResponse.json()) as SyncStateResponse;
+    expect(state.subscriptions).toHaveLength(1);
+    expect(state.subscriptions[0]).toMatchObject({
+      feedUrl: "https://feed.example/rss.xml",
+      status: "deleted",
+    });
+    expect(state.subscriptions[0]?.deletedAt).toBeTruthy();
+  });
+
+  it("preferences endpoint persists normalized settings", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/preferences", {
+      body: JSON.stringify({
+        preferences: {
+          autoPlay: true,
+          itunesSearchEnabled: false,
+          skipInterval: 0,
+          updatedAt: "2026-04-18T00:00:00.000Z",
+          whatsNewCount: -4,
+        },
+      }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "PUT",
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      autoPlay: true,
+      itunesSearchEnabled: false,
+      skipInterval: 1,
+      whatsNewCount: 1,
+    });
+  });
 });

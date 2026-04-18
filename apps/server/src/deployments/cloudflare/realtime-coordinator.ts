@@ -14,10 +14,7 @@ const REALTIME_TICKET_TTL_MS = 60_000;
 export class CloudflareRealtimeCoordinator implements RealtimeCoordinator {
   constructor(private readonly env: CloudflareBindings) {}
 
-  async issueTicket(input: {
-    baseUrl: string;
-    deviceId: string;
-  }): Promise<RealtimeTicketResponse> {
+  async issueTicket(input: { baseUrl: string; deviceId: string }): Promise<RealtimeTicketResponse> {
     const expiresAt = Date.now() + REALTIME_TICKET_TTL_MS;
     const payload: RealtimeTicketPayload = {
       deviceId: input.deviceId,
@@ -54,23 +51,15 @@ export class CloudflareRealtimeCoordinator implements RealtimeCoordinator {
   }
 }
 
-async function signTicket(
-  payload: RealtimeTicketPayload,
-  secret: string,
-): Promise<string> {
+async function signTicket(payload: RealtimeTicketPayload, secret: string): Promise<string> {
   const encoder = new TextEncoder();
-  const encodedPayload = base64UrlEncode(
-    encoder.encode(JSON.stringify(payload)),
-  );
+  const encodedPayload = base64UrlEncode(encoder.encode(JSON.stringify(payload)));
   const key = await importHmacKey(secret);
   const signature = await crypto.subtle.sign("HMAC", key, encoder.encode(encodedPayload));
   return `${encodedPayload}.${base64UrlEncode(new Uint8Array(signature))}`;
 }
 
-async function verifyTicket(
-  ticket: string,
-  secret: string,
-): Promise<RealtimeTicketPayload | null> {
+async function verifyTicket(ticket: string, secret: string): Promise<RealtimeTicketPayload | null> {
   const [payloadPart, signaturePart] = ticket.split(".");
   if (!payloadPart || !signaturePart) {
     return null;
@@ -78,10 +67,11 @@ async function verifyTicket(
 
   const key = await importHmacKey(secret);
   const encoder = new TextEncoder();
+  const signature = base64UrlDecode(signaturePart);
   const valid = await crypto.subtle.verify(
     "HMAC",
     key,
-    base64UrlDecode(signaturePart),
+    bytesToArrayBuffer(signature),
     encoder.encode(payloadPart),
   );
 
@@ -127,4 +117,8 @@ function base64UrlDecode(value: string): Uint8Array {
   }
 
   return bytes;
+}
+
+function bytesToArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
 }

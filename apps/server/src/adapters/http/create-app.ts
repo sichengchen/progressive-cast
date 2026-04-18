@@ -127,7 +127,7 @@ export function createApp(options: CreateAppOptions) {
     return options.realtimeCoordinator.connect(c.req.raw, ticket);
   });
 
-  app.onError((error, c) => {
+  app.onError((error) => {
     if (error instanceof HttpError) {
       return Response.json({ error: error.message }, { status: error.statusCode });
     }

@@ -1141,3 +1141,42 @@ export const usePodcastStore = create<PodcastStore>()(
     },
   ),
 );
+
+export function resetPodcastStoreForTests(): void {
+  usePodcastStore.persist.clearStorage();
+  usePodcastStore.setState({
+    currentPage: "whats-new",
+    downloadedEpisodes: [],
+    downloadProgress: new Map(),
+    episodes: [],
+    error: null,
+    isImporting: false,
+    isLoading: false,
+    isRefreshing: false,
+    latestEpisodesCache: null,
+    playbackProgress: new Map(),
+    playbackState: {
+      currentEpisode: null,
+      currentTime: 0,
+      duration: 0,
+      isLoading: false,
+      isPlaying: false,
+      seekRequested: false,
+      showNotes: "",
+      volume: 1,
+    },
+    podcasts: [],
+    preferences: { ...defaultPreferences },
+    progressDialog: {
+      currentItem: "",
+      isOpen: false,
+      progress: 0,
+      title: "",
+      total: 0,
+    },
+    selectedPodcastId: null,
+    showAddPodcastDialog: false,
+    showNotesOpen: false,
+    storageStats: null,
+  });
+}

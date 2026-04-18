@@ -438,3 +438,9 @@ export class DatabaseService {
     );
   }
 }
+
+export async function resetDatabaseForTests(): Promise<void> {
+  db.close();
+  await Dexie.delete(db.name);
+  await db.open();
+}

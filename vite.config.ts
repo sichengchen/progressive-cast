@@ -1,18 +1,22 @@
-import { defineConfig } from 'vite-plus';
+import { defineConfig } from "vite-plus";
 
 export default defineConfig({
   fmt: {
     ignorePatterns: [
-      '**/node_modules/**',
-      'apps/*/dist/**',
-      'apps/web/build/**',
+      "**/node_modules/**",
+      "apps/*/.wrangler/**",
+      "apps/*/dist/**",
+      "apps/*/test-results/**",
+      "apps/web/build/**",
     ],
   },
   lint: {
     ignorePatterns: [
-      '**/node_modules/**',
-      'apps/*/dist/**',
-      'apps/web/build/**',
+      "**/node_modules/**",
+      "apps/*/.wrangler/**",
+      "apps/*/dist/**",
+      "apps/*/test-results/**",
+      "apps/web/build/**",
     ],
     options: {
       typeAware: true,
@@ -23,6 +27,6 @@ export default defineConfig({
     enablePrePostScripts: true,
   },
   staged: {
-    '*.{css,js,json,md,mjs,ts,tsx}': 'vp check --fix',
+    "*.{css,js,json,md,mjs,ts,tsx}": "vp check --fix",
   },
 });

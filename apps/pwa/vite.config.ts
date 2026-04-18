@@ -37,10 +37,22 @@ export default defineConfig({
     emptyOutDir: true,
   },
   fmt: {
-    ignorePatterns: ["dist/**", "node_modules/**", "src/worker-configuration.d.ts"],
+    ignorePatterns: [
+      "dist/**",
+      "node_modules/**",
+      ".wrangler/**",
+      "src/worker-configuration.d.ts",
+      "test-results/**",
+    ],
   },
   lint: {
-    ignorePatterns: ["dist/**", "node_modules/**", "src/worker-configuration.d.ts"],
+    ignorePatterns: [
+      "dist/**",
+      "node_modules/**",
+      ".wrangler/**",
+      "src/worker-configuration.d.ts",
+      "test-results/**",
+    ],
     options: {
       typeAware: true,
       typeCheck: true,
@@ -50,8 +62,11 @@ export default defineConfig({
     },
   },
   test: {
-    environment: "node",
+    environment: "jsdom",
     globals: true,
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    exclude: ["e2e/**"],
+    setupFiles: ["./src/test/setup.ts"],
     passWithNoTests: true,
   },
   pack: {

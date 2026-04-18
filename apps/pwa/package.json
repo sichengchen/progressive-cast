@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names client,api --prefix name \"pnpm dev:client\" \"pnpm dev:api\"",
     "dev:client": "node ./scripts/build-sw.mjs && vp dev",
+    "dev:client:e2e": "node ./scripts/build-sw.mjs && vp dev --host 127.0.0.1 --strictPort",
     "dev:api": "tsx watch src/api/server.ts",
+    "dev:api:e2e": "tsx src/api/server.ts",
+    "dev:e2e": "concurrently --kill-others-on-fail --names client,api --prefix name \"pnpm dev:client:e2e\" \"pnpm dev:api:e2e\"",
     "build": "pnpm build:client && pnpm build:server",
     "build:client": "node ./scripts/build-sw.mjs && vp build",
     "build:server": "vp pack",
@@ -17,6 +20,7 @@
     "cf:dev": "pnpm cf:build && wrangler dev --config wrangler.jsonc",
     "cf:typegen": "wrangler types ./src/worker-configuration.d.ts --config wrangler.jsonc",
     "test": "vp test",
+    "test:e2e": "playwright test --config ./playwright.config.ts",
     "preview": "node dist/server/server.mjs"
   },
   "dependencies": {
@@ -56,17 +60,21 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@tailwindcss/postcss": "^4.1.11",
     "@types/node": "^20.17.58",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^5.1.0",
     "concurrently": "^9.2.1",
+    "fake-indexeddb": "^6.2.2",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4.1.11",
     "tsx": "^4.20.6",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5.8.3",
     "vite-plus": "^0.1.16",
-    "wrangler": "^4.22.0"
+    "wrangler": "^4.22.0",
+    "ws": "^8.18.3"
   }
 }

@@ -1,16 +1,18 @@
 {
   "name": "progressive-cast",
   "private": true,
-  "packageManager": "pnpm@10.12.1",
   "type": "module",
   "scripts": {
     "dev": "vp run -r dev",
     "build": "vp run -r build",
     "check": "vp run -r check",
     "test": "vp run -r test",
+    "test:e2e": "pnpm --filter @pgcast/pwa test:e2e",
+    "test:all": "pnpm test && pnpm test:e2e",
     "preview": "vp run -r preview"
   },
   "devDependencies": {
     "vite-plus": "^0.1.16"
-  }
+  },
+  "packageManager": "pnpm@10.12.1"
 }

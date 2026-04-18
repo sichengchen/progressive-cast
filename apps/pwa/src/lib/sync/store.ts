@@ -85,3 +85,11 @@ export function hasSyncBackendConfigured(): boolean {
   const { apiToken, backendUrl } = useSyncBackendStore.getState();
   return Boolean(apiToken.trim() && backendUrl.trim());
 }
+
+export function resetSyncBackendStoreForTests(): void {
+  useSyncBackendStore.persist.clearStorage();
+  useSyncBackendStore.setState({
+    ...initialState,
+    deviceId: createDeviceId(),
+  });
+}

@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc --port 8788",
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "check": "vp check",
+    "test": "vp test",
     "preview": "node -e \"console.log('Use pnpm --filter @pgcast/server dev to run the personal sync backend locally.')\"",
     "cf:typegen": "wrangler types ./src/worker-configuration.d.ts --config wrangler.jsonc",
     "db:generate": "drizzle-kit generate",
@@ -19,11 +19,14 @@
     "hono": "^4.9.6"
   },
   "devDependencies": {
-    "@types/node": "^20.17.58",
     "@cloudflare/workers-types": "^4.20260418.0",
+    "@hono/node-server": "^1.19.1",
+    "@types/node": "^20.17.58",
     "drizzle-kit": "^0.31.4",
     "tsx": "^4.20.6",
     "typescript": "^5.8.3",
-    "wrangler": "^4.22.0"
+    "vite-plus": "^0.1.16",
+    "wrangler": "^4.22.0",
+    "ws": "^8.18.3"
   }
 }
