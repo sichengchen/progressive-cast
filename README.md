@@ -1,14 +1,10 @@
 # Progressive Cast
 
-A monorepo for Progressive Cast.
+A podcast player.
 
 ## Tech Stack
 
 - [Vite+](https://viteplus.dev/)
-- [Vite](https://vite.dev/)
-- [Vitest](https://vitest.dev/)
-- [Rolldown](https://rolldown.rs/)
-- [Oxc](https://oxc.rs/)
 - [React](https://react.dev/)
 - [TanStack Query](https://tanstack.com/query/latest)
 - [TanStack Router](https://tanstack.com/router/latest)
