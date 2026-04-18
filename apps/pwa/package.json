@@ -7,8 +7,15 @@
     "dev": "concurrently --kill-others-on-fail --names client,api --prefix name \"pnpm dev:client\" \"pnpm dev:api\"",
     "dev:client": "node ./scripts/build-sw.mjs && vp dev",
     "dev:api": "tsx watch src/api/server.ts",
-    "build": "node ./scripts/build-sw.mjs && vp build && vp pack",
+    "build": "pnpm build:client && pnpm build:server",
+    "build:client": "node ./scripts/build-sw.mjs && vp build",
+    "build:server": "vp pack",
     "check": "vp check",
+    "cf:build": "pnpm build:client && pnpm cf:typegen",
+    "cf:check": "pnpm cf:build && wrangler deploy --dry-run --config wrangler.jsonc",
+    "cf:deploy": "pnpm cf:build && wrangler deploy --config wrangler.jsonc",
+    "cf:dev": "pnpm cf:build && wrangler dev --config wrangler.jsonc",
+    "cf:typegen": "wrangler types ./src/worker-configuration.d.ts --config wrangler.jsonc",
     "test": "vp test",
     "preview": "node dist/server/server.mjs"
   },
@@ -58,6 +65,7 @@
     "tsx": "^4.20.6",
     "tw-animate-css": "^1.3.5",
     "typescript": "^5.8.3",
-    "vite-plus": "^0.1.16"
+    "vite-plus": "^0.1.16",
+    "wrangler": "^4.22.0"
   }
 }
