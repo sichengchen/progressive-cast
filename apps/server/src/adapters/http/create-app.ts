@@ -23,8 +23,29 @@ interface CreateAppOptions {
   version: string;
 }
 
+const API_CORS_HEADERS: Record<string, string> = {
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
+  "Access-Control-Allow-Origin": "*",
+};
+
 export function createApp(options: CreateAppOptions) {
   const app = new Hono();
+
+  app.use("/api/*", async (c, next) => {
+    if (c.req.method === "OPTIONS") {
+      return new Response(null, {
+        headers: API_CORS_HEADERS,
+        status: 204,
+      });
+    }
+
+    await next();
+
+    for (const [header, value] of Object.entries(API_CORS_HEADERS)) {
+      c.header(header, value);
+    }
+  });
 
   app.get("/healthz", (c) => c.text("ok"));
 

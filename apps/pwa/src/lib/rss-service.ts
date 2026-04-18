@@ -86,6 +86,10 @@ export class RSSService {
         );
       }
 
+      if (error instanceof Error && error.message.includes("exceeds the")) {
+        throw new Error(error.message);
+      }
+
       if (error instanceof Error) {
         throw new Error(`Failed to parse RSS feed: ${error.message}`);
       }

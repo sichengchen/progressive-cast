@@ -116,6 +116,7 @@ test("GET /api/meta returns the portable server metadata", async () => {
   const response = await app.request("http://example.test/api/meta");
 
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
   assert.deepEqual(await response.json(), {
     appVersion: "test",
     protocolVersion: "1",
@@ -128,6 +129,24 @@ test("authenticated sync routes reject missing bearer tokens", async () => {
   const response = await app.request("http://example.test/api/sync/state");
 
   assert.equal(response.status, 401);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
+});
+
+test("authenticated sync routes answer CORS preflight", async () => {
+  const { app } = createTestServer();
+  const response = await app.request("http://example.test/api/sync/state", {
+    headers: {
+      "Access-Control-Request-Headers": "authorization,content-type",
+      "Access-Control-Request-Method": "GET",
+      Origin: "http://localhost:3000",
+    },
+    method: "OPTIONS",
+  });
+
+  assert.equal(response.status, 204);
+  assert.equal(response.headers.get("Access-Control-Allow-Origin"), "*");
+  assert.equal(response.headers.get("Access-Control-Allow-Headers"), "Authorization, Content-Type");
+  assert.equal(response.headers.get("Access-Control-Allow-Methods"), "GET, POST, PUT, OPTIONS");
 });
 
 test("bootstrap merges subscriptions and preferences, then state is readable", async () => {

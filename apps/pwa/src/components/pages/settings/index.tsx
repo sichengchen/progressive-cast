@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Trash2, AlertCircle } from "lucide-react";
+import { AlertCircle, PlugZap, RefreshCw, Trash2 } from "lucide-react";
 import {
   SettingsGroup,
   SettingsItem,
@@ -33,9 +33,7 @@ export function SettingsPage() {
   const backendUrl = useSyncBackendStore((state) => state.backendUrl);
   const apiToken = useSyncBackendStore((state) => state.apiToken);
   const connectionStatus = useSyncBackendStore((state) => state.connectionStatus);
-  const syncError = useSyncBackendStore((state) => state.error);
   const lastValidatedAt = useSyncBackendStore((state) => state.lastValidatedAt);
-  const serverMeta = useSyncBackendStore((state) => state.serverMeta);
   const [backendUrlInput, setBackendUrlInput] = useState(backendUrl);
   const [apiTokenInput, setApiTokenInput] = useState(apiToken);
 
@@ -153,17 +151,6 @@ export function SettingsPage() {
     setApiTokenInput("");
     toast.success("Sync backend disconnected.");
   };
-
-  const statusLabel =
-    connectionStatus === "connected"
-      ? "Connected"
-      : connectionStatus === "syncing"
-        ? "Syncing"
-        : connectionStatus === "connecting"
-          ? "Connecting"
-          : connectionStatus === "error"
-            ? "Error"
-            : "Disconnected";
 
   return (
     <>
@@ -319,56 +306,72 @@ export function SettingsPage() {
                 label="Status"
                 description={
                   lastValidatedAt
-                    ? `Last validated at ${new Date(lastValidatedAt).toLocaleString()}`
-                    : "No backend has been validated yet."
+                    ? `Last updated at ${new Date(lastValidatedAt).toLocaleString()}`
+                    : "No sync server has been connected yet."
                 }
               >
-                <div className="text-sm text-right">
-                  <div className="font-medium">{statusLabel}</div>
-                  {serverMeta && (
-                    <div className="text-muted-foreground">
-                      Protocol {serverMeta.protocolVersion} · {serverMeta.appVersion}
-                    </div>
-                  )}
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSyncNow}
+                    className="whitespace-nowrap"
+                    disabled={!backendUrl || !apiToken || isSyncingBackend}
+                  >
+                    <RefreshCw
+                      className={`h-4 w-4 ${isSyncingBackend ? "motion-safe:animate-spin" : ""}`}
+                    />
+                    {isSyncingBackend ? "Syncing..." : "Sync Now"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={
+                      connectionStatus === "connected" || connectionStatus === "syncing"
+                        ? handleDisconnectBackend
+                        : handleConnectBackend
+                    }
+                    className="whitespace-nowrap"
+                    disabled={isConnectingBackend}
+                  >
+                    <PlugZap className="h-4 w-4" />
+                    {isConnectingBackend
+                      ? "Connecting..."
+                      : connectionStatus === "connected" || connectionStatus === "syncing"
+                        ? "Disconnect"
+                        : connectionStatus === "error"
+                          ? "Reconnect"
+                          : "Connect"}
+                  </Button>
                 </div>
               </SettingsItem>
             )}
 
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSyncNow}
-                className="whitespace-nowrap"
-                disabled={!backendUrl || !apiToken || isSyncingBackend}
-              >
-                {isSyncingBackend ? "Syncing..." : "Sync Now"}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={
-                  connectionStatus === "connected" || connectionStatus === "syncing"
-                    ? handleDisconnectBackend
-                    : handleConnectBackend
-                }
-                className="whitespace-nowrap"
-                disabled={isConnectingBackend}
-              >
-                {isConnectingBackend
-                  ? "Connecting..."
-                  : connectionStatus === "connected" || connectionStatus === "syncing"
-                    ? "Disconnect"
-                    : connectionStatus === "error"
-                      ? "Reconnect"
-                      : "Connect"}
-              </Button>
-            </div>
-
-            {syncError && (
-              <SettingsAlert variant="destructive" icon={AlertCircle}>
-                <p className="text-red-800 dark:text-red-200">{syncError}</p>
-              </SettingsAlert>
+            {connectionStatus === "disconnected" && (
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncNow}
+                  className="whitespace-nowrap"
+                  disabled={!backendUrl || !apiToken || isSyncingBackend}
+                >
+                  <RefreshCw
+                    className={`h-4 w-4 ${isSyncingBackend ? "motion-safe:animate-spin" : ""}`}
+                  />
+                  {isSyncingBackend ? "Syncing..." : "Sync Now"}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleConnectBackend}
+                  className="whitespace-nowrap"
+                  disabled={isConnectingBackend}
+                >
+                  <PlugZap className="h-4 w-4" />
+                  {isConnectingBackend ? "Connecting..." : "Connect"}
+                </Button>
+              </div>
             )}
           </SettingsDivider>
         </SettingsGroup>

@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 
-const RSS_MAX_BYTES = 5 * 1024 * 1024;
+const RSS_MAX_BYTES = 20 * 1024 * 1024;
+const RSS_MAX_MB = Math.floor(RSS_MAX_BYTES / 1024 / 1024);
 
 async function readTextWithLimit(response: Response, maxBytes: number): Promise<string> {
   const contentLength = response.headers.get("content-length");
@@ -8,7 +9,7 @@ async function readTextWithLimit(response: Response, maxBytes: number): Promise<
   if (contentLength) {
     const size = Number.parseInt(contentLength, 10);
     if (Number.isFinite(size) && size > maxBytes) {
-      throw new Error(`RSS feed exceeds the ${Math.floor(maxBytes / 1024 / 1024)} MB limit.`);
+      throw new Error(`RSS feed exceeds the ${RSS_MAX_MB} MB limit.`);
     }
   }
 
@@ -31,7 +32,7 @@ async function readTextWithLimit(response: Response, maxBytes: number): Promise<
 
       totalBytes += value.byteLength;
       if (totalBytes > maxBytes) {
-        throw new Error(`RSS feed exceeds the ${Math.floor(maxBytes / 1024 / 1024)} MB limit.`);
+        throw new Error(`RSS feed exceeds the ${RSS_MAX_MB} MB limit.`);
       }
 
       result += decoder.decode(value, { stream: true });

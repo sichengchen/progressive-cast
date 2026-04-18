@@ -49,10 +49,95 @@ db.version(4).stores({
   syncOutbox: "&id, kind, updatedAt",
 });
 
+function mergePodcastRecord(existing: Podcast | undefined, incoming: Podcast): Podcast {
+  if (!existing) {
+    return incoming;
+  }
+
+  if (existing.feedUrl !== incoming.feedUrl) {
+    throw new Error(`Podcast ID collision detected for ${incoming.feedUrl}.`);
+  }
+
+  return {
+    ...existing,
+    ...incoming,
+    subscriptionDate: existing.subscriptionDate,
+  };
+}
+
+function mergeEpisodeRecord(existing: Episode | undefined, incoming: Episode): Episode {
+  if (!existing) {
+    return incoming;
+  }
+
+  if (existing.podcastId !== incoming.podcastId || existing.audioUrl !== incoming.audioUrl) {
+    throw new Error(`Episode ID collision detected for ${incoming.title}.`);
+  }
+
+  return {
+    ...existing,
+    ...incoming,
+    downloadedAt: existing.downloadedAt ?? incoming.downloadedAt,
+    downloadedPath: existing.downloadedPath ?? incoming.downloadedPath,
+    fileSize: existing.fileSize ?? incoming.fileSize,
+    isDownloaded: existing.isDownloaded ?? incoming.isDownloaded,
+  };
+}
+
+function mergeIncomingPodcasts(podcasts: Podcast[]): Podcast[] {
+  const merged = new Map<string, Podcast>();
+
+  for (const podcast of podcasts) {
+    const existing = merged.get(podcast.id);
+    merged.set(podcast.id, mergePodcastRecord(existing, podcast));
+  }
+
+  return [...merged.values()];
+}
+
+function mergeIncomingEpisodes(episodes: Episode[]): Episode[] {
+  const merged = new Map<string, Episode>();
+
+  for (const episode of episodes) {
+    const existing = merged.get(episode.id);
+    merged.set(episode.id, mergeEpisodeRecord(existing, episode));
+  }
+
+  return [...merged.values()];
+}
+
+async function putPodcasts(podcasts: Podcast[]): Promise<void> {
+  const uniquePodcasts = mergeIncomingPodcasts(podcasts);
+  if (uniquePodcasts.length === 0) {
+    return;
+  }
+
+  const existingPodcasts = await db.podcasts.bulkGet(uniquePodcasts.map((podcast) => podcast.id));
+  const mergedPodcasts = uniquePodcasts.map((podcast, index) =>
+    mergePodcastRecord(existingPodcasts[index], podcast),
+  );
+
+  await db.podcasts.bulkPut(mergedPodcasts);
+}
+
+async function putEpisodes(episodes: Episode[]): Promise<void> {
+  const uniqueEpisodes = mergeIncomingEpisodes(episodes);
+  if (uniqueEpisodes.length === 0) {
+    return;
+  }
+
+  const existingEpisodes = await db.episodes.bulkGet(uniqueEpisodes.map((episode) => episode.id));
+  const mergedEpisodes = uniqueEpisodes.map((episode, index) =>
+    mergeEpisodeRecord(existingEpisodes[index], episode),
+  );
+
+  await db.episodes.bulkPut(mergedEpisodes);
+}
+
 export class DatabaseService {
   // Podcast operations
   static async addPodcast(podcast: Podcast): Promise<void> {
-    await db.podcasts.add(podcast);
+    await putPodcasts([podcast]);
   }
 
   static async getPodcasts(): Promise<Podcast[]> {
@@ -78,7 +163,7 @@ export class DatabaseService {
 
   // Episode operations
   static async addEpisodes(episodes: Episode[]): Promise<void> {
-    await db.episodes.bulkAdd(episodes);
+    await putEpisodes(episodes);
   }
 
   // Optimized method for getting latest episodes across all podcasts
@@ -199,9 +284,9 @@ export class DatabaseService {
     playbackProgress: PlaybackProgress[];
   }): Promise<void> {
     await db.transaction("rw", db.podcasts, db.episodes, db.playbackProgress, async () => {
-      await db.podcasts.bulkAdd(data.podcasts);
-      await db.episodes.bulkAdd(data.episodes);
-      await db.playbackProgress.bulkAdd(data.playbackProgress);
+      await putPodcasts(data.podcasts);
+      await putEpisodes(data.episodes);
+      await db.playbackProgress.bulkPut(data.playbackProgress);
     });
   }
 
