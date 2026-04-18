@@ -1,0 +1,19 @@
+{
+  "name": "@pgcast/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json",
+    "test": "node -e \"console.log('No tests for @pgcast/contracts')\"",
+    "preview": "node -e \"console.log('No preview for @pgcast/contracts')\""
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}

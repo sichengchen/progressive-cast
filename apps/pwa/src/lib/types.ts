@@ -22,6 +22,7 @@ export interface Episode {
   duration?: number; // in seconds
   publishedAt: Date;
   imageUrl?: string;
+  guid?: string;
   episodeNumber?: number;
   seasonNumber?: number;
   // Download-related fields
@@ -93,6 +94,7 @@ export interface RSSEpisode {
   duration?: number;
   publishedAt: Date;
   imageUrl?: string;
+  guid?: string;
   episodeNumber?: number;
   seasonNumber?: number;
 }

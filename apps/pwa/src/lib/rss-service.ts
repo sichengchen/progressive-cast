@@ -1,5 +1,7 @@
 import type { Episode, Podcast, RSSFeed, RSSEpisode } from "./types";
 
+type SearchRoot = Document | Element;
+
 export class RSSService {
   static async parseFeed(feedUrl: string): Promise<RSSFeed> {
     try {
@@ -13,9 +15,9 @@ export class RSSService {
       });
 
       if (!response.ok) {
-        let errorData;
+        let errorData: { error?: string };
         try {
-          errorData = await response.json();
+          errorData = (await response.json()) as { error?: string };
         } catch {
           const textContent = await response.text();
           errorData = {
@@ -130,6 +132,7 @@ export class RSSService {
       description: episode.description,
       duration: episode.duration,
       episodeNumber: episode.episodeNumber,
+      guid: episode.guid,
       id: this.generateEpisodeId(podcastId, episode.audioUrl, index),
       imageUrl: episode.imageUrl,
       podcastId,
@@ -172,7 +175,7 @@ export class RSSService {
     );
   }
 
-  private static extractAuthor(root: ParentNode): string | undefined {
+  private static extractAuthor(root: SearchRoot): string | undefined {
     const itunesAuthor = this.findText(root, ["author"]);
     if (itunesAuthor) {
       return itunesAuthor;
@@ -186,7 +189,7 @@ export class RSSService {
     return this.findText(authorElement, ["name"]) || authorElement.textContent?.trim() || undefined;
   }
 
-  private static extractCategories(root: ParentNode): string[] {
+  private static extractCategories(root: SearchRoot): string[] {
     const categories = this.findElements(root, ["category"])
       .map((element) => element.getAttribute("text") || element.textContent?.trim() || "")
       .filter(Boolean);
@@ -194,7 +197,7 @@ export class RSSService {
     return [...new Set(categories)];
   }
 
-  private static extractFeedImage(root: ParentNode): string | undefined {
+  private static extractFeedImage(root: SearchRoot): string | undefined {
     const itunesImage = this.findFirstElement(root, ["image"])?.getAttribute("href");
     if (itunesImage) {
       return itunesImage;
@@ -229,7 +232,7 @@ export class RSSService {
     return doc.querySelector("img")?.getAttribute("src") || undefined;
   }
 
-  private static extractItemImage(item: ParentNode, fallbackImage?: string): string | undefined {
+  private static extractItemImage(item: SearchRoot, fallbackImage?: string): string | undefined {
     const itunesImage = this.findFirstElement(item, ["image"])?.getAttribute("href");
     if (itunesImage) {
       return itunesImage;
@@ -276,7 +279,7 @@ export class RSSService {
     return normalized || undefined;
   }
 
-  private static findElements(root: ParentNode, names: string[]): Element[] {
+  private static findElements(root: SearchRoot, names: string[]): Element[] {
     const descendants =
       root instanceof Element
         ? [root, ...Array.from(root.querySelectorAll("*"))]
@@ -285,11 +288,11 @@ export class RSSService {
     return descendants.filter((element) => names.some((name) => this.matchesName(element, name)));
   }
 
-  private static findFirstElement(root: ParentNode, names: string[]): Element | undefined {
+  private static findFirstElement(root: SearchRoot, names: string[]): Element | undefined {
     return this.findElements(root, names)[0];
   }
 
-  private static findText(root: ParentNode, names: string[]): string | undefined {
+  private static findText(root: SearchRoot, names: string[]): string | undefined {
     for (const element of this.findElements(root, names)) {
       const text = element.textContent?.trim();
       if (text) {
@@ -363,6 +366,7 @@ export class RSSService {
     const publishedAt = this.findText(item, ["pubdate", "published", "updated"]) || "";
     const episodeNumber = this.findText(item, ["episode"]);
     const seasonNumber = this.findText(item, ["season"]);
+    const guid = this.findText(item, ["guid", "id"]) || undefined;
 
     return {
       audioUrl: this.extractAudioUrl(item),
@@ -370,6 +374,7 @@ export class RSSService {
       description,
       duration: this.parseDuration(this.findText(item, ["duration"])),
       episodeNumber: episodeNumber ? parseInt(episodeNumber, 10) : undefined,
+      guid,
       imageUrl: this.extractItemImage(item, fallbackImage),
       publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
       seasonNumber: seasonNumber ? parseInt(seasonNumber, 10) : undefined,

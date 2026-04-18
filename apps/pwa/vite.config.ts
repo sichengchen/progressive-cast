@@ -37,10 +37,10 @@ export default defineConfig({
     emptyOutDir: true,
   },
   fmt: {
-    ignorePatterns: ["dist/**", "node_modules/**"],
+    ignorePatterns: ["dist/**", "node_modules/**", "src/worker-configuration.d.ts"],
   },
   lint: {
-    ignorePatterns: ["dist/**", "node_modules/**"],
+    ignorePatterns: ["dist/**", "node_modules/**", "src/worker-configuration.d.ts"],
     options: {
       typeAware: true,
       typeCheck: true,

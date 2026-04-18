@@ -1,0 +1,37 @@
+{
+  "$schema": "../pwa/node_modules/wrangler/config-schema.json",
+  "name": "pgcast-personal-sync",
+  "main": "./src/deployments/cloudflare/worker.ts",
+  "compatibility_date": "2026-04-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pgcast-personal-sync",
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "preview_database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "PLAYBACK_COORDINATOR",
+        "class_name": "PlaybackRoomDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["PlaybackRoomDurableObject"]
+    }
+  ]
+}

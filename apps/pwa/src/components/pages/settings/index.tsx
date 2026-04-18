@@ -18,12 +18,26 @@ import { useTheme } from "next-themes";
 import { OPMLManager } from "../../common/opml-manager";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { connectSyncBackend, disconnectSyncBackend, syncNow } from "@/lib/sync/bridge";
+import { useSyncBackendStore } from "@/lib/sync/store";
 
 export function SettingsPage() {
   const [isClearingData, setIsClearingData] = useState(false);
   const [isClearingDownloads, setIsClearingDownloads] = useState(false);
+  const [isConnectingBackend, setIsConnectingBackend] = useState(false);
+  const [isSyncingBackend, setIsSyncingBackend] = useState(false);
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
+  const backendUrl = useSyncBackendStore((state) => state.backendUrl);
+  const apiToken = useSyncBackendStore((state) => state.apiToken);
+  const connectionStatus = useSyncBackendStore((state) => state.connectionStatus);
+  const syncError = useSyncBackendStore((state) => state.error);
+  const lastValidatedAt = useSyncBackendStore((state) => state.lastValidatedAt);
+  const serverMeta = useSyncBackendStore((state) => state.serverMeta);
+  const [backendUrlInput, setBackendUrlInput] = useState(backendUrl);
+  const [apiTokenInput, setApiTokenInput] = useState(apiToken);
 
   const {
     preferences,
@@ -42,6 +56,14 @@ export function SettingsPage() {
   useEffect(() => {
     refreshStorageStats();
   }, [refreshStorageStats]);
+
+  useEffect(() => {
+    setBackendUrlInput(backendUrl);
+  }, [backendUrl]);
+
+  useEffect(() => {
+    setApiTokenInput(apiToken);
+  }, [apiToken]);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 B";
@@ -97,6 +119,51 @@ export function SettingsPage() {
       setIsClearingData(false);
     }
   };
+
+  const handleConnectBackend = async () => {
+    setIsConnectingBackend(true);
+    try {
+      await connectSyncBackend(backendUrlInput, apiTokenInput);
+      toast.success("Sync backend connected.");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to connect to the sync backend.";
+      toast.error(message);
+    } finally {
+      setIsConnectingBackend(false);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    setIsSyncingBackend(true);
+    try {
+      await syncNow();
+      toast.success("Sync completed.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to sync with the backend.";
+      toast.error(message);
+    } finally {
+      setIsSyncingBackend(false);
+    }
+  };
+
+  const handleDisconnectBackend = () => {
+    disconnectSyncBackend();
+    setBackendUrlInput("");
+    setApiTokenInput("");
+    toast.success("Sync backend disconnected.");
+  };
+
+  const statusLabel =
+    connectionStatus === "connected"
+      ? "Connected"
+      : connectionStatus === "syncing"
+        ? "Syncing"
+        : connectionStatus === "connecting"
+          ? "Connecting"
+          : connectionStatus === "error"
+            ? "Error"
+            : "Disconnected";
 
   return (
     <>
@@ -217,6 +284,92 @@ export function SettingsPage() {
                 actionLabel: "Clear Downloads",
               }}
             />
+          </SettingsDivider>
+        </SettingsGroup>
+
+        <SettingsGroup title="Sync Server">
+          <SettingsItem label="Endpoint" description="The API endpoint for your sync server.">
+            <Input
+              value={backendUrlInput}
+              onChange={(event) => setBackendUrlInput(event.target.value)}
+              placeholder="https://sync.example.com"
+              className="w-full min-w-[280px] sm:w-[320px]"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </SettingsItem>
+
+          <SettingsItem label="Token" description="Bearer token configured on your sync server.">
+            <Input
+              type="password"
+              value={apiTokenInput}
+              onChange={(event) => setApiTokenInput(event.target.value)}
+              placeholder="Paste your personal token"
+              className="w-full min-w-[280px] sm:w-[320px]"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+          </SettingsItem>
+
+          <SettingsDivider className="space-y-3">
+            {connectionStatus !== "disconnected" && (
+              <SettingsItem
+                label="Status"
+                description={
+                  lastValidatedAt
+                    ? `Last validated at ${new Date(lastValidatedAt).toLocaleString()}`
+                    : "No backend has been validated yet."
+                }
+              >
+                <div className="text-sm text-right">
+                  <div className="font-medium">{statusLabel}</div>
+                  {serverMeta && (
+                    <div className="text-muted-foreground">
+                      Protocol {serverMeta.protocolVersion} · {serverMeta.appVersion}
+                    </div>
+                  )}
+                </div>
+              </SettingsItem>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSyncNow}
+                className="whitespace-nowrap"
+                disabled={!backendUrl || !apiToken || isSyncingBackend}
+              >
+                {isSyncingBackend ? "Syncing..." : "Sync Now"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={
+                  connectionStatus === "connected" || connectionStatus === "syncing"
+                    ? handleDisconnectBackend
+                    : handleConnectBackend
+                }
+                className="whitespace-nowrap"
+                disabled={isConnectingBackend}
+              >
+                {isConnectingBackend
+                  ? "Connecting..."
+                  : connectionStatus === "connected" || connectionStatus === "syncing"
+                    ? "Disconnect"
+                    : connectionStatus === "error"
+                      ? "Reconnect"
+                      : "Connect"}
+              </Button>
+            </div>
+
+            {syncError && (
+              <SettingsAlert variant="destructive" icon={AlertCircle}>
+                <p className="text-red-800 dark:text-red-200">{syncError}</p>
+              </SettingsAlert>
+            )}
           </SettingsDivider>
         </SettingsGroup>
 

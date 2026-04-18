@@ -32,9 +32,9 @@ export class iTunesService {
       });
 
       if (!response.ok) {
-        let errorData;
+        let errorData: { error?: string };
         try {
-          errorData = await response.json();
+          errorData = (await response.json()) as { error?: string };
         } catch {
           const textContent = await response.text();
           errorData = {
@@ -46,7 +46,7 @@ export class iTunesService {
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as iTunesSearchResponse;
       return data;
     } catch (error) {
       console.error("iTunes search error:", error);

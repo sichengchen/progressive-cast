@@ -1,5 +1,6 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { Podcast, Episode, PlaybackProgress, DownloadProgress, DownloadQueue } from "./types";
+import type { SyncOutboxItem } from "./sync/types";
 
 export interface PodcastDB {
   podcasts: EntityTable<Podcast, "id">;
@@ -8,6 +9,7 @@ export interface PodcastDB {
   downloadProgress: EntityTable<DownloadProgress, "episodeId">;
   downloadQueue: EntityTable<DownloadQueue, "id">;
   audioFiles: EntityTable<{ key: string; blob: Blob; size: number; createdAt: Date }, "key">;
+  syncOutbox: EntityTable<SyncOutboxItem, "id">;
 }
 
 const db = new Dexie("PodcastPlayerDB") as Dexie & PodcastDB;
@@ -34,6 +36,17 @@ db.version(3).stores({
   downloadProgress: "&episodeId, status, startedAt",
   downloadQueue: "&id, episodeId, priority, status, addedAt",
   audioFiles: "&key, size, createdAt",
+});
+
+db.version(4).stores({
+  podcasts: "&id, title, feedUrl, subscriptionDate, lastUpdated",
+  episodes:
+    "&id, podcastId, title, publishedAt, audioUrl, guid, [publishedAt+podcastId], isDownloaded",
+  playbackProgress: "&id, episodeId, podcastId, lastPlayedAt, isCompleted",
+  downloadProgress: "&episodeId, status, startedAt",
+  downloadQueue: "&id, episodeId, priority, status, addedAt",
+  audioFiles: "&key, size, createdAt",
+  syncOutbox: "&id, kind, updatedAt",
 });
 
 export class DatabaseService {
@@ -105,15 +118,20 @@ export class DatabaseService {
 
   static async markEpisodeCompleted(episodeId: string, podcastId: string): Promise<void> {
     const progressId = `${episodeId}_progress`;
+    const existing = await db.playbackProgress.get(progressId);
     await db.playbackProgress.put({
       id: progressId,
       episodeId,
       podcastId,
-      currentTime: 0,
-      duration: 0,
+      currentTime: existing?.duration ?? existing?.currentTime ?? 0,
+      duration: existing?.duration ?? 0,
       lastPlayedAt: new Date(),
       isCompleted: true,
     });
+  }
+
+  static async clearPlaybackProgress(): Promise<void> {
+    await db.playbackProgress.clear();
   }
 
   // Search operations
@@ -146,11 +164,19 @@ export class DatabaseService {
 
   // Utility operations
   static async clearAllData(): Promise<void> {
-    await db.transaction("rw", db.podcasts, db.episodes, db.playbackProgress, async () => {
-      await db.podcasts.clear();
-      await db.episodes.clear();
-      await db.playbackProgress.clear();
-    });
+    await db.transaction(
+      "rw",
+      db.podcasts,
+      db.episodes,
+      db.playbackProgress,
+      db.syncOutbox,
+      async () => {
+        await db.podcasts.clear();
+        await db.episodes.clear();
+        await db.playbackProgress.clear();
+        await db.syncOutbox.clear();
+      },
+    );
   }
 
   static async exportData(): Promise<{
@@ -258,6 +284,22 @@ export class DatabaseService {
 
   static async getAllDownloadProgress(): Promise<DownloadProgress[]> {
     return await db.downloadProgress.toArray();
+  }
+
+  static async putSyncOutboxItem(item: SyncOutboxItem): Promise<void> {
+    await db.syncOutbox.put(item);
+  }
+
+  static async getSyncOutboxItems(): Promise<SyncOutboxItem[]> {
+    return await db.syncOutbox.orderBy("updatedAt").toArray();
+  }
+
+  static async deleteSyncOutboxItem(id: string): Promise<void> {
+    await db.syncOutbox.delete(id);
+  }
+
+  static async clearSyncOutbox(): Promise<void> {
+    await db.syncOutbox.clear();
   }
 
   // Download queue operations

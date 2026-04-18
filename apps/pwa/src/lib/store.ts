@@ -12,6 +12,13 @@ import type {
 import { DatabaseService } from "./database";
 import { RSSService } from "./rss-service";
 import { DownloadService } from "./download-service";
+import {
+  enqueueCurrentPlaybackClear,
+  enqueuePlaybackCheckpoint,
+  enqueuePreferencesSync,
+  enqueueSubscriptionDelete,
+  enqueueSubscriptionUpsert,
+} from "./sync/queue";
 
 const defaultPreferences: UserPreferences = {
   theme: "system",
@@ -262,6 +269,7 @@ export const usePodcastStore = create<PodcastStore>()(
           set((state) => ({
             podcasts: [podcast, ...state.podcasts],
           }));
+          void enqueueSubscriptionUpsert(podcast.feedUrl);
 
           // Clear cache since we have new episodes
           get().clearLatestEpisodesCache();
@@ -281,6 +289,7 @@ export const usePodcastStore = create<PodcastStore>()(
       // Unsubscribe from a podcast
       unsubscribeFromPodcast: async (podcastId: string) => {
         try {
+          const podcast = get().podcasts.find((candidate) => candidate.id === podcastId);
           await DatabaseService.deletePodcast(podcastId);
 
           set((state) => ({
@@ -289,6 +298,9 @@ export const usePodcastStore = create<PodcastStore>()(
             selectedPodcastId:
               state.selectedPodcastId === podcastId ? null : state.selectedPodcastId,
           }));
+          if (podcast) {
+            void enqueueSubscriptionDelete(podcast.feedUrl);
+          }
         } catch (error) {
           set({
             error: `Failed to unsubscribe: ${
@@ -542,6 +554,7 @@ export const usePodcastStore = create<PodcastStore>()(
             seekRequested: false,
           },
         }));
+        void enqueueCurrentPlaybackClear();
       },
 
       // Set current playback time
@@ -627,6 +640,19 @@ export const usePodcastStore = create<PodcastStore>()(
           newProgressMap.set(episodeId, progress);
           return { playbackProgress: newProgressMap };
         });
+
+        const podcast = get().podcasts.find(
+          (candidate) => candidate.id === playbackState.currentEpisode?.podcastId,
+        );
+        if (podcast) {
+          await enqueuePlaybackCheckpoint({
+            currentTime,
+            duration,
+            episode: playbackState.currentEpisode,
+            isCompleted: progress.isCompleted,
+            podcast,
+          });
+        }
       },
 
       // Mark episode as completed
@@ -654,6 +680,20 @@ export const usePodcastStore = create<PodcastStore>()(
           newProgressMap.set(episodeId, progress);
           return { playbackProgress: newProgressMap };
         });
+
+        const podcast = get().podcasts.find(
+          (candidate) => candidate.id === playbackState.currentEpisode?.podcastId,
+        );
+        if (podcast) {
+          await enqueuePlaybackCheckpoint({
+            currentTime: playbackState.duration,
+            duration: playbackState.duration,
+            episode: playbackState.currentEpisode,
+            isCompleted: true,
+            podcast,
+          });
+          await enqueueCurrentPlaybackClear();
+        }
       },
 
       // Set theme
@@ -668,42 +708,62 @@ export const usePodcastStore = create<PodcastStore>()(
 
       // Set skip interval
       setSkipInterval: (interval: number) => {
+        const nextPreferences = {
+          ...get().preferences,
+          skipInterval: interval,
+        };
         set((state) => ({
           preferences: {
             ...state.preferences,
             skipInterval: interval,
           },
         }));
+        void enqueuePreferencesSync(nextPreferences);
       },
 
       // Set what's new count
       setWhatsNewCount: (count: number) => {
+        const nextPreferences = {
+          ...get().preferences,
+          whatsNewCount: count,
+        };
         set((state) => ({
           preferences: {
             ...state.preferences,
             whatsNewCount: count,
           },
         }));
+        void enqueuePreferencesSync(nextPreferences);
       },
 
       // Set auto play
       setAutoPlay: (autoPlay: boolean) => {
+        const nextPreferences = {
+          ...get().preferences,
+          autoPlay,
+        };
         set((state) => ({
           preferences: {
             ...state.preferences,
             autoPlay,
           },
         }));
+        void enqueuePreferencesSync(nextPreferences);
       },
 
       // Set iTunes search enabled
       setItunesSearchEnabled: (enabled: boolean) => {
+        const nextPreferences = {
+          ...get().preferences,
+          itunesSearchEnabled: enabled,
+        };
         set((state) => ({
           preferences: {
             ...state.preferences,
             itunesSearchEnabled: enabled,
           },
         }));
+        void enqueuePreferencesSync(nextPreferences);
       },
 
       // Set error
@@ -808,6 +868,7 @@ export const usePodcastStore = create<PodcastStore>()(
                 set((state) => ({
                   podcasts: [podcast, ...state.podcasts],
                 }));
+                void enqueueSubscriptionUpsert(feedUrl);
 
                 imported++;
               } catch (error) {

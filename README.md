@@ -13,10 +13,28 @@ A podcast player.
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Zustand](https://github.com/pmndrs/zustand)
 - [Dexie.js](https://dexie.org/)
+- [Drizzle ORM](https://orm.drizzle.team/)
+
+## Workspace
+
+- `apps/pwa`: `@pgcast/pwa`, the local-first podcast player PWA
+- `apps/server`: `@pgcast/server`, the personal sync backend
+- `packages/contracts`: `@pgcast/contracts`, the shared API and sync contracts
 
 ## PWA (`apps/pwa`)
 
-`@pgcast/pwa`, the PWA podcast player.
+The PWA stays fully usable without any backend configured.
+
+### Personal Sync Backend
+
+The PWA can connect to a personal sync backend from **Settings → Sync Backend**.
+
+Users provide:
+
+- a backend endpoint
+- a personal bearer token
+
+The UI does not assume Cloudflare. Any compatible deployment that implements the shared API contract works. Cloudflare is the recommended reference deployment.
 
 ### Cloudflare Workers Deployment
 
@@ -29,6 +47,42 @@ pnpm --filter @pgcast/pwa cf:deploy
 
 The deployment config lives in [apps/pwa/wrangler.jsonc](/Users/sichengchen/src/progressive-cast/apps/pwa/wrangler.jsonc). Update the Worker `name`, and add `routes` or a custom domain there before production deployment if needed.
 
+## Personal Sync Backend (`apps/server`)
+
+`@pgcast/server` is a single-tenant personal sync backend for:
+
+- subscriptions
+- playback checkpoints and history
+- current cross-device resume position
+- syncable playback preferences
+
+The runtime auth model is intentionally simple: every request uses `Authorization: Bearer <token>`.
+
+### Portability
+
+The server is architected so that:
+
+- core sync logic is not tied to Cloudflare runtime types
+- Hono routes depend on interfaces instead of deployment bindings
+- Cloudflare Worker + D1 + Durable Objects is the shipped reference deployment, not a product requirement
+
+### Reference Deployment
+
+Cloudflare is the recommended deployment target for v1. Configure:
+
+- a D1 database bound as `DB`
+- a secret `PGCAST_API_TOKEN`
+- a secret `PGCAST_REALTIME_TICKET_SECRET`
+- a Durable Object binding `PLAYBACK_COORDINATOR`
+
+Local development:
+
+```bash
+pnpm --filter @pgcast/server dev
+```
+
+The reference worker runs on [http://localhost:8788](http://localhost:8788), so the PWA can be pointed at that endpoint from Settings during development.
+
 ## Quick Start
 
 ### Development
@@ -38,7 +92,7 @@ pnpm install
 pnpm dev
 ```
 
-The PWA client runs on [http://localhost:3000](http://localhost:3000). The Hono API runs alongside it inside the `@pgcast/pwa` dev script.
+The PWA client runs on [http://localhost:3000](http://localhost:3000). The PWA's local Hono API still runs inside `@pgcast/pwa`, and the personal sync backend runs separately on port `8788`.
 
 ### Building for Production
 
