@@ -41,6 +41,8 @@ yarn-error.log*
 # vercel
 .vercel
 .wrangler
+/apps/pwa/wrangler.deploy.jsonc
+/apps/server/wrangler.deploy.jsonc
 
 # typescript
 *.tsbuildinfo

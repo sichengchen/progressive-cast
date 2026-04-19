@@ -40,6 +40,23 @@ The UI does not assume Cloudflare. Any compatible deployment that implements the
 
 The PWA is now set up to deploy as static assets plus a Worker-backed `/api/*` layer.
 
+If you want the PWA and the personal sync backend deployed together, use the repo script:
+
+```bash
+pnpm cf:deploy
+```
+
+The script will:
+
+- prompt for the Worker names and an optional D1 location hint
+- create or reuse the server D1 database
+- generate the personal bearer token and realtime signing secret
+- save those generated values to `.env.cloudflare-workers`
+- apply the server migrations
+- deploy the server Worker and the PWA Worker
+
+When it finishes, it prints the PWA URL, the server URL, and the generated personal token to paste into **Settings → Sync Backend**.
+
 ```bash
 pnpm --filter @pgcast/pwa cf:check
 pnpm --filter @pgcast/pwa cf:deploy
@@ -80,6 +97,8 @@ Local development:
 ```bash
 pnpm --filter @pgcast/server dev
 ```
+
+Production deployment for the server is handled by `pnpm cf:deploy`, which also creates the D1 database when needed and generates the personal bearer token used by the PWA.
 
 The reference worker runs on [http://localhost:8788](http://localhost:8788), so the PWA can be pointed at that endpoint from Settings during development.
 
