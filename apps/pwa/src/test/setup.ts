@@ -2,6 +2,50 @@ import "fake-indexeddb/auto";
 
 import { afterEach, beforeEach, vi } from "vitest";
 
+function createMemoryStorage(): Storage {
+  const items = new Map<string, string>();
+
+  return {
+    get length() {
+      return items.size;
+    },
+    clear: () => {
+      items.clear();
+    },
+    getItem: (key) => items.get(key) ?? null,
+    key: (index) => Array.from(items.keys())[index] ?? null,
+    removeItem: (key) => {
+      items.delete(key);
+    },
+    setItem: (key, value) => {
+      items.set(key, value);
+    },
+  };
+}
+
+const localStorageMock = createMemoryStorage();
+const sessionStorageMock = createMemoryStorage();
+
+Object.defineProperty(window, "localStorage", {
+  configurable: true,
+  value: localStorageMock,
+});
+
+Object.defineProperty(window, "sessionStorage", {
+  configurable: true,
+  value: sessionStorageMock,
+});
+
+Object.defineProperty(globalThis, "localStorage", {
+  configurable: true,
+  value: localStorageMock,
+});
+
+Object.defineProperty(globalThis, "sessionStorage", {
+  configurable: true,
+  value: sessionStorageMock,
+});
+
 beforeEach(() => {
   vi.clearAllMocks();
   vi.restoreAllMocks();

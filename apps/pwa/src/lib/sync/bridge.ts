@@ -355,6 +355,8 @@ async function refreshPodcastStoreState(remotePreferences?: SyncPreferences): Pr
 
   usePodcastStore.setState((state) => ({
     episodes,
+    latestEpisodesCache: null,
+    latestEpisodesVersion: state.latestEpisodesVersion + 1,
     playbackProgress: progressMap,
     playbackState: currentEpisodeStillExists
       ? state.playbackState

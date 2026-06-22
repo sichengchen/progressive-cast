@@ -9,7 +9,14 @@ export function WhatsNewPage() {
   const [latestEpisodes, setLatestEpisodes] = useState<Episode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const { podcasts, playEpisode, preferences, playbackProgress, isImporting } = usePodcastStore();
+  const {
+    podcasts,
+    playEpisode,
+    preferences,
+    playbackProgress,
+    isImporting,
+    latestEpisodesVersion,
+  } = usePodcastStore();
 
   useEffect(() => {
     const loadLatestEpisodes = async () => {
@@ -37,6 +44,7 @@ export function WhatsNewPage() {
 
     // Early return if no podcasts
     if (podcasts.length === 0) {
+      setLatestEpisodes([]);
       setIsLoading(false);
       return;
     }
@@ -48,7 +56,7 @@ export function WhatsNewPage() {
 
     // Start loading immediately
     loadLatestEpisodes();
-  }, [preferences.whatsNewCount, podcasts.length, isImporting]);
+  }, [preferences.whatsNewCount, podcasts.length, isImporting, latestEpisodesVersion]);
 
   // Memoize episode processing to avoid recalculation on re-renders
   const processedEpisodes = useMemo(() => {

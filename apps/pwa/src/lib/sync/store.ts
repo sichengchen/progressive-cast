@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 
 import type { SyncBackendConfigState, SyncConnectionStatus } from "./types";
 
@@ -69,6 +69,7 @@ export const useSyncBackendStore = create<SyncBackendStore>()(
         };
       },
       name: "pgcast-sync-backend",
+      storage: createJSONStorage(() => window.localStorage),
       partialize: (state) => ({
         apiToken: state.apiToken,
         backendUrl: state.backendUrl,

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
 import type {
   Podcast,
   Episode,
@@ -59,6 +59,7 @@ interface PodcastStore {
     timestamp: number;
     count: number;
   } | null;
+  latestEpisodesVersion: number;
 
   // Progress state
   progressDialog: {
@@ -172,6 +173,7 @@ export const usePodcastStore = create<PodcastStore>()(
       isImporting: false,
       error: null,
       latestEpisodesCache: null,
+      latestEpisodesVersion: 0,
 
       // Download state
       downloadProgress: new Map(),
@@ -298,6 +300,7 @@ export const usePodcastStore = create<PodcastStore>()(
             selectedPodcastId:
               state.selectedPodcastId === podcastId ? null : state.selectedPodcastId,
           }));
+          get().clearLatestEpisodesCache();
           if (podcast) {
             void enqueueSubscriptionDelete(podcast.feedUrl);
           }
@@ -482,7 +485,10 @@ export const usePodcastStore = create<PodcastStore>()(
 
       // Clear latest episodes cache when needed
       clearLatestEpisodesCache: () => {
-        set({ latestEpisodesCache: null });
+        set((state) => ({
+          latestEpisodesCache: null,
+          latestEpisodesVersion: state.latestEpisodesVersion + 1,
+        }));
       },
 
       // Toggle show notes
@@ -917,6 +923,7 @@ export const usePodcastStore = create<PodcastStore>()(
             currentPage: "whats-new" as const,
             error: null,
             latestEpisodesCache: null,
+            latestEpisodesVersion: 0,
             downloadProgress: new Map(),
             storageStats: { totalSize: 0, downloadedEpisodes: 0 },
             progressDialog: {
@@ -1126,6 +1133,7 @@ export const usePodcastStore = create<PodcastStore>()(
     }),
     {
       name: "podcast-player-preferences",
+      storage: createJSONStorage(() => window.localStorage),
       partialize: (state) => ({
         preferences: state.preferences,
         selectedPodcastId: state.selectedPodcastId,
@@ -1154,6 +1162,7 @@ export function resetPodcastStoreForTests(): void {
     isLoading: false,
     isRefreshing: false,
     latestEpisodesCache: null,
+    latestEpisodesVersion: 0,
     playbackProgress: new Map(),
     playbackState: {
       currentEpisode: null,
