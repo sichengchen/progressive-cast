@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SyncStateResponse } from "@pgcast/contracts";
+import type { SyncStateResponse } from "@newcastle/contracts";
 import { createTestServer } from "./test/test-harness";
 
 describe("createApp", () => {
@@ -41,6 +41,15 @@ describe("createApp", () => {
       "Authorization, Content-Type",
     );
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, PUT, OPTIONS");
+  });
+
+  it("does not expose media, RSS, or download API routes", async () => {
+    const { app } = createTestServer();
+
+    for (const pathname of ["/api/rss", "/api/download", "/api/media/episode.mp3"]) {
+      const response = await app.request(`http://example.test${pathname}`);
+      expect(response.status).toBe(404);
+    }
   });
 
   it("bootstrap merges subscriptions and preferences, then state is readable", async () => {

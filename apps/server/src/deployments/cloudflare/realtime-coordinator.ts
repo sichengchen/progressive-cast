@@ -1,4 +1,4 @@
-import type { PlaybackRealtimeEvent, RealtimeTicketResponse } from "@pgcast/contracts";
+import type { PlaybackRealtimeEvent, RealtimeTicketResponse } from "@newcastle/contracts";
 
 import type { RealtimeCoordinator } from "../../core/realtime";
 import { UnauthorizedError } from "../../core/errors";

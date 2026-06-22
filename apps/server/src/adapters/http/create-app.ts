@@ -7,7 +7,7 @@ import {
   type ServerMetaResponse,
   type SubscriptionMutationRequest,
   type UpdatePreferencesRequest,
-} from "@pgcast/contracts";
+} from "@newcastle/contracts";
 import { Hono } from "hono";
 
 import type { AuthGuard } from "../../core/auth";

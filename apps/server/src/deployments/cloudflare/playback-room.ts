@@ -1,4 +1,4 @@
-import type { PlaybackRealtimeEvent } from "@pgcast/contracts";
+import type { PlaybackRealtimeEvent } from "@newcastle/contracts";
 import { DurableObject } from "cloudflare:workers";
 
 import type { CloudflareBindings } from "./env";

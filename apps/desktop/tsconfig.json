@@ -1,0 +1,13 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "composite": true,
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "types": ["node"]
+  },
+  "include": ["src", "scripts", "*.config.ts"]
+}

@@ -1,0 +1,62 @@
+import type {
+  DesktopSettings,
+  DownloadStatus,
+  EpisodeSummary,
+  PlaybackProgressInput,
+  PlaybackSource,
+  PodcastSummary,
+} from "./types";
+
+export const ipcChannels = {
+  downloads: {
+    delete: "downloads:delete",
+    start: "downloads:start",
+  },
+  episodes: {
+    listByPodcast: "episodes:list-by-podcast",
+  },
+  library: {
+    list: "library:list",
+    refresh: "library:refresh",
+    subscribe: "library:subscribe",
+    unsubscribe: "library:unsubscribe",
+  },
+  playback: {
+    getSource: "playback:get-source",
+    saveProgress: "playback:save-progress",
+  },
+  settings: {
+    get: "settings:get",
+    set: "settings:set",
+  },
+  sync: {
+    now: "sync:now",
+  },
+} as const;
+
+export interface NewcastleApi {
+  library: {
+    list: () => Promise<PodcastSummary[]>;
+    subscribe: (feedUrl: string) => Promise<PodcastSummary>;
+    unsubscribe: (podcastId: string) => Promise<void>;
+    refresh: (podcastId: string) => Promise<PodcastSummary>;
+  };
+  episodes: {
+    listByPodcast: (podcastId: string) => Promise<EpisodeSummary[]>;
+  };
+  downloads: {
+    start: (episodeId: string) => Promise<DownloadStatus>;
+    delete: (episodeId: string) => Promise<void>;
+  };
+  playback: {
+    getSource: (episodeId: string) => Promise<PlaybackSource>;
+    saveProgress: (progress: PlaybackProgressInput) => Promise<void>;
+  };
+  settings: {
+    get: () => Promise<DesktopSettings>;
+    set: (settings: DesktopSettings) => Promise<DesktopSettings>;
+  };
+  sync: {
+    now: () => Promise<void>;
+  };
+}

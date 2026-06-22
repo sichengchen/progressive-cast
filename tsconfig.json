@@ -8,7 +8,7 @@
       "path": "./apps/server"
     },
     {
-      "path": "./apps/pwa"
+      "path": "./apps/desktop"
     }
   ]
 }

@@ -7,10 +7,12 @@
     "build": "vp run -r build",
     "check": "vp run -r check",
     "test": "vp run -r test",
-    "test:e2e": "pnpm --filter @pgcast/pwa test:e2e",
-    "test:all": "pnpm test && pnpm test:e2e",
+    "test:all": "pnpm test",
     "preview": "vp run -r preview",
-    "cf:deploy": "bash ./scripts/deploy-cloudflare.sh"
+    "cf:deploy": "bash ./scripts/deploy-cloudflare.sh",
+    "mobile:start": "pnpm --filter @newcastle/mobile start",
+    "mobile:ios": "pnpm --filter @newcastle/mobile ios",
+    "mobile:android": "pnpm --filter @newcastle/mobile android"
   },
   "devDependencies": {
     "vite-plus": "^0.1.16"

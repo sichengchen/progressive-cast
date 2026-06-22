@@ -1,7 +1,4 @@
-import type {
-  PlaybackRealtimeEvent,
-  RealtimeTicketResponse,
-} from "@pgcast/contracts";
+import type { PlaybackRealtimeEvent, RealtimeTicketResponse } from "@newcastle/contracts";
 
 export interface RealtimeCoordinator {
   issueTicket(input: { baseUrl: string; deviceId: string }): Promise<RealtimeTicketResponse>;

@@ -1,5 +1,5 @@
 {
-  "name": "@pgcast/contracts",
+  "name": "@newcastle/contracts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json",
-    "test": "node -e \"console.log('No tests for @pgcast/contracts')\"",
-    "preview": "node -e \"console.log('No preview for @pgcast/contracts')\""
+    "test": "node -e \"console.log('No tests for @newcastle/contracts')\"",
+    "preview": "node -e \"console.log('No preview for @newcastle/contracts')\""
   },
   "devDependencies": {
     "typescript": "^5.8.3"

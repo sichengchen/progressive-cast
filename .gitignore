@@ -21,13 +21,13 @@ playwright-report
 
 # production
 /build
-/apps/pwa/dist
-/apps/pwa/public/sw.js
+/apps/*/dist
 /apps/web/build
 
 # misc
 .DS_Store
 *.pem
+/apps/*/.expo/
 
 # debug
 npm-debug.log*
@@ -41,7 +41,6 @@ yarn-error.log*
 # vercel
 .vercel
 .wrangler
-/apps/pwa/wrangler.deploy.jsonc
 /apps/server/wrangler.deploy.jsonc
 
 # typescript

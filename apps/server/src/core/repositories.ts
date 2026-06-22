@@ -3,7 +3,7 @@ import type {
   PlaybackCheckpointSyncRecord,
   SubscriptionRecord,
   SyncPreferences,
-} from "@pgcast/contracts";
+} from "@newcastle/contracts";
 
 export interface SubscriptionRepository {
   list(): Promise<SubscriptionRecord[]>;

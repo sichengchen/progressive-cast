@@ -1,0 +1,21 @@
+import { builtinModules } from "node:module";
+import { defineConfig } from "vite";
+
+const external = ["electron", ...builtinModules, ...builtinModules.map((module) => `node:${module}`)];
+
+export default defineConfig({
+  build: {
+    emptyOutDir: true,
+    lib: {
+      entry: "src/main/main.ts",
+      fileName: () => "main.js",
+      formats: ["es"],
+    },
+    outDir: "dist/main",
+    rollupOptions: {
+      external,
+    },
+    sourcemap: true,
+    target: "node20",
+  },
+});

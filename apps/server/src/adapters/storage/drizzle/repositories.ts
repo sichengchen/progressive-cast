@@ -4,13 +4,19 @@ import {
   type PlaybackCheckpointSyncRecord,
   type SubscriptionRecord,
   type SyncPreferences,
-} from "@pgcast/contracts";
+} from "@newcastle/contracts";
 import { desc, eq } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 
 import type { ServerRepositories } from "../../../core/repositories";
 import { toMillis } from "../../../core/time";
-import { currentPlayback, playbackCheckpoints, schema, subscriptions, syncPreferences } from "./schema";
+import {
+  currentPlayback,
+  playbackCheckpoints,
+  schema,
+  subscriptions,
+  syncPreferences,
+} from "./schema";
 
 export type SyncDatabase = DrizzleD1Database<typeof schema>;
 
@@ -121,7 +127,11 @@ class DrizzleCurrentPlaybackRepository {
   constructor(private readonly db: SyncDatabase) {}
 
   async get(): Promise<CurrentPlaybackSyncRecord | null> {
-    const rows = await this.db.select().from(currentPlayback).where(eq(currentPlayback.id, 1)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(currentPlayback)
+      .where(eq(currentPlayback.id, 1))
+      .limit(1);
     const row = rows[0];
 
     if (!row) {
@@ -177,7 +187,11 @@ class DrizzleSyncPreferencesRepository {
   constructor(private readonly db: SyncDatabase) {}
 
   async get(): Promise<SyncPreferences | null> {
-    const rows = await this.db.select().from(syncPreferences).where(eq(syncPreferences.id, 1)).limit(1);
+    const rows = await this.db
+      .select()
+      .from(syncPreferences)
+      .where(eq(syncPreferences.id, 1))
+      .limit(1);
     const row = rows[0];
 
     if (!row) {
@@ -203,12 +217,9 @@ class DrizzleSyncPreferencesRepository {
       whatsNewCount: record.whatsNewCount,
     };
 
-    await this.db
-      .insert(syncPreferences)
-      .values(normalized)
-      .onConflictDoUpdate({
-        set: normalized,
-        target: syncPreferences.id,
-      });
+    await this.db.insert(syncPreferences).values(normalized).onConflictDoUpdate({
+      set: normalized,
+      target: syncPreferences.id,
+    });
   }
 }

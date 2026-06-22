@@ -9,7 +9,7 @@ import {
   type SyncPreferences,
   type SyncStateResponse,
   type UpdatePreferencesRequest,
-} from "@pgcast/contracts";
+} from "@newcastle/contracts";
 
 import type { ServerRepositories } from "./repositories";
 import type { RealtimeCoordinator } from "./realtime";
@@ -62,7 +62,9 @@ export class SyncService {
         this.repositories.syncPreferences.get(),
       ]);
 
-    const subscriptionsByFeedUrl = new Map(existingSubscriptions.map((record) => [record.feedUrl, record]));
+    const subscriptionsByFeedUrl = new Map(
+      existingSubscriptions.map((record) => [record.feedUrl, record]),
+    );
     for (const incoming of snapshot.subscriptions) {
       const existing = subscriptionsByFeedUrl.get(incoming.feedUrl);
       if (!existing || toMillis(incoming.updatedAt) >= toMillis(existing.updatedAt)) {
@@ -86,7 +88,9 @@ export class SyncService {
       (!existingCurrentPlayback ||
         toMillis(snapshot.currentPlayback.updatedAt) >= toMillis(existingCurrentPlayback.updatedAt))
     ) {
-      await this.repositories.currentPlayback.set(normalizeCurrentPlaybackRecord(snapshot.currentPlayback));
+      await this.repositories.currentPlayback.set(
+        normalizeCurrentPlaybackRecord(snapshot.currentPlayback),
+      );
     }
 
     if (!preferences) {
@@ -210,12 +214,14 @@ function normalizePreferences(input: SyncPreferences): SyncPreferences {
 function normalizeSubscriptionRecord(record: BootstrapSyncRequest["subscriptions"][number]) {
   return {
     ...record,
-    deletedAt: record.status === "deleted" ? record.deletedAt ?? record.updatedAt : null,
+    deletedAt: record.status === "deleted" ? (record.deletedAt ?? record.updatedAt) : null,
     feedUrl: record.feedUrl.trim(),
   };
 }
 
-function normalizeCheckpointRecord(record: PlaybackCheckpointSyncRecord): PlaybackCheckpointSyncRecord {
+function normalizeCheckpointRecord(
+  record: PlaybackCheckpointSyncRecord,
+): PlaybackCheckpointSyncRecord {
   return {
     ...record,
     currentTime: Math.max(0, record.currentTime),
