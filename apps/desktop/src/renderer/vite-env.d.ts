@@ -4,6 +4,6 @@ import type { NewcastleApi } from "../shared/ipc";
 
 declare global {
   interface Window {
-    newcastle: NewcastleApi;
+    newcastle?: NewcastleApi;
   }
 }

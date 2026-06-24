@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import type { DesktopSettings, EpisodeSummary, PodcastSummary } from "../shared/types";
+import { desktopApi } from "./desktop-api";
 
 export function AppShell() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -13,8 +14,8 @@ export function AppShell() {
   const [status, setStatus] = useState("");
 
   useEffect(() => {
-    void reloadLibrary();
-    void window.newcastle.settings.get().then(setSettings);
+    void reloadLibrary().catch(reportError);
+    void desktopApi.settings.get().then(setSettings).catch(reportError);
   }, []);
 
   useEffect(() => {
@@ -23,32 +24,48 @@ export function AppShell() {
       return;
     }
 
-    void window.newcastle.episodes.listByPodcast(selectedPodcastId).then(setEpisodes);
+    void desktopApi.episodes.listByPodcast(selectedPodcastId).then(setEpisodes).catch(reportError);
   }, [selectedPodcastId]);
 
+  function reportError(error: unknown) {
+    setStatus(error instanceof Error ? error.message : "Something went wrong.");
+  }
+
+  async function runWithStatus(message: string, action: () => Promise<void>) {
+    setStatus(message);
+    try {
+      await action();
+      setStatus("");
+    } catch (error) {
+      reportError(error);
+    }
+  }
+
   async function reloadLibrary() {
-    const nextPodcasts = await window.newcastle.library.list();
+    const nextPodcasts = await desktopApi.library.list();
     setPodcasts(nextPodcasts);
     setSelectedPodcastId((current) => current ?? nextPodcasts[0]?.id ?? null);
   }
 
   async function handleSubscribe(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setStatus("Adding feed...");
-    const podcast = await window.newcastle.library.subscribe(feedUrl);
-    setFeedUrl("");
-    await reloadLibrary();
-    setSelectedPodcastId(podcast.id);
-    setStatus("");
+    await runWithStatus("Adding feed...", async () => {
+      const podcast = await desktopApi.library.subscribe(feedUrl);
+      setFeedUrl("");
+      await reloadLibrary();
+      setSelectedPodcastId(podcast.id);
+    });
   }
 
   async function handlePlay(episode: EpisodeSummary) {
-    const source = await window.newcastle.playback.getSource(episode.id);
-    setCurrentEpisode(episode);
-    if (audioRef.current) {
-      audioRef.current.src = source.source;
-      await audioRef.current.play();
-    }
+    await runWithStatus("Loading episode...", async () => {
+      const source = await desktopApi.playback.getSource(episode.id);
+      setCurrentEpisode(episode);
+      if (audioRef.current) {
+        audioRef.current.src = source.source;
+        await audioRef.current.play();
+      }
+    });
   }
 
   async function saveProgress(isCompleted = false) {
@@ -57,7 +74,7 @@ export function AppShell() {
       return;
     }
 
-    await window.newcastle.playback.saveProgress({
+    await desktopApi.playback.saveProgress({
       currentTime: audio.currentTime,
       duration: Number.isFinite(audio.duration) ? audio.duration : 0,
       episodeId: currentEpisode.id,
@@ -67,34 +84,38 @@ export function AppShell() {
   }
 
   async function handleDownload(episodeId: string) {
-    setStatus("Downloading...");
-    await window.newcastle.downloads.start(episodeId);
-    if (selectedPodcastId) {
-      setEpisodes(await window.newcastle.episodes.listByPodcast(selectedPodcastId));
-    }
-    setStatus("");
+    await runWithStatus("Downloading...", async () => {
+      await desktopApi.downloads.start(episodeId);
+      if (selectedPodcastId) {
+        setEpisodes(await desktopApi.episodes.listByPodcast(selectedPodcastId));
+      }
+    });
   }
 
   async function handleDeleteDownload(episodeId: string) {
-    await window.newcastle.downloads.delete(episodeId);
-    if (selectedPodcastId) {
-      setEpisodes(await window.newcastle.episodes.listByPodcast(selectedPodcastId));
-    }
+    await runWithStatus("Deleting download...", async () => {
+      await desktopApi.downloads.delete(episodeId);
+      if (selectedPodcastId) {
+        setEpisodes(await desktopApi.episodes.listByPodcast(selectedPodcastId));
+      }
+    });
   }
 
   async function handleSaveSettings(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSettings(await window.newcastle.settings.set(settings));
+    await runWithStatus("Saving settings...", async () => {
+      setSettings(await desktopApi.settings.set(settings));
+    });
   }
 
   async function handleSync() {
-    setStatus("Syncing...");
-    await window.newcastle.sync.now();
-    await reloadLibrary();
-    if (selectedPodcastId) {
-      setEpisodes(await window.newcastle.episodes.listByPodcast(selectedPodcastId));
-    }
-    setStatus("");
+    await runWithStatus("Syncing...", async () => {
+      await desktopApi.sync.now();
+      await reloadLibrary();
+      if (selectedPodcastId) {
+        setEpisodes(await desktopApi.episodes.listByPodcast(selectedPodcastId));
+      }
+    });
   }
 
   async function handleRefresh() {
@@ -102,11 +123,11 @@ export function AppShell() {
       return;
     }
 
-    setStatus("Refreshing...");
-    await window.newcastle.library.refresh(selectedPodcastId);
-    await reloadLibrary();
-    setEpisodes(await window.newcastle.episodes.listByPodcast(selectedPodcastId));
-    setStatus("");
+    await runWithStatus("Refreshing...", async () => {
+      await desktopApi.library.refresh(selectedPodcastId);
+      await reloadLibrary();
+      setEpisodes(await desktopApi.episodes.listByPodcast(selectedPodcastId));
+    });
   }
 
   async function handleUnsubscribe() {
@@ -114,12 +135,12 @@ export function AppShell() {
       return;
     }
 
-    setStatus("Removing...");
-    await window.newcastle.library.unsubscribe(selectedPodcastId);
-    const nextPodcasts = await window.newcastle.library.list();
-    setPodcasts(nextPodcasts);
-    setSelectedPodcastId(nextPodcasts[0]?.id ?? null);
-    setStatus("");
+    await runWithStatus("Removing...", async () => {
+      await desktopApi.library.unsubscribe(selectedPodcastId);
+      const nextPodcasts = await desktopApi.library.list();
+      setPodcasts(nextPodcasts);
+      setSelectedPodcastId(nextPodcasts[0]?.id ?? null);
+    });
   }
 
   const selectedPodcast = podcasts.find((podcast) => podcast.id === selectedPodcastId) ?? null;
