@@ -8,8 +8,8 @@ export default defineConfig({
     emptyOutDir: true,
     lib: {
       entry: "src/main/main.ts",
-      fileName: () => "main.js",
-      formats: ["es"],
+      fileName: () => "main.cjs",
+      formats: ["cjs"],
     },
     outDir: "dist/main",
     rollupOptions: {

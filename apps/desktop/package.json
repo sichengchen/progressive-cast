@@ -5,7 +5,7 @@
   "type": "module",
   "productName": "Newcastle",
   "description": "New podCast player: Listen and Explore.",
-  "main": "dist/main/main.js",
+  "main": "scripts/electron-entry.cjs",
   "scripts": {
     "dev": "concurrently --kill-others-on-fail --names renderer,electron \"vite --host 127.0.0.1 --port 5173 --strictPort\" \"tsx ./scripts/start-electron-dev.ts\"",
     "build": "pnpm build:main && pnpm build:preload && pnpm build:renderer",
@@ -22,7 +22,7 @@
     "directories": {
       "buildResources": "resources"
     },
-    "files": ["dist/**", "package.json"],
+    "files": ["dist/**", "package.json", "scripts/electron-entry.cjs"],
     "mac": {
       "category": "public.app-category.music",
       "icon": "resources/icon.png"

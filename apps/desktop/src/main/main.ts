@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { createLocalDatabase } from "./db";
 import { registerIpcHandlers } from "./ipc";
 
-const mainDir = path.dirname(fileURLToPath(import.meta.url));
+const mainDir =
+  typeof __dirname === "string" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 const appId = "com.scchan.newcastle";
 const rendererDevServerUrl = process.env.NEWCASTLE_RENDERER_URL;
 
