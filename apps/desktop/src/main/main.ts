@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, nativeImage } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -9,14 +9,25 @@ const mainDir =
   typeof __dirname === "string" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 const appId = "com.scchan.newcastle";
 const rendererDevServerUrl = process.env.NEWCASTLE_RENDERER_URL;
+const appIconPath = app.isPackaged
+  ? path.join(process.resourcesPath, "icon.png")
+  : path.resolve(mainDir, "../../resources/icon.png");
+const appIcon = nativeImage.createFromPath(appIconPath);
 
 function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     height: 860,
+    icon: appIcon,
     minHeight: 640,
     minWidth: 960,
     show: false,
     title: "Newcastle",
+    ...(process.platform === "darwin"
+      ? {
+          titleBarStyle: "hiddenInset" as const,
+          trafficLightPosition: { x: 18, y: 18 },
+        }
+      : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -43,6 +54,10 @@ app.setName("Newcastle");
 app.setAppUserModelId(appId);
 
 app.whenReady().then(() => {
+  if (process.platform === "darwin" && app.dock && !appIcon.isEmpty()) {
+    app.dock.setIcon(appIcon);
+  }
+
   const db = createLocalDatabase(app.getPath("userData"));
   registerIpcHandlers(db, path.join(app.getPath("userData"), "downloads"));
   createMainWindow();

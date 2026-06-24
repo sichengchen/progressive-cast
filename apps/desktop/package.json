@@ -22,6 +22,12 @@
     "directories": {
       "buildResources": "resources"
     },
+    "extraResources": [
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
+      }
+    ],
     "files": ["dist/**", "package.json", "scripts/electron-entry.cjs"],
     "mac": {
       "category": "public.app-category.music",
