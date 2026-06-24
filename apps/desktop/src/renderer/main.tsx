@@ -4,9 +4,20 @@ import "@fontsource/inter/600.css";
 import "@fontsource/inter/700.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider } from "@tanstack/react-router";
 
-import { AppShell } from "./app-shell";
-import "./styles.css";
+import { AppInitializer } from "@/components/common/app-initializer";
+import { ClientOnly } from "@/components/common/client-only";
+import { KeyboardShortcuts } from "@/components/common/keyboard-shortcuts";
+import { OfflineIndicator } from "@/components/common/offline-indicator";
+import { ServiceWorkerProvider } from "@/components/common/service-worker-provider";
+import { ThemeProvider } from "@/components/common/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+import { queryClient } from "@/query-client";
+import { router } from "@/router";
+
+import "./app/globals.css";
 
 const rootElement = document.getElementById("root");
 
@@ -16,6 +27,18 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <AppShell />
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" disableTransitionOnChange enableSystem>
+        <ClientOnly>
+          <ServiceWorkerProvider>
+            <AppInitializer />
+            <KeyboardShortcuts />
+            <RouterProvider router={router} />
+            <OfflineIndicator />
+            <Toaster />
+          </ServiceWorkerProvider>
+        </ClientOnly>
+      </ThemeProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

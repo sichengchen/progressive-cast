@@ -5,7 +5,7 @@
     "composite": true,
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/renderer/*"]
     },
     "types": ["node"]
   },
