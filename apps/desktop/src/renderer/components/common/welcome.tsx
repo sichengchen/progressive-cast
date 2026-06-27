@@ -27,7 +27,9 @@ export function WelcomeScreen() {
       if (result.imported > 0) {
         toast.success(`Successfully imported ${result.imported} podcast(s)!`);
         if (result.errors > 0) {
-          toast.warning(`${result.errors} podcast(s) failed to import. Check console for details.`);
+          toast.warning(
+            `${result.errors} podcast(s) could not be imported. The feed may be unavailable or require access.`,
+          );
         }
       } else {
         toast.error("No podcasts were imported. Please check the OPML file format.");
