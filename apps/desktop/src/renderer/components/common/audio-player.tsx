@@ -22,27 +22,27 @@ import { ShowNotes } from "./show-notes";
 
 export function AudioPlayer() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const isPlayingRef = useRef(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
 
-  const {
-    playbackState,
-    preferences,
-    podcasts,
-    pausePlayback,
-    resumePlayback,
-    setCurrentTime,
-    setDuration,
-    setVolume,
-    setLoading,
-    saveProgress,
-    clearSeekRequest,
-    toggleShowNotes,
-    showNotesOpen,
-  } = usePodcastStore();
+  const playbackState = usePodcastStore((state) => state.playbackState);
+  const preferences = usePodcastStore((state) => state.preferences);
+  const podcasts = usePodcastStore((state) => state.podcasts);
+  const pausePlayback = usePodcastStore((state) => state.pausePlayback);
+  const resumePlayback = usePodcastStore((state) => state.resumePlayback);
+  const setCurrentTime = usePodcastStore((state) => state.setCurrentTime);
+  const setDuration = usePodcastStore((state) => state.setDuration);
+  const setVolume = usePodcastStore((state) => state.setVolume);
+  const setLoading = usePodcastStore((state) => state.setLoading);
+  const saveProgress = usePodcastStore((state) => state.saveProgress);
+  const clearSeekRequest = usePodcastStore((state) => state.clearSeekRequest);
+  const toggleShowNotes = usePodcastStore((state) => state.toggleShowNotes);
+  const showNotesOpen = usePodcastStore((state) => state.showNotesOpen);
 
   const { currentEpisode, isPlaying, currentTime, duration, volume, seekRequested } = playbackState;
+  isPlayingRef.current = isPlaying;
 
   // Get current podcast info
   const currentPodcast = currentEpisode
@@ -189,10 +189,12 @@ export function AudioPlayer() {
     if (!audioRef.current || !currentEpisode) return;
 
     const audio = audioRef.current;
+    let cancelled = false;
 
     // Pause and reset current audio before loading new source
     audio.pause();
     audio.currentTime = 0;
+    setLoading(true);
 
     const loadAudioSource = async () => {
       let audioUrl = currentEpisode.audioUrl;
@@ -210,6 +212,10 @@ export function AudioPlayer() {
         } catch (error) {
           console.warn("Failed to load local audio file, falling back to streaming:", error);
         }
+      }
+
+      if (cancelled) {
+        return;
       }
 
       // Set the audio source
@@ -230,7 +236,6 @@ export function AudioPlayer() {
       } else {
         setCurrentTime(0);
       }
-      setLoading(false);
     };
 
     const handleTimeUpdate = () => {
@@ -244,7 +249,7 @@ export function AudioPlayer() {
     const handleCanPlay = () => {
       setLoading(false);
       // Auto-play if user intended to play this episode
-      if (isPlaying && audio.paused) {
+      if (isPlayingRef.current && audio.paused) {
         // Add a small delay for downloaded files to ensure blob URL is ready
         const playAudio = () => {
           const playPromise = audio.play();
@@ -300,6 +305,7 @@ export function AudioPlayer() {
     loadAudioSource();
 
     return () => {
+      cancelled = true;
       // Clean up: pause audio and remove event listeners
       audio.pause();
 
@@ -322,8 +328,6 @@ export function AudioPlayer() {
     pausePlayback,
     saveProgress,
     setCurrentTime,
-    duration,
-    isPlaying,
   ]);
 
   useEffect(() => {
@@ -493,7 +497,7 @@ export function AudioPlayer() {
               size="sm"
               variant="ghost"
               onClick={() => handleSkip(-preferences.skipInterval)}
-              className="p-2"
+              className="h-9 w-9 p-0"
             >
               <Rewind className="h-4 w-4" />
             </Button>
@@ -501,8 +505,8 @@ export function AudioPlayer() {
             <Button
               size="sm"
               onClick={handlePlayPause}
-              disabled={playbackState.isLoading}
-              className="p-2"
+              className="h-9 w-9 p-0"
+              aria-busy={playbackState.isLoading}
             >
               {playbackState.isLoading ? (
                 <div className="h-4 w-4 animate-spin">
@@ -519,7 +523,7 @@ export function AudioPlayer() {
               size="sm"
               variant="ghost"
               onClick={() => handleSkip(preferences.skipInterval)}
-              className="p-2"
+              className="h-9 w-9 p-0"
             >
               <FastForward className="h-4 w-4" />
             </Button>
@@ -539,11 +543,21 @@ export function AudioPlayer() {
 
           {/* Playback Controls */}
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="ghost" onClick={() => handleSkip(-preferences.skipInterval)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleSkip(-preferences.skipInterval)}
+              className="h-9 w-9 p-0"
+            >
               <Rewind className="h-4 w-4" />
             </Button>
 
-            <Button size="sm" onClick={handlePlayPause} disabled={playbackState.isLoading}>
+            <Button
+              size="sm"
+              onClick={handlePlayPause}
+              className="h-9 w-9 p-0"
+              aria-busy={playbackState.isLoading}
+            >
               {playbackState.isLoading ? (
                 <div className="h-4 w-4 animate-spin">
                   <div className="h-full w-full border-2 border-current border-t-transparent rounded-full" />
@@ -555,7 +569,12 @@ export function AudioPlayer() {
               )}
             </Button>
 
-            <Button size="sm" variant="ghost" onClick={() => handleSkip(preferences.skipInterval)}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => handleSkip(preferences.skipInterval)}
+              className="h-9 w-9 p-0"
+            >
               <FastForward className="h-4 w-4" />
             </Button>
           </div>

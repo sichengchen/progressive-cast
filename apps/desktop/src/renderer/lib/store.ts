@@ -20,6 +20,8 @@ const defaultPreferences: UserPreferences = {
   whatsNewCount: 10,
 };
 
+const episodeLoadPromises = new Map<string, Promise<Episode[]>>();
+
 interface ProgressDialogState {
   currentItem: string;
   isOpen: boolean;
@@ -32,6 +34,7 @@ interface PodcastStore {
   currentPage: "podcasts" | "whats-new" | "resume-playing" | "settings" | "downloaded" | "library";
   downloadedEpisodes: Episode[];
   downloadProgress: Map<string, DownloadProgress>;
+  episodeCache: Map<string, Episode[]>;
   episodes: Episode[];
   error: string | null;
   isImporting: boolean;
@@ -102,6 +105,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   currentPage: "whats-new",
   downloadedEpisodes: [],
   downloadProgress: new Map(),
+  episodeCache: new Map(),
   episodes: [],
   error: null,
   isImporting: false,
@@ -147,6 +151,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set({
       downloadedEpisodes: [],
       downloadProgress: new Map(),
+      episodeCache: new Map(),
       episodes: [],
       latestEpisodesCache: null,
       latestEpisodesVersion: get().latestEpisodesVersion + 1,
@@ -302,9 +307,6 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       const podcasts = (await desktopApi.library.list()).map(toPodcast);
       const selectedPodcastId = get().selectedPodcastId ?? podcasts[0]?.id ?? null;
       set({ isLoading: false, podcasts, selectedPodcastId });
-      if (selectedPodcastId) {
-        await get().loadEpisodes(selectedPodcastId);
-      }
       await get().getDownloadedEpisodes();
       await get().refreshStorageStats();
     } catch (error) {
@@ -316,14 +318,40 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   },
 
   loadEpisodes: async (podcastId) => {
-    set({ isLoading: true, selectedPodcastId: podcastId });
+    const cachedEpisodes = get().episodeCache.get(podcastId);
+    set({ selectedPodcastId: podcastId });
+
+    if (cachedEpisodes) {
+      set({ episodes: cachedEpisodes });
+      return;
+    }
+
     try {
-      const episodes = (await desktopApi.episodes.listByPodcast(podcastId)).map(toEpisode);
-      set({ episodes, isLoading: false });
+      let loadPromise = episodeLoadPromises.get(podcastId);
+
+      if (!loadPromise) {
+        loadPromise = desktopApi.episodes
+          .listByPodcast(podcastId)
+          .then((items) => items.map(toEpisode))
+          .finally(() => {
+            episodeLoadPromises.delete(podcastId);
+          });
+        episodeLoadPromises.set(podcastId, loadPromise);
+      }
+
+      const episodes = await loadPromise;
+      set((state) => {
+        const episodeCache = new Map(state.episodeCache);
+        episodeCache.set(podcastId, episodes);
+
+        return {
+          episodeCache,
+          episodes: state.selectedPodcastId === podcastId ? episodes : state.episodes,
+        };
+      });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Failed to load episodes.",
-        isLoading: false,
       });
     }
   },
@@ -334,22 +362,35 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     await get().saveProgress(episodeId, get().playbackState.duration, get().playbackState.duration);
   },
 
-  pausePlayback: () =>
-    set((state) => ({ playbackState: { ...state.playbackState, isPlaying: false } })),
+  pausePlayback: () => {
+    if (!get().playbackState.isPlaying) return;
+    set((state) => ({ playbackState: { ...state.playbackState, isPlaying: false } }));
+  },
 
   playEpisode: (episode) =>
-    set((state) => ({
-      playbackState: {
-        ...state.playbackState,
-        currentEpisode: episode,
-        currentTime: 0,
-        duration: episode.duration ?? 0,
-        isLoading: true,
-        isPlaying: true,
-        showNotes: episode.showNotes || episode.content || episode.description,
-      },
-      showNotesOpen: state.showNotesOpen,
-    })),
+    set((state) => {
+      if (state.playbackState.currentEpisode?.id === episode.id) {
+        return {
+          playbackState: {
+            ...state.playbackState,
+            isPlaying: true,
+          },
+        };
+      }
+
+      return {
+        playbackState: {
+          ...state.playbackState,
+          currentEpisode: episode,
+          currentTime: 0,
+          duration: episode.duration ?? 0,
+          isLoading: true,
+          isPlaying: true,
+          showNotes: episode.showNotes || episode.content || episode.description,
+        },
+        showNotesOpen: state.showNotesOpen,
+      };
+    }),
 
   refreshAllPodcasts: async () => {
     set({ isRefreshing: true });
@@ -368,6 +409,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set({ isRefreshing: true });
     try {
       await desktopApi.library.refresh(podcastId);
+      set((state) => {
+        const episodeCache = new Map(state.episodeCache);
+        episodeCache.delete(podcastId);
+        return { episodeCache };
+      });
       await get().initializeStore();
       await get().loadEpisodes(podcastId);
       get().clearLatestEpisodesCache();
@@ -386,8 +432,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     });
   },
 
-  resumePlayback: () =>
-    set((state) => ({ playbackState: { ...state.playbackState, isPlaying: true } })),
+  resumePlayback: () => {
+    const { playbackState } = get();
+    if (!playbackState.currentEpisode || playbackState.isPlaying) return;
+    set((state) => ({ playbackState: { ...state.playbackState, isPlaying: true } }));
+  },
 
   retryDownload: async (episode) => get().downloadEpisode(episode),
 
@@ -432,8 +481,10 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   setItunesSearchEnabled: (itunesSearchEnabled) =>
     set((state) => ({ preferences: { ...state.preferences, itunesSearchEnabled } })),
 
-  setLoading: (isLoading) =>
-    set((state) => ({ playbackState: { ...state.playbackState, isLoading } })),
+  setLoading: (isLoading) => {
+    if (get().playbackState.isLoading === isLoading) return;
+    set((state) => ({ playbackState: { ...state.playbackState, isLoading } }));
+  },
 
   setProgressDialog: (data) =>
     set((state) => ({ progressDialog: { ...state.progressDialog, ...data } })),
@@ -489,9 +540,16 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     await desktopApi.library.unsubscribe(podcastId);
     set((state) => {
       const podcasts = state.podcasts.filter((podcast) => podcast.id !== podcastId);
+      const episodeCache = new Map(state.episodeCache);
+      episodeCache.delete(podcastId);
       return {
+        episodeCache,
+        episodes: state.selectedPodcastId === podcastId ? [] : state.episodes,
         podcasts,
-        selectedPodcastId: state.selectedPodcastId === podcastId ? (podcasts[0]?.id ?? null) : state.selectedPodcastId,
+        selectedPodcastId:
+          state.selectedPodcastId === podcastId
+            ? (podcasts[0]?.id ?? null)
+            : state.selectedPodcastId,
       };
     });
     get().clearLatestEpisodesCache();
@@ -520,7 +578,10 @@ async function reloadSelectedEpisodes(
 ) {
   const selectedPodcastId = get().selectedPodcastId;
   if (selectedPodcastId) {
-    set({ episodes: (await desktopApi.episodes.listByPodcast(selectedPodcastId)).map(toEpisode) });
+    const episodes = (await desktopApi.episodes.listByPodcast(selectedPodcastId)).map(toEpisode);
+    const episodeCache = new Map(get().episodeCache);
+    episodeCache.set(selectedPodcastId, episodes);
+    set({ episodeCache, episodes });
   }
 }
 

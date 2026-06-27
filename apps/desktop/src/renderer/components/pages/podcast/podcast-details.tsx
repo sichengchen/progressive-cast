@@ -44,7 +44,9 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
   const navigate = useNavigate();
   const cleanDescription = richTextToPlainText(podcast.description);
 
-  const { episodes, playEpisode, unsubscribeFromPodcast } = usePodcastStore();
+  const episodes = usePodcastStore((state) => state.episodes);
+  const playEpisode = usePodcastStore((state) => state.playEpisode);
+  const unsubscribeFromPodcast = usePodcastStore((state) => state.unsubscribeFromPodcast);
 
   // Get episodes for this specific podcast
   const podcastEpisodes = useMemo(
@@ -55,7 +57,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
   // Get the latest episode for this podcast
   const latestEpisode = useMemo(
     () =>
-      podcastEpisodes.sort(
+      [...podcastEpisodes].sort(
         (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
       )[0],
     [podcastEpisodes],
@@ -116,19 +118,11 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
       <div className="flex flex-row gap-4 md:gap-8 md:items-start">
         {/* Podcast Cover */}
         <div className="flex-shrink-0 self-start">
-          {podcast.imageUrl ? (
-            <img
-              src={podcast.imageUrl}
-              alt={podcast.title}
-              className="w-32 h-32 md:w-40 md:h-40 rounded-lg object-cover shadow-md"
-            />
-          ) : (
-            <CoverImage
-              src={undefined}
-              alt={podcast.title}
-              className="w-40 h-40 rounded-lg shadow-md"
-            />
-          )}
+          <CoverImage
+            src={podcast.imageUrl}
+            alt={podcast.title}
+            className="w-32 h-32 md:w-40 md:h-40 rounded-lg shadow-md"
+          />
         </div>
 
         {/* Podcast Info */}
@@ -234,7 +228,7 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
               ) : buttonState === "hasEpisodes" ? (
                 <>
                   <Play className="h-4 w-4" />
-                  <span className="hidden sm:inline">Play Latest Episode</span>
+                  <span className="hidden sm:inline">Latest Episode</span>
                   <span className="sm:hidden">Latest</span>
                 </>
               ) : (

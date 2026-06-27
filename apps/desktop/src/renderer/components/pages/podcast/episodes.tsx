@@ -11,7 +11,11 @@ interface PodcastEpisodesProps {
 export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
 
-  const { episodes, playbackProgress, loadEpisodes, playEpisode } = usePodcastStore();
+  const episodes = usePodcastStore((state) => state.episodes);
+  const playbackProgress = usePodcastStore((state) => state.playbackProgress);
+  const loadEpisodes = usePodcastStore((state) => state.loadEpisodes);
+  const playEpisode = usePodcastStore((state) => state.playEpisode);
+  const hasCachedEpisodes = usePodcastStore((state) => state.episodeCache.has(podcastId));
 
   const handleDownloadComplete = async () => {
     try {
@@ -23,13 +27,16 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
 
   useEffect(() => {
     const loadPodcastEpisodes = async () => {
-      setIsLoadingEpisodes(true);
-      await loadEpisodes(podcastId);
-      setIsLoadingEpisodes(false);
+      setIsLoadingEpisodes(!hasCachedEpisodes);
+      try {
+        await loadEpisodes(podcastId);
+      } finally {
+        setIsLoadingEpisodes(false);
+      }
     };
 
     loadPodcastEpisodes();
-  }, [podcastId, loadEpisodes]);
+  }, [hasCachedEpisodes, podcastId, loadEpisodes]);
 
   return (
     <div>

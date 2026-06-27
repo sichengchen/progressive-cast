@@ -104,11 +104,18 @@ const MediaCard = React.forwardRef<HTMLDivElement, MediaCardProps>(
     },
     ref,
   ) => {
+    const [hasImageError, setHasImageError] = React.useState(false);
+    const showImage = imageUrl && !hasImageError;
+
+    React.useEffect(() => {
+      setHasImageError(false);
+    }, [imageUrl]);
+
     const cardContent = (
       <>
         {/* Image Container */}
         <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
-          {imageUrl ? (
+          {showImage ? (
             <img
               src={imageUrl}
               alt={imageAlt || title}
@@ -117,6 +124,9 @@ const MediaCard = React.forwardRef<HTMLDivElement, MediaCardProps>(
                 onClick && "group-hover:scale-105",
                 imageClassName,
               )}
+              decoding="async"
+              loading="lazy"
+              onError={() => setHasImageError(true)}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-muted">

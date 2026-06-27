@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Headphones } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,9 +23,16 @@ const iconSizes = {
 };
 
 export function CoverImage({ src, alt, className, size = "lg", children }: CoverImageProps) {
+  const [hasImageError, setHasImageError] = useState(false);
   // Determine icon size - use larger icon for custom className that appears to be large
-  const isLargeCustom = className?.includes("w-32") || className?.includes("w-24");
+  const isLargeCustom =
+    className?.includes("w-40") || className?.includes("w-32") || className?.includes("w-24");
   const iconSize = isLargeCustom ? "w-8 h-8" : iconSizes[size];
+  const showImage = src && !hasImageError;
+
+  useEffect(() => {
+    setHasImageError(false);
+  }, [src]);
 
   return (
     <div
@@ -33,8 +41,15 @@ export function CoverImage({ src, alt, className, size = "lg", children }: Cover
         className || sizeClasses[size],
       )}
     >
-      {src ? (
-        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      {showImage ? (
+        <img
+          src={src}
+          alt={alt}
+          className="w-full h-full object-cover"
+          decoding="async"
+          loading="lazy"
+          onError={() => setHasImageError(true)}
+        />
       ) : (
         <div className="w-full h-full bg-muted flex items-center justify-center">
           <Headphones className={cn("text-muted-foreground", iconSize)} />

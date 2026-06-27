@@ -12,12 +12,13 @@ test("parses RSS feeds into podcast and episode records", () => {
         <title>Example Podcast</title>
         <description><![CDATA[<p>Example description</p>]]></description>
         <itunes:author>Example Author</itunes:author>
-        <itunes:image href="https://example.com/art.jpg" />
+        <itunes:image href="/art.jpg" />
         <item>
           <title>First Episode</title>
           <guid>episode-guid</guid>
           <pubDate>Mon, 01 Jun 2026 10:00:00 GMT</pubDate>
           <itunes:duration>01:02:03</itunes:duration>
+          <itunes:image href="episode-art.jpg" />
           <enclosure url="https://example.com/audio.mp3" type="audio/mpeg" />
         </item>
       </channel>
@@ -27,8 +28,10 @@ test("parses RSS feeds into podcast and episode records", () => {
   assert.equal(result.podcast.title, "Example Podcast");
   assert.equal(result.podcast.author, "Example Author");
   assert.equal(result.podcast.description, "Example description");
+  assert.equal(result.podcast.imageUrl, "https://example.com/art.jpg");
   assert.equal(result.episodes[0]?.title, "First Episode");
   assert.equal(result.episodes[0]?.duration, 3723);
+  assert.equal(result.episodes[0]?.imageUrl, "https://example.com/episode-art.jpg");
   assert.equal(result.episodes[0]?.audioUrl, "https://example.com/audio.mp3");
 });
 

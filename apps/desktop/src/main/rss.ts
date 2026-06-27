@@ -56,7 +56,7 @@ export class RssService {
     const items = selectArray(channel, ["item", "entry"]);
     const now = new Date().toISOString();
     const podcastId = generatePodcastId(feedUrl);
-    const feedImage = extractImage(channel);
+    const feedImage = extractImage(channel, feedUrl);
 
     const podcast: PodcastSummary = {
       author: firstText(channel, ["itunes:author", "author", "managingEditor"]),
@@ -71,7 +71,7 @@ export class RssService {
     };
 
     const episodes = items
-      .map((item, index) => toEpisodeSummary(item, podcastId, index, feedImage))
+      .map((item, index) => toEpisodeSummary(item, podcastId, index, feedImage, feedUrl))
       .filter((episode) => episode.audioUrl.length > 0);
 
     return { episodes, podcast };
@@ -82,7 +82,8 @@ function toEpisodeSummary(
   item: XmlNode,
   podcastId: string,
   index: number,
-  fallbackImage?: string,
+  fallbackImage: string | undefined,
+  feedUrl: string,
 ): EpisodeSummary {
   const audioUrl = extractAudioUrl(item);
   const guid = firstText(item, ["guid", "id"]);
@@ -94,7 +95,7 @@ function toEpisodeSummary(
     duration: parseDuration(firstText(item, ["itunes:duration", "duration"])),
     guid,
     id: generateEpisodeId(podcastId, audioUrl || guid || String(index), index),
-    imageUrl: extractImage(item) ?? fallbackImage,
+    imageUrl: extractImage(item, feedUrl) ?? fallbackImage,
     podcastId,
     publishedAt: parseDate(firstText(item, ["pubDate", "published", "updated"])),
     title: firstText(item, ["title"]) ?? "Untitled Episode",
@@ -192,16 +193,16 @@ function extractAudioUrl(item: XmlNode): string {
   return firstText(item, ["link"]) ?? "";
 }
 
-function extractImage(root: XmlNode): string | undefined {
+function extractImage(root: XmlNode, baseUrl: string): string | undefined {
   const image = root["itunes:image"] ?? root["media:thumbnail"] ?? root.image;
   if (isObject(image)) {
-    return textValue(image.href) ?? textValue(image.url);
+    return resolveUrl(textValue(image.href) ?? textValue(image.url), baseUrl);
   }
 
   if (Array.isArray(image)) {
     for (const entry of image) {
       if (isObject(entry)) {
-        const value = textValue(entry.href) ?? textValue(entry.url);
+        const value = resolveUrl(textValue(entry.href) ?? textValue(entry.url), baseUrl);
         if (value) {
           return value;
         }
@@ -209,7 +210,19 @@ function extractImage(root: XmlNode): string | undefined {
     }
   }
 
-  return textValue(image);
+  return resolveUrl(textValue(image), baseUrl);
+}
+
+function resolveUrl(value: string | undefined, baseUrl: string): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return value;
+  }
 }
 
 function parseDate(value?: string): string | undefined {

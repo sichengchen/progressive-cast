@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CoverImage } from "@/components/ui/cover-image";
 import {
   Dialog,
   DialogContent,
@@ -231,13 +232,11 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
                             <Card key={podcast.id}>
                               <CardContent className="p-4">
                                 <div className="flex items-start gap-3">
-                                  {podcast.imageUrl && (
-                                    <img
-                                      src={podcast.imageUrl}
-                                      alt={podcast.title}
-                                      className="w-16 h-16 rounded object-cover flex-shrink-0"
-                                    />
-                                  )}
+                                  <CoverImage
+                                    src={podcast.imageUrl}
+                                    alt={podcast.title}
+                                    className="w-16 h-16 rounded"
+                                  />
                                   <div className="flex-1 min-w-0">
                                     <h4 className="font-medium truncate">{podcast.title}</h4>
                                     <p className="text-sm text-muted-foreground truncate">
