@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
 import type { SyncStateResponse } from "@newcastle/contracts";
+import { createApp } from "./adapters/http/create-app";
+import { StaticBearerAuthGuard } from "./core/auth";
+import { SyncService } from "./core/sync-service";
 import { createTestServer } from "./test/test-harness";
+import { createInMemoryRepositories, TestRealtimeCoordinator } from "./test/test-harness";
 
 describe("createApp", () => {
+  it("GET /healthz returns ok", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/healthz");
+
+    expect(response.status).toBe(200);
+    await expect(response.text()).resolves.toBe("ok");
+  });
+
   it("GET /api/meta returns the portable server metadata", async () => {
     const { app } = createTestServer();
     const response = await app.request("http://example.test/api/meta");
@@ -22,6 +34,38 @@ describe("createApp", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("*");
+  });
+
+  it("authenticated sync routes reject invalid bearer tokens", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer wrong",
+      },
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("authenticated routes reject requests when the server token is not configured", async () => {
+    const realtime = new TestRealtimeCoordinator();
+    const app = createApp({
+      authGuard: new StaticBearerAuthGuard(""),
+      realtimeCoordinator: realtime,
+      syncService: new SyncService(createInMemoryRepositories(), realtime),
+      version: "test",
+    });
+
+    const response = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer any",
+      },
+    });
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Server auth token is not configured",
+    });
   });
 
   it("authenticated sync routes answer CORS preflight", async () => {
@@ -91,6 +135,28 @@ describe("createApp", () => {
     expect(state.preferences.whatsNewCount).toBe(12);
   });
 
+  it("GET /api/sync/state returns the complete sync state shape", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      currentPlayback: null,
+      playbackHistory: [],
+      preferences: {
+        autoPlay: false,
+        itunesSearchEnabled: true,
+        skipInterval: 30,
+        whatsNewCount: 10,
+      },
+      subscriptions: [],
+    });
+  });
+
   it("checkpoint updates state and publishes realtime events", async () => {
     const { app, realtime } = createTestServer();
     const checkpointResponse = await app.request(
@@ -149,6 +215,48 @@ describe("createApp", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "Request body must be valid JSON",
+    });
+  });
+
+  it("returns a structured 400 when domain validation fails", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/api/sync/subscriptions/upsert", {
+      body: JSON.stringify({ feedUrl: " " }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "feedUrl is required",
+    });
+  });
+
+  it("returns a structured 500 when a handler throws unexpectedly", async () => {
+    const realtime = new TestRealtimeCoordinator();
+    const syncService = new SyncService(createInMemoryRepositories(), realtime);
+    syncService.getState = async () => {
+      throw new Error("boom");
+    };
+    const app = createApp({
+      authGuard: { async authorize() {} },
+      realtimeCoordinator: realtime,
+      syncService,
+      version: "test",
+    });
+
+    const response = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    });
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Internal server error",
     });
   });
 
@@ -215,6 +323,82 @@ describe("createApp", () => {
       itunesSearchEnabled: false,
       skipInterval: 1,
       whatsNewCount: 1,
+    });
+  });
+
+  it("clear-current endpoint removes current playback", async () => {
+    const { app } = createTestServer({
+      currentPlayback: {
+        currentTime: 10,
+        duration: 100,
+        locator: {
+          audioUrl: "https://cdn.example/episode.mp3",
+          feedUrl: "https://feed.example/rss.xml",
+        },
+        sourceDeviceId: "device-a",
+        updatedAt: "2026-04-18T00:00:00.000Z",
+      },
+    });
+
+    const response = await app.request("http://example.test/api/sync/playback/clear-current", {
+      body: JSON.stringify({ deviceId: "device-a" }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(204);
+
+    const stateResponse = await app.request("http://example.test/api/sync/state", {
+      headers: {
+        Authorization: "Bearer test-token",
+      },
+    });
+    const state = (await stateResponse.json()) as SyncStateResponse;
+    expect(state.currentPlayback).toBeNull();
+  });
+
+  it("issues realtime tickets and rejects blank ticket requests", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("https://example.test/api/realtime-ticket", {
+      body: JSON.stringify({ deviceId: " device-a " }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      ticket: "ticket",
+      wsUrl: "ws://example.test/ws/playback?ticket=ticket",
+    });
+
+    const blankResponse = await app.request("https://example.test/api/realtime-ticket", {
+      body: JSON.stringify({ deviceId: " " }),
+      headers: {
+        Authorization: "Bearer test-token",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    });
+
+    expect(blankResponse.status).toBe(400);
+    await expect(blankResponse.json()).resolves.toEqual({
+      error: "deviceId is required",
+    });
+  });
+
+  it("rejects websocket connections without realtime tickets", async () => {
+    const { app } = createTestServer();
+    const response = await app.request("http://example.test/ws/playback");
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Missing realtime ticket",
     });
   });
 });

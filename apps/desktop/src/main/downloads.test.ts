@@ -47,7 +47,96 @@ test("downloads audio, records local file state, and playback prefers the local 
   }
 });
 
-function seedEpisode(db: LocalDatabase): void {
+test("downloads audio with an mp3 fallback extension when the URL has no extension", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
+  const db = new LocalDatabase(path.join(root, "test.sqlite"));
+  const downloadsDir = path.join(root, "downloads");
+  seedEpisode(db, "https://cdn.example/audio");
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(new Uint8Array([4, 5, 6]), { status: 200 });
+
+  try {
+    const status = await new DownloadService(db, downloadsDir).start("episode_1");
+
+    assert.equal(status.status, "downloaded");
+    assert.equal(path.extname(status.downloadedPath ?? ""), ".mp3");
+    assert.equal(db.getEpisode("episode_1")?.fileSize, 3);
+    assert.match(db.getEpisode("episode_1")?.downloadedAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    db.close();
+  }
+});
+
+test("returns missing without fetching when an episode does not exist", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
+  const db = new LocalDatabase(path.join(root, "test.sqlite"));
+  const originalFetch = globalThis.fetch;
+  let requested = false;
+  globalThis.fetch = async () => {
+    requested = true;
+    return new Response();
+  };
+
+  try {
+    assert.deepEqual(await new DownloadService(db, path.join(root, "downloads")).start("missing"), {
+      episodeId: "missing",
+      progress: 0,
+      status: "missing",
+    });
+    assert.equal(requested, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+    db.close();
+  }
+});
+
+test("persists failed download status when fetch fails", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
+  const db = new LocalDatabase(path.join(root, "test.sqlite"));
+  seedEpisode(db);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response("", { status: 503 });
+
+  try {
+    const status = await new DownloadService(db, path.join(root, "downloads")).start("episode_1");
+
+    assert.equal(status.status, "failed");
+    assert.equal(status.progress, 0);
+    assert.match(status.error ?? "", /Download failed with HTTP 503/);
+    assert.equal(db.getDownloadStatus("episode_1").status, "failed");
+  } finally {
+    globalThis.fetch = originalFetch;
+    db.close();
+  }
+});
+
+test("delete clears downloaded metadata for non-downloaded or missing episodes", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
+  const db = new LocalDatabase(path.join(root, "test.sqlite"));
+  seedEpisode(db);
+  const service = new DownloadService(db, path.join(root, "downloads"));
+
+  try {
+    await service.delete("episode_1");
+    const status = db.getDownloadStatus("episode_1");
+    assert.equal(status.episodeId, "episode_1");
+    assert.equal(status.progress, 0);
+    assert.equal(status.status, "queued");
+
+    await service.delete("missing");
+    assert.deepEqual(db.getDownloadStatus("missing"), {
+      episodeId: "missing",
+      progress: 0,
+      status: "missing",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+function seedEpisode(db: LocalDatabase, audioUrl = "https://cdn.example/episode.mp3"): void {
   db.upsertPodcast({
     feedUrl: "https://example.com/feed.xml",
     id: "podcast_1",
@@ -57,7 +146,7 @@ function seedEpisode(db: LocalDatabase): void {
   });
   db.upsertEpisodes([
     {
-      audioUrl: "https://cdn.example/episode.mp3",
+      audioUrl,
       id: "episode_1",
       podcastId: "podcast_1",
       title: "Episode One",

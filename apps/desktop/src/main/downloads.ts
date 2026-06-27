@@ -53,6 +53,10 @@ export class DownloadService {
 
   async delete(episodeId: string): Promise<void> {
     const episode = this.db.getEpisode(episodeId);
+    if (!episode) {
+      return;
+    }
+
     if (episode?.downloadedPath) {
       await rm(episode.downloadedPath, { force: true });
     }

@@ -2,10 +2,14 @@ import type { EpisodeSummary, PodcastSummary } from "../shared/types";
 import type { LocalDatabase } from "./db";
 import { RssService } from "./rss";
 
+interface FeedReader {
+  fetchFeed(feedUrl: string): ReturnType<RssService["fetchFeed"]>;
+}
+
 export class LibraryService {
   constructor(
     private readonly db: LocalDatabase,
-    private readonly rss = new RssService(),
+    private readonly rss: FeedReader = new RssService(),
   ) {}
 
   async listPodcasts(): Promise<PodcastSummary[]> {
