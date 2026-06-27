@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePodcastStore } from "@/lib/store";
+import { router } from "@/router";
 
 export function KeyboardShortcuts() {
   const { playbackState, pausePlayback, resumePlayback, setCurrentTime, preferences } =
@@ -9,6 +10,18 @@ export function KeyboardShortcuts() {
 
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
+      if (
+        event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey &&
+        event.code === "Comma"
+      ) {
+        event.preventDefault();
+        void router.navigate({ to: "/settings" });
+        return;
+      }
+
       // Only handle shortcuts when not typing in an input
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
         return;
