@@ -42,7 +42,12 @@ interface PodcastStore {
   isImporting: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
-  latestEpisodesCache: { count: number; episodes: Episode[]; timestamp: number } | null;
+  latestEpisodesCache: {
+    count: number;
+    episodes: Episode[];
+    timestamp: number;
+    version: number;
+  } | null;
   latestEpisodesVersion: number;
   playbackProgress: Map<string, PlaybackProgress>;
   playbackState: PlaybackState;
@@ -238,14 +243,21 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   getLatestEpisodes: async () => {
     const count = get().preferences.whatsNewCount || 10;
     const cached = get().latestEpisodesCache;
-    if (cached && cached.count === count && Date.now() - cached.timestamp < 60_000) {
+    const cacheVersion = get().latestEpisodesVersion;
+    if (
+      cached &&
+      cached.count === count &&
+      cached.version === cacheVersion &&
+      Date.now() - cached.timestamp < 60_000
+    ) {
       return cached.episodes;
     }
     const episodes = await loadEpisodesFromLibrary(set, get);
+    const version = get().latestEpisodesVersion;
     const latest = [...episodes]
       .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
       .slice(0, count);
-    set({ latestEpisodesCache: { count, episodes: latest, timestamp: Date.now() } });
+    set({ latestEpisodesCache: { count, episodes: latest, timestamp: Date.now(), version } });
     return latest;
   },
 
@@ -322,6 +334,8 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodeCache,
         episodesHydrated: true,
         episodes: selectedPodcastId ? (episodeCache.get(selectedPodcastId) ?? []) : [],
+        latestEpisodesCache: null,
+        latestEpisodesVersion: get().latestEpisodesVersion + 1,
         storageStats: {
           downloadedEpisodes: downloadedEpisodes.length,
           totalSize: downloadedEpisodes.reduce((sum, episode) => sum + (episode.fileSize ?? 0), 0),
@@ -366,6 +380,8 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         return {
           episodeCache,
           episodes: state.selectedPodcastId === podcastId ? episodes : state.episodes,
+          latestEpisodesCache: null,
+          latestEpisodesVersion: state.latestEpisodesVersion + 1,
         };
       });
     } catch (error) {
@@ -611,7 +627,12 @@ async function reloadSelectedEpisodes(
     const episodes = (await desktopApi.episodes.listByPodcast(selectedPodcastId)).map(toEpisode);
     const episodeCache = new Map(get().episodeCache);
     episodeCache.set(selectedPodcastId, episodes);
-    set({ episodeCache, episodes });
+    set({
+      episodeCache,
+      episodes,
+      latestEpisodesCache: null,
+      latestEpisodesVersion: get().latestEpisodesVersion + 1,
+    });
   }
 }
 
@@ -626,7 +647,12 @@ async function loadEpisodesFromLibrary(
   const episodes = (await desktopApi.episodes.listAll()).map(toEpisode);
   const episodeCache = groupEpisodesByPodcast(episodes, get().podcasts);
   warmLibraryImages(get().podcasts, episodeCache, get().selectedPodcastId);
-  set({ episodeCache, episodesHydrated: true });
+  set({
+    episodeCache,
+    episodesHydrated: true,
+    latestEpisodesCache: null,
+    latestEpisodesVersion: get().latestEpisodesVersion + 1,
+  });
   return episodes;
 }
 
