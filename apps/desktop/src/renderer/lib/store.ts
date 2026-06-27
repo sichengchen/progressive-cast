@@ -504,7 +504,14 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   setProgressDialog: (data) =>
     set((state) => ({ progressDialog: { ...state.progressDialog, ...data } })),
 
-  setSelectedPodcast: (selectedPodcastId) => set({ selectedPodcastId }),
+  setSelectedPodcast: (selectedPodcastId) => {
+    if (get().selectedPodcastId === selectedPodcastId) return;
+    const cachedEpisodes = selectedPodcastId ? get().episodeCache.get(selectedPodcastId) : undefined;
+    set((state) => ({
+      episodes: cachedEpisodes ?? state.episodes,
+      selectedPodcastId,
+    }));
+  },
 
   setShowAddPodcastDialog: (showAddPodcastDialog) => set({ showAddPodcastDialog }),
 

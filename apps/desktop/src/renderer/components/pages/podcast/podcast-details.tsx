@@ -1,7 +1,7 @@
 "use client";
 
 import { useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { Globe, Trash2, Play, User, Clock, Tag, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
@@ -27,68 +27,32 @@ import { usePodcastStore } from "@/lib/store";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import ISO6391 from "iso-639-1";
-import type { Podcast } from "@/lib/types";
+import type { Episode, Podcast } from "@/lib/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { richTextToPlainText } from "@/lib/utils";
 
 interface PodcastDetailsProps {
+  episodes: Episode[];
   podcast: Podcast;
 }
 
-export function PodcastDetails({ podcast }: PodcastDetailsProps) {
+export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
-  const [buttonState, setButtonState] = useState<"loading" | "hasEpisodes" | "noEpisodes">(
-    "loading",
-  );
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const cleanDescription = richTextToPlainText(podcast.description);
 
-  const episodes = usePodcastStore((state) => state.episodes);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
   const unsubscribeFromPodcast = usePodcastStore((state) => state.unsubscribeFromPodcast);
-
-  // Get episodes for this specific podcast
-  const podcastEpisodes = useMemo(
-    () => episodes.filter((episode) => episode.podcastId === podcast.id),
-    [episodes, podcast.id],
-  );
 
   // Get the latest episode for this podcast
   const latestEpisode = useMemo(
     () =>
-      [...podcastEpisodes].sort(
+      [...episodes].sort(
         (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
       )[0],
-    [podcastEpisodes],
+    [episodes],
   );
-
-  // Manage button state with smooth transitions
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
-
-    if (latestEpisode) {
-      // If we have episodes, immediately show the button
-      setButtonState("hasEpisodes");
-    } else {
-      // If no episodes, add a small delay before showing "no episodes"
-      // This prevents flashing during podcast switching
-      timeoutId = setTimeout(() => {
-        setButtonState("noEpisodes");
-      }, 300); // 300ms delay to allow for loading
-    }
-
-    return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [latestEpisode]);
-
-  // Reset to loading state when podcast changes
-  useEffect(() => {
-    setButtonState("loading");
-  }, [podcast.id]);
 
   const handlePlayLatest = () => {
     if (latestEpisode) {
@@ -213,19 +177,11 @@ export function PodcastDetails({ podcast }: PodcastDetailsProps) {
           <div className="flex gap-3 md:gap-4 flex-row mt-4 md:mt-0 md:justify-start">
             <Button
               onClick={handlePlayLatest}
-              disabled={buttonState !== "hasEpisodes"}
+              disabled={!latestEpisode}
               size="default"
               className="flex items-center gap-2 w-auto md:h-10 md:px-8"
             >
-              {buttonState === "loading" ? (
-                <>
-                  <div className="h-4 w-4 animate-spin">
-                    <div className="h-full w-full border-2 border-current border-t-transparent rounded-full" />
-                  </div>
-                  <span className="hidden sm:inline">Loading Episodes...</span>
-                  <span className="sm:hidden">Loading...</span>
-                </>
-              ) : buttonState === "hasEpisodes" ? (
+              {latestEpisode ? (
                 <>
                   <Play className="h-4 w-4" />
                   <span className="hidden sm:inline">Latest Episode</span>

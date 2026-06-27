@@ -1,6 +1,6 @@
 "use client";
 
-import { useDeferredValue, useState } from "react";
+import { useDeferredValue, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Plus,
@@ -49,20 +49,23 @@ export function PodcastSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const {
-    podcasts,
-    isLoading,
-    isRefreshing,
-    playbackState,
-    refreshAllPodcasts,
-    setShowAddPodcastDialog,
-  } = usePodcastStore();
+  const podcasts = usePodcastStore((state) => state.podcasts);
+  const isLoading = usePodcastStore((state) => state.isLoading);
+  const isRefreshing = usePodcastStore((state) => state.isRefreshing);
+  const hasActiveEpisode = usePodcastStore((state) => Boolean(state.playbackState.currentEpisode));
+  const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
+  const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
+  const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
 
   const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
-  const filteredPodcasts = podcasts.filter(
-    (podcast) =>
-      podcast.title.toLowerCase().includes(normalizedQuery) ||
-      podcast.description.toLowerCase().includes(normalizedQuery),
+  const filteredPodcasts = useMemo(
+    () =>
+      podcasts.filter(
+        (podcast) =>
+          podcast.title.toLowerCase().includes(normalizedQuery) ||
+          podcast.description.toLowerCase().includes(normalizedQuery),
+      ),
+    [normalizedQuery, podcasts],
   );
 
   const activePodcastId = location.pathname.startsWith("/podcast/")
@@ -172,9 +175,7 @@ export function PodcastSidebar() {
           <div
             className="flex-1 min-h-0 overflow-y-auto p-2 pt-0"
             style={{
-              paddingBottom: playbackState.currentEpisode
-                ? "calc(6rem + env(safe-area-inset-bottom))"
-                : "0",
+              paddingBottom: hasActiveEpisode ? "calc(6rem + env(safe-area-inset-bottom))" : "0",
             }}
           >
             <div className="w-full text-sm">
@@ -203,6 +204,7 @@ export function PodcastSidebar() {
                     <li key={podcast.id} className="group/menu-item relative">
                       <button
                         onClick={() => {
+                          setSelectedPodcast(podcast.id);
                           navigate({
                             params: {
                               podcastId: podcast.id,

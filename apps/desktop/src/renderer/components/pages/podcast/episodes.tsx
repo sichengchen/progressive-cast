@@ -2,16 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { usePodcastStore } from "@/lib/store";
+import type { Episode } from "@/lib/types";
 import { EpisodeList } from "../../common/episode-list";
 
 interface PodcastEpisodesProps {
   podcastId: string;
 }
 
+const emptyEpisodes: Episode[] = [];
+
 export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
   const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
 
-  const episodes = usePodcastStore((state) => state.episodes);
+  const episodes = usePodcastStore((state) => state.episodeCache.get(podcastId) ?? emptyEpisodes);
   const playbackProgress = usePodcastStore((state) => state.playbackProgress);
   const loadEpisodes = usePodcastStore((state) => state.loadEpisodes);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
@@ -27,6 +30,11 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
 
   useEffect(() => {
     const loadPodcastEpisodes = async () => {
+      if (hasCachedEpisodes) {
+        setIsLoadingEpisodes(false);
+        return;
+      }
+
       setIsLoadingEpisodes(!hasCachedEpisodes);
       try {
         await loadEpisodes(podcastId);
