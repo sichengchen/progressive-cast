@@ -25,6 +25,7 @@ export function registerIpcHandlers(db: LocalDatabase, downloadsDir: string): vo
   ipcMain.handle(ipcChannels.library.refresh, (_event, podcastId: string) =>
     library.refresh(podcastId),
   );
+  ipcMain.handle(ipcChannels.episodes.listAll, () => library.listEpisodes());
   ipcMain.handle(ipcChannels.episodes.listByPodcast, (_event, podcastId: string) =>
     library.listEpisodesByPodcast(podcastId),
   );

@@ -30,6 +30,7 @@ test("stores podcasts and episodes in SQLite", () => {
 
   assert.equal(db.listPodcasts()[0]?.title, "Example Feed");
   assert.equal(db.listEpisodesByPodcast("podcast_1")[0]?.audioUrl, "https://example.com/episode.mp3");
+  assert.equal(db.listEpisodes()[0]?.id, "episode_1");
 
   db.close();
 });

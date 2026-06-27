@@ -35,6 +35,7 @@ interface PodcastStore {
   downloadedEpisodes: Episode[];
   downloadProgress: Map<string, DownloadProgress>;
   episodeCache: Map<string, Episode[]>;
+  episodesHydrated: boolean;
   episodes: Episode[];
   error: string | null;
   isImporting: boolean;
@@ -106,6 +107,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   downloadedEpisodes: [],
   downloadProgress: new Map(),
   episodeCache: new Map(),
+  episodesHydrated: false,
   episodes: [],
   error: null,
   isImporting: false,
@@ -152,6 +154,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       downloadedEpisodes: [],
       downloadProgress: new Map(),
       episodeCache: new Map(),
+      episodesHydrated: true,
       episodes: [],
       latestEpisodesCache: null,
       latestEpisodesVersion: get().latestEpisodesVersion + 1,
@@ -225,7 +228,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   },
 
   getDownloadedEpisodes: async () => {
-    const episodes = await loadAllEpisodes(get().podcasts);
+    const episodes = await loadEpisodesFromLibrary(set, get);
     const downloadedEpisodes = episodes.filter((episode) => episode.isDownloaded);
     set({ downloadedEpisodes });
     return downloadedEpisodes;
@@ -237,7 +240,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     if (cached && cached.count === count && Date.now() - cached.timestamp < 60_000) {
       return cached.episodes;
     }
-    const episodes = await loadAllEpisodes(get().podcasts);
+    const episodes = await loadEpisodesFromLibrary(set, get);
     const latest = [...episodes]
       .sort((a, b) => b.publishedAt.getTime() - a.publishedAt.getTime())
       .slice(0, count);
@@ -247,7 +250,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   getUnfinishedEpisodes: async () => {
     const progress = get().playbackProgress;
-    const episodes = await loadAllEpisodes(get().podcasts);
+    const episodes = await loadEpisodesFromLibrary(set, get);
     return episodes.filter((episode) => {
       const entry = progress.get(episode.id);
       return entry && entry.currentTime > 0 && !entry.isCompleted;
@@ -306,9 +309,22 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     try {
       const podcasts = (await desktopApi.library.list()).map(toPodcast);
       const selectedPodcastId = get().selectedPodcastId ?? podcasts[0]?.id ?? null;
-      set({ isLoading: false, podcasts, selectedPodcastId });
-      await get().getDownloadedEpisodes();
-      await get().refreshStorageStats();
+      const allEpisodes = (await desktopApi.episodes.listAll()).map(toEpisode);
+      const episodeCache = groupEpisodesByPodcast(allEpisodes, podcasts);
+      const downloadedEpisodes = allEpisodes.filter((episode) => episode.isDownloaded);
+      set({
+        downloadedEpisodes,
+        episodeCache,
+        episodesHydrated: true,
+        episodes: selectedPodcastId ? (episodeCache.get(selectedPodcastId) ?? []) : [],
+        isLoading: false,
+        podcasts,
+        selectedPodcastId,
+        storageStats: {
+          downloadedEpisodes: downloadedEpisodes.length,
+          totalSize: downloadedEpisodes.reduce((sum, episode) => sum + (episode.fileSize ?? 0), 0),
+        },
+      });
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Failed to initialize library.",
@@ -585,11 +601,39 @@ async function reloadSelectedEpisodes(
   }
 }
 
-async function loadAllEpisodes(podcasts: Podcast[]) {
-  const groups = await Promise.all(
-    podcasts.map((podcast) => desktopApi.episodes.listByPodcast(podcast.id)),
-  );
-  return groups.flat().map(toEpisode);
+async function loadEpisodesFromLibrary(
+  set: (partial: Partial<PodcastStore>) => void,
+  get: () => PodcastStore,
+) {
+  if (get().episodesHydrated) {
+    return cachedEpisodes(get());
+  }
+
+  const episodes = (await desktopApi.episodes.listAll()).map(toEpisode);
+  set({ episodeCache: groupEpisodesByPodcast(episodes, get().podcasts), episodesHydrated: true });
+  return episodes;
+}
+
+function cachedEpisodes(state: PodcastStore) {
+  return [...state.episodeCache.values()].flat();
+}
+
+function groupEpisodesByPodcast(episodes: Episode[], podcasts: Podcast[] = []) {
+  const episodeCache = new Map<string, Episode[]>();
+  for (const podcast of podcasts) {
+    episodeCache.set(podcast.id, []);
+  }
+
+  for (const episode of episodes) {
+    const current = episodeCache.get(episode.podcastId);
+    if (current) {
+      current.push(episode);
+    } else {
+      episodeCache.set(episode.podcastId, [episode]);
+    }
+  }
+
+  return episodeCache;
 }
 
 function findEpisode(episodeId: string, state: PodcastStore) {

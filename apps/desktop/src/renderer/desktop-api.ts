@@ -8,6 +8,7 @@ const browserFallbackApi: NewcastleApi = {
     start: () => missingDesktopServices(),
   },
   episodes: {
+    listAll: () => Promise.resolve([]),
     listByPodcast: () => Promise.resolve([]),
   },
   library: {

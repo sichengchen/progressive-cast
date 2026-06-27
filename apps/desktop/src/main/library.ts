@@ -46,4 +46,8 @@ export class LibraryService {
   async listEpisodesByPodcast(podcastId: string): Promise<EpisodeSummary[]> {
     return this.db.listEpisodesByPodcast(podcastId);
   }
+
+  async listEpisodes(): Promise<EpisodeSummary[]> {
+    return this.db.listEpisodes();
+  }
 }

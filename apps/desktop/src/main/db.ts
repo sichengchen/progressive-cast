@@ -237,6 +237,30 @@ export class LocalDatabase {
       .map(toEpisodeSummary);
   }
 
+  listEpisodes(): EpisodeSummary[] {
+    return this.db
+      .prepare(
+        `SELECT
+          id,
+          podcast_id,
+          guid,
+          title,
+          description,
+          content,
+          audio_url,
+          image_url,
+          published_at,
+          duration,
+          downloaded_path,
+          file_size,
+          downloaded_at
+        FROM episodes
+        ORDER BY podcast_id, published_at DESC`,
+      )
+      .all()
+      .map(toEpisodeSummary);
+  }
+
   getEpisode(episodeId: string): EpisodeSummary | null {
     const row = this.db
       .prepare(

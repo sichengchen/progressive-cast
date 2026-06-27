@@ -13,6 +13,7 @@ export const ipcChannels = {
     start: "downloads:start",
   },
   episodes: {
+    listAll: "episodes:list-all",
     listByPodcast: "episodes:list-by-podcast",
   },
   library: {
@@ -42,6 +43,7 @@ export interface NewcastleApi {
     refresh: (podcastId: string) => Promise<PodcastSummary>;
   };
   episodes: {
+    listAll: () => Promise<EpisodeSummary[]>;
     listByPodcast: (podcastId: string) => Promise<EpisodeSummary[]>;
   };
   downloads: {
