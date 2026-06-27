@@ -57,7 +57,6 @@ export interface UserPreferences {
   theme: "light" | "dark" | "system";
   skipInterval: number; // in seconds, default 30
   autoPlay: boolean;
-  whatsNewCount: number; // number of latest episodes to show in What's New
   itunesSearchEnabled: boolean; // enable iTunes search in search bar, default true
   lastViewedPage?: string;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect } from "react";
 import { usePodcastStore } from "@/lib/store";
 import type { Episode } from "@/lib/types";
 import { EpisodeList } from "../../common/episode-list";
@@ -12,13 +12,12 @@ interface PodcastEpisodesProps {
 const emptyEpisodes: Episode[] = [];
 
 export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
-  const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(false);
-
   const episodes = usePodcastStore((state) => state.episodeCache.get(podcastId) ?? emptyEpisodes);
+  const pageState = usePodcastStore((state) => state.episodePageState.get(podcastId));
   const playbackProgress = usePodcastStore((state) => state.playbackProgress);
   const loadEpisodes = usePodcastStore((state) => state.loadEpisodes);
+  const loadMoreEpisodes = usePodcastStore((state) => state.loadMoreEpisodes);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
-  const hasCachedEpisodes = usePodcastStore((state) => state.episodeCache.has(podcastId));
 
   const handleDownloadComplete = async () => {
     try {
@@ -30,33 +29,34 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
 
   useEffect(() => {
     const loadPodcastEpisodes = async () => {
-      if (hasCachedEpisodes) {
-        setIsLoadingEpisodes(false);
+      if (pageState?.loaded) {
         return;
       }
 
-      setIsLoadingEpisodes(!hasCachedEpisodes);
-      try {
-        await loadEpisodes(podcastId);
-      } finally {
-        setIsLoadingEpisodes(false);
-      }
+      await loadEpisodes(podcastId);
     };
 
     loadPodcastEpisodes();
-  }, [hasCachedEpisodes, podcastId, loadEpisodes]);
+  }, [pageState?.loaded, podcastId, loadEpisodes]);
+
+  const handleLoadMore = useCallback(async () => {
+    await loadMoreEpisodes(podcastId);
+  }, [loadMoreEpisodes, podcastId]);
 
   return (
     <div>
       <h2 className="text-xl font-semibold px-2">Episodes</h2>
       <EpisodeList
-        isLoadingEpisodes={isLoadingEpisodes}
+        isLoadingEpisodes={Boolean(pageState?.isLoading && !pageState.loaded)}
         episodes={episodes}
         playbackProgress={playbackProgress}
         playEpisode={playEpisode}
         showDownloadButton={true}
         pageType="podcast"
         onDownloadComplete={handleDownloadComplete}
+        hasMore={Boolean(pageState?.hasMore)}
+        isLoadingMore={Boolean(pageState?.isLoading && pageState.loaded)}
+        onLoadMore={handleLoadMore}
       />
     </div>
   );

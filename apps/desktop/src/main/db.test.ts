@@ -68,6 +68,62 @@ test("persists playback progress and sync outbox entries", () => {
   db.close();
 });
 
+test("pages latest and podcast episodes without loading full feeds", () => {
+  const db = createTestDatabase();
+
+  db.upsertPodcast({
+    feedUrl: "https://example.com/feed.xml",
+    id: "podcast_1",
+    lastUpdated: "2026-01-01T00:00:00.000Z",
+    subscriptionDate: "2026-01-01T00:00:00.000Z",
+    title: "Example Feed",
+  });
+  db.upsertPodcast({
+    feedUrl: "https://example.com/other.xml",
+    id: "podcast_2",
+    lastUpdated: "2026-01-01T00:00:00.000Z",
+    subscriptionDate: "2026-01-01T00:00:00.000Z",
+    title: "Other Feed",
+  });
+  db.upsertEpisodes([
+    {
+      audioUrl: "https://example.com/old.mp3",
+      id: "episode_old",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      title: "Old",
+    },
+    {
+      audioUrl: "https://example.com/new.mp3",
+      id: "episode_new",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-03T00:00:00.000Z",
+      title: "New",
+    },
+    {
+      audioUrl: "https://example.com/other.mp3",
+      id: "episode_other",
+      podcastId: "podcast_2",
+      publishedAt: "2026-01-02T00:00:00.000Z",
+      title: "Other",
+    },
+  ]);
+
+  assert.deepEqual(db.listLatestEpisodes({ limit: 2 }).episodes.map((episode) => episode.id), [
+    "episode_new",
+    "episode_other",
+  ]);
+  assert.equal(db.listLatestEpisodes({ limit: 2 }).hasMore, true);
+  assert.deepEqual(
+    db.listEpisodesByPodcastPage("podcast_1", { limit: 1, offset: 1 }).episodes.map(
+      (episode) => episode.id,
+    ),
+    ["episode_old"],
+  );
+
+  db.close();
+});
+
 function createTestDatabase(): LocalDatabase {
   return new LocalDatabase(path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"));
 }

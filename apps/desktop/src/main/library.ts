@@ -1,4 +1,4 @@
-import type { EpisodeSummary, PodcastSummary } from "../shared/types";
+import type { EpisodePage, EpisodePageRequest, EpisodeSummary, PodcastSummary } from "../shared/types";
 import type { LocalDatabase } from "./db";
 import { RssService } from "./rss";
 
@@ -49,6 +49,17 @@ export class LibraryService {
 
   async listEpisodesByPodcast(podcastId: string): Promise<EpisodeSummary[]> {
     return this.db.listEpisodesByPodcast(podcastId);
+  }
+
+  async listEpisodesByPodcastPage(
+    podcastId: string,
+    request?: EpisodePageRequest,
+  ): Promise<EpisodePage> {
+    return this.db.listEpisodesByPodcastPage(podcastId, request);
+  }
+
+  async listLatestEpisodes(request?: EpisodePageRequest): Promise<EpisodePage> {
+    return this.db.listLatestEpisodes(request);
   }
 
   async listEpisodes(): Promise<EpisodeSummary[]> {

@@ -1,5 +1,7 @@
 import type {
   DesktopSettings,
+  EpisodePage,
+  EpisodePageRequest,
   DownloadStatus,
   EpisodeSummary,
   PlaybackProgressInput,
@@ -14,7 +16,9 @@ export const ipcChannels = {
   },
   episodes: {
     listAll: "episodes:list-all",
+    listLatest: "episodes:list-latest",
     listByPodcast: "episodes:list-by-podcast",
+    listByPodcastPage: "episodes:list-by-podcast-page",
   },
   library: {
     list: "library:list",
@@ -44,7 +48,9 @@ export interface NewcastleApi {
   };
   episodes: {
     listAll: () => Promise<EpisodeSummary[]>;
+    listLatest: (request?: EpisodePageRequest) => Promise<EpisodePage>;
     listByPodcast: (podcastId: string) => Promise<EpisodeSummary[]>;
+    listByPodcastPage: (podcastId: string, request?: EpisodePageRequest) => Promise<EpisodePage>;
   };
   downloads: {
     start: (episodeId: string) => Promise<DownloadStatus>;

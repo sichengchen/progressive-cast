@@ -26,6 +26,17 @@ export interface EpisodeSummary {
   downloadedAt?: string;
 }
 
+export interface EpisodePageRequest {
+  limit?: number;
+  offset?: number;
+}
+
+export interface EpisodePage {
+  episodes: EpisodeSummary[];
+  hasMore: boolean;
+  nextOffset: number;
+}
+
 export interface PlaybackProgressInput {
   episodeId: string;
   podcastId: string;

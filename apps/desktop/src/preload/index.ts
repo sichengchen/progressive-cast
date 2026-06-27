@@ -9,7 +9,10 @@ const api: NewcastleApi = {
   },
   episodes: {
     listAll: () => ipcRenderer.invoke(ipcChannels.episodes.listAll),
+    listLatest: (request) => ipcRenderer.invoke(ipcChannels.episodes.listLatest, request),
     listByPodcast: (podcastId) => ipcRenderer.invoke(ipcChannels.episodes.listByPodcast, podcastId),
+    listByPodcastPage: (podcastId, request) =>
+      ipcRenderer.invoke(ipcChannels.episodes.listByPodcastPage, podcastId, request),
   },
   library: {
     list: () => ipcRenderer.invoke(ipcChannels.library.list),

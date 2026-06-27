@@ -1,21 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePodcastStore } from "@/lib/store";
-import type { Episode } from "@/lib/types";
 import { EpisodeList } from "@/components/common/episode-list";
 
 export function WhatsNewPage() {
-  const [latestEpisodes, setLatestEpisodes] = useState<Episode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const {
+    latestEpisodes,
+    latestEpisodesPage,
+    loadMoreLatestEpisodes,
     podcasts,
     playEpisode,
-    preferences,
     playbackProgress,
     isImporting,
-    latestEpisodesVersion,
   } = usePodcastStore();
 
   useEffect(() => {
@@ -25,14 +24,13 @@ export function WhatsNewPage() {
 
       try {
         // Use optimized store method that includes caching
-        const episodes = await usePodcastStore.getState().getLatestEpisodes();
-        setLatestEpisodes(episodes);
+        await usePodcastStore.getState().getLatestEpisodes();
 
         // Performance monitoring in development
         if (import.meta.env.DEV) {
           const loadTime = performance.now() - startTime;
           console.log(
-            `What's New loaded in ${loadTime.toFixed(2)}ms with ${episodes.length} episodes`,
+            `What's New loaded in ${loadTime.toFixed(2)}ms`,
           );
         }
       } catch (error) {
@@ -44,7 +42,6 @@ export function WhatsNewPage() {
 
     // Early return if no podcasts
     if (podcasts.length === 0) {
-      setLatestEpisodes([]);
       setIsLoading(false);
       return;
     }
@@ -54,9 +51,18 @@ export function WhatsNewPage() {
       return;
     }
 
+    if (latestEpisodesPage.loaded) {
+      setIsLoading(false);
+      return;
+    }
+
     // Start loading immediately
     loadLatestEpisodes();
-  }, [preferences.whatsNewCount, podcasts.length, isImporting, latestEpisodesVersion]);
+  }, [podcasts.length, isImporting, latestEpisodesPage.loaded]);
+
+  const handleLoadMore = useCallback(async () => {
+    await loadMoreLatestEpisodes();
+  }, [loadMoreLatestEpisodes]);
 
   // Memoize episode processing to avoid recalculation on re-renders
   const processedEpisodes = useMemo(() => {
@@ -76,6 +82,9 @@ export function WhatsNewPage() {
         playEpisode={playEpisode}
         noEpisodesMessage="No episodes found"
         noEpisodesMessageDescription="Subscribe to some podcasts to see the latest episodes here"
+        hasMore={latestEpisodesPage.hasMore}
+        isLoadingMore={latestEpisodesPage.isLoading && latestEpisodesPage.loaded}
+        onLoadMore={handleLoadMore}
       />
     </>
   );

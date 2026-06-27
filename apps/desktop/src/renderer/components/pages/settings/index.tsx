@@ -41,7 +41,6 @@ export function SettingsPage() {
     preferences,
     setSkipInterval,
     setAutoPlay,
-    setWhatsNewCount,
     setItunesSearchEnabled,
     clearAllData,
     podcasts,
@@ -77,10 +76,6 @@ export function SettingsPage() {
 
   const handleAutoPlayChange = (checked: boolean) => {
     setAutoPlay(checked);
-  };
-
-  const handleWhatsNewCountChange = (value: string) => {
-    setWhatsNewCount(parseInt(value));
   };
 
   const handleItunesSearchEnabledChange = (checked: boolean) => {
@@ -195,23 +190,6 @@ export function SettingsPage() {
             description="Automatically play next episode"
             checked={preferences.autoPlay || false}
             onCheckedChange={handleAutoPlayChange}
-          />
-        </SettingsGroup>
-
-        {/* What's New Settings */}
-        <SettingsGroup title="What's New">
-          <SettingsSelect
-            label="Number of Episodes"
-            description="Number of latest episodes to show in the What's New section"
-            value={(preferences.whatsNewCount || 10).toString()}
-            onValueChange={handleWhatsNewCountChange}
-            options={[
-              { value: "5", label: "5 episodes" },
-              { value: "10", label: "10 episodes" },
-              { value: "20", label: "20 episodes" },
-              { value: "50", label: "50 episodes" },
-            ]}
-            placeholder="Select count"
           />
         </SettingsGroup>
 

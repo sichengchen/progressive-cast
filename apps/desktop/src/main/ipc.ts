@@ -26,8 +26,14 @@ export function registerIpcHandlers(db: LocalDatabase, downloadsDir: string): vo
     library.refresh(podcastId),
   );
   ipcMain.handle(ipcChannels.episodes.listAll, () => library.listEpisodes());
+  ipcMain.handle(ipcChannels.episodes.listLatest, (_event, request) =>
+    library.listLatestEpisodes(request),
+  );
   ipcMain.handle(ipcChannels.episodes.listByPodcast, (_event, podcastId: string) =>
     library.listEpisodesByPodcast(podcastId),
+  );
+  ipcMain.handle(ipcChannels.episodes.listByPodcastPage, (_event, podcastId: string, request) =>
+    library.listEpisodesByPodcastPage(podcastId, request),
   );
 
   ipcMain.handle(ipcChannels.downloads.start, (_event, episodeId: string) =>

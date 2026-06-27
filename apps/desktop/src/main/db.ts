@@ -5,6 +5,8 @@ import { DatabaseSync } from "node:sqlite";
 import type {
   DesktopSettings,
   DownloadStatus,
+  EpisodePage,
+  EpisodePageRequest,
   EpisodeSummary,
   PlaybackProgressInput,
   PodcastSummary,
@@ -76,6 +78,9 @@ export const localDatabaseSchema = [
 ] as const;
 
 type Row = Record<string, unknown>;
+
+const defaultEpisodePageLimit = 20;
+const maxEpisodePageLimit = 100;
 
 export class LocalDatabase {
   private readonly db: DatabaseSync;
@@ -235,6 +240,63 @@ export class LocalDatabase {
       )
       .all(podcastId)
       .map(toEpisodeSummary);
+  }
+
+  listEpisodesByPodcastPage(podcastId: string, request: EpisodePageRequest = {}): EpisodePage {
+    const page = normalizePageRequest(request);
+    const rows = this.db
+      .prepare(
+        `SELECT
+          id,
+          podcast_id,
+          guid,
+          title,
+          description,
+          content,
+          audio_url,
+          image_url,
+          published_at,
+          duration,
+          downloaded_path,
+          file_size,
+          downloaded_at
+        FROM episodes
+        WHERE podcast_id = ?
+        ORDER BY published_at DESC, id DESC
+        LIMIT ? OFFSET ?`,
+      )
+      .all(podcastId, page.limit + 1, page.offset)
+      .map(toEpisodeSummary);
+
+    return toEpisodePage(rows, page);
+  }
+
+  listLatestEpisodes(request: EpisodePageRequest = {}): EpisodePage {
+    const page = normalizePageRequest(request);
+    const rows = this.db
+      .prepare(
+        `SELECT
+          id,
+          podcast_id,
+          guid,
+          title,
+          description,
+          content,
+          audio_url,
+          image_url,
+          published_at,
+          duration,
+          downloaded_path,
+          file_size,
+          downloaded_at
+        FROM episodes
+        ORDER BY published_at DESC, id DESC
+        LIMIT ? OFFSET ?`,
+      )
+      .all(page.limit + 1, page.offset)
+      .map(toEpisodeSummary);
+
+    return toEpisodePage(rows, page);
   }
 
   listEpisodes(): EpisodeSummary[] {
@@ -623,6 +685,26 @@ function requireString(row: Row, key: string): string {
     throw new Error(`Expected ${key} to be a string`);
   }
   return value;
+}
+
+function normalizePageRequest(request: EpisodePageRequest) {
+  const requestedLimit = Math.trunc(request.limit ?? defaultEpisodePageLimit);
+  const requestedOffset = Math.trunc(request.offset ?? 0);
+
+  return {
+    limit: Math.min(Math.max(requestedLimit, 1), maxEpisodePageLimit),
+    offset: Math.max(requestedOffset, 0),
+  };
+}
+
+function toEpisodePage(rows: EpisodeSummary[], page: { limit: number; offset: number }): EpisodePage {
+  const episodes = rows.slice(0, page.limit);
+
+  return {
+    episodes,
+    hasMore: rows.length > page.limit,
+    nextOffset: page.offset + episodes.length,
+  };
 }
 
 function toPodcastSummary(row: unknown): PodcastSummary {
