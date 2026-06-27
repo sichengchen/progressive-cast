@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 import { desktopApi } from "@/desktop-api";
+import { preloadImageUrls } from "@/lib/image-preloader";
 import type {
   DownloadProgress,
   Episode,
@@ -310,10 +311,12 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       const podcasts = (await desktopApi.library.list()).map(toPodcast);
       const selectedPodcastId = selectPodcastId(get().selectedPodcastId, podcasts);
       set({ isLoading: false, podcasts, selectedPodcastId });
+      warmPodcastCoverImages(podcasts);
 
       const allEpisodes = (await desktopApi.episodes.listAll()).map(toEpisode);
       const episodeCache = groupEpisodesByPodcast(allEpisodes, podcasts);
       const downloadedEpisodes = allEpisodes.filter((episode) => episode.isDownloaded);
+      warmLibraryImages(podcasts, episodeCache, selectedPodcastId);
       set({
         downloadedEpisodes,
         episodeCache,
@@ -358,6 +361,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       set((state) => {
         const episodeCache = new Map(state.episodeCache);
         episodeCache.set(podcastId, episodes);
+        warmSelectedPodcastImages(state.podcasts, podcastId, episodes);
 
         return {
           episodeCache,
@@ -507,6 +511,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   setSelectedPodcast: (selectedPodcastId) => {
     if (get().selectedPodcastId === selectedPodcastId) return;
     const cachedEpisodes = selectedPodcastId ? get().episodeCache.get(selectedPodcastId) : undefined;
+    if (selectedPodcastId) {
+      warmSelectedPodcastImages(get().podcasts, selectedPodcastId, cachedEpisodes ?? []);
+    }
     set((state) => ({
       episodes: cachedEpisodes ?? state.episodes,
       selectedPodcastId,
@@ -545,6 +552,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         showAddPodcastDialog: false,
       }));
       await get().loadEpisodes(podcast.id);
+      warmSelectedPodcastImages(get().podcasts, podcast.id, get().episodeCache.get(podcast.id) ?? []);
       get().clearLatestEpisodesCache();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to add podcast.";
@@ -616,7 +624,9 @@ async function loadEpisodesFromLibrary(
   }
 
   const episodes = (await desktopApi.episodes.listAll()).map(toEpisode);
-  set({ episodeCache: groupEpisodesByPodcast(episodes, get().podcasts), episodesHydrated: true });
+  const episodeCache = groupEpisodesByPodcast(episodes, get().podcasts);
+  warmLibraryImages(get().podcasts, episodeCache, get().selectedPodcastId);
+  set({ episodeCache, episodesHydrated: true });
   return episodes;
 }
 
@@ -648,6 +658,38 @@ function selectPodcastId(currentPodcastId: string | null, podcasts: Podcast[]) {
   }
 
   return podcasts[0]?.id ?? null;
+}
+
+function warmPodcastCoverImages(podcasts: Podcast[]) {
+  preloadImageUrls(
+    podcasts.map((podcast) => podcast.imageUrl),
+    { limit: 120 },
+  );
+}
+
+function warmLibraryImages(
+  podcasts: Podcast[],
+  episodeCache: Map<string, Episode[]>,
+  selectedPodcastId: string | null,
+) {
+  const urls = podcasts.flatMap((podcast) => [
+    podcast.imageUrl,
+    ...(episodeCache.get(podcast.id) ?? []).slice(0, 8).map((episode) => episode.imageUrl),
+  ]);
+
+  preloadImageUrls(urls, { limit: 500 });
+
+  if (selectedPodcastId) {
+    warmSelectedPodcastImages(podcasts, selectedPodcastId, episodeCache.get(selectedPodcastId) ?? []);
+  }
+}
+
+function warmSelectedPodcastImages(podcasts: Podcast[], podcastId: string, episodes: Episode[]) {
+  const podcast = podcasts.find((entry) => entry.id === podcastId);
+  preloadImageUrls([podcast?.imageUrl, ...episodes.slice(0, 24).map((episode) => episode.imageUrl)], {
+    immediate: true,
+    limit: 32,
+  });
 }
 
 function findEpisode(episodeId: string, state: PodcastStore) {

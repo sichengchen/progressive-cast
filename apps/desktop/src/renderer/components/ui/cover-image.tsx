@@ -6,6 +6,8 @@ interface CoverImageProps {
   src?: string;
   alt: string;
   className?: string;
+  fetchPriority?: "high" | "low" | "auto";
+  loading?: "eager" | "lazy";
   size?: "sm" | "md" | "lg";
   children?: React.ReactNode;
 }
@@ -22,7 +24,15 @@ const iconSizes = {
   lg: "w-6 h-6",
 };
 
-export function CoverImage({ src, alt, className, size = "lg", children }: CoverImageProps) {
+export function CoverImage({
+  src,
+  alt,
+  className,
+  fetchPriority = "auto",
+  loading = "eager",
+  size = "lg",
+  children,
+}: CoverImageProps) {
   const [hasImageError, setHasImageError] = useState(false);
   // Determine icon size - use larger icon for custom className that appears to be large
   const isLargeCustom =
@@ -47,7 +57,8 @@ export function CoverImage({ src, alt, className, size = "lg", children }: Cover
           alt={alt}
           className="w-full h-full object-cover"
           decoding="async"
-          loading="lazy"
+          fetchPriority={fetchPriority}
+          loading={loading}
           onError={() => setHasImageError(true)}
         />
       ) : (

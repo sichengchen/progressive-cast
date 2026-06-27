@@ -86,6 +86,7 @@ export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
             src={podcast.imageUrl}
             alt={podcast.title}
             className="w-32 h-32 md:w-40 md:h-40 rounded-lg shadow-md"
+            fetchPriority="high"
           />
         </div>
 
