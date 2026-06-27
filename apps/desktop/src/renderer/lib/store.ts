@@ -325,7 +325,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       set({ isLoading: false, podcasts, selectedPodcastId });
       warmPodcastCoverImages(podcasts);
 
-      const allEpisodes = (await desktopApi.episodes.listAll()).map(toEpisode);
+      const allEpisodes = await listLibraryEpisodes(podcasts);
       const episodeCache = groupEpisodesByPodcast(allEpisodes, podcasts);
       const downloadedEpisodes = allEpisodes.filter((episode) => episode.isDownloaded);
       warmLibraryImages(podcasts, episodeCache, selectedPodcastId);
@@ -641,10 +641,13 @@ async function loadEpisodesFromLibrary(
   get: () => PodcastStore,
 ) {
   if (get().episodesHydrated) {
-    return cachedEpisodes(get());
+    const episodes = cachedEpisodes(get());
+    if (episodes.length > 0 || get().podcasts.length === 0) {
+      return episodes;
+    }
   }
 
-  const episodes = (await desktopApi.episodes.listAll()).map(toEpisode);
+  const episodes = await listLibraryEpisodes(get().podcasts);
   const episodeCache = groupEpisodesByPodcast(episodes, get().podcasts);
   warmLibraryImages(get().podcasts, episodeCache, get().selectedPodcastId);
   set({
@@ -658,6 +661,22 @@ async function loadEpisodesFromLibrary(
 
 function cachedEpisodes(state: PodcastStore) {
   return [...state.episodeCache.values()].flat();
+}
+
+async function listLibraryEpisodes(podcasts: Podcast[]) {
+  const listAll = desktopApi.episodes.listAll as (() => Promise<EpisodeSummary[]>) | undefined;
+
+  if (listAll) {
+    const episodes = (await listAll()).map(toEpisode);
+    if (episodes.length > 0 || podcasts.length === 0) {
+      return episodes;
+    }
+  }
+
+  const episodeGroups = await Promise.all(
+    podcasts.map((podcast) => desktopApi.episodes.listByPodcast(podcast.id)),
+  );
+  return episodeGroups.flat().map(toEpisode);
 }
 
 function groupEpisodesByPodcast(episodes: Episode[], podcasts: Podcast[] = []) {
