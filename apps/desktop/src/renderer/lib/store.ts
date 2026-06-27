@@ -251,21 +251,47 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   importFromOPML: async (opmlContent) => {
     set({ isImporting: true });
-    const urls = extractOpmlFeedUrls(opmlContent);
+    const feeds = extractOpmlFeeds(opmlContent);
+    const { closeProgressDialog, setProgressDialog, updateProgress } = get();
+
+    if (feeds.length === 0) {
+      set({ isImporting: false });
+      throw new Error("No podcast feeds found in OPML file");
+    }
+
+    setProgressDialog({
+      currentItem: "Preparing import...",
+      isOpen: true,
+      progress: 0,
+      title: "Importing OPML Subscriptions",
+      total: feeds.length,
+    });
+
     let imported = 0;
     let errors = 0;
+
     try {
-      for (const url of urls) {
+      for (const [index, feed] of feeds.entries()) {
+        updateProgress(index + 1, `Importing: ${feed.title}`);
+
         try {
-          await desktopApi.library.subscribe(url);
+          const existing = get().podcasts.find((podcast) => podcast.feedUrl === feed.feedUrl);
+          if (existing) {
+            continue;
+          }
+
+          await desktopApi.library.subscribe(feed.feedUrl);
           imported += 1;
-        } catch {
+        } catch (error) {
+          console.error(`Failed to import podcast: ${feed.feedUrl}`, error);
           errors += 1;
         }
       }
+
       await get().initializeStore();
       return { errors, imported };
     } finally {
+      closeProgressDialog();
       set({ isImporting: false });
     }
   },
@@ -554,9 +580,19 @@ function toDate(value?: string) {
   return Number.isNaN(date.getTime()) ? new Date() : date;
 }
 
-function extractOpmlFeedUrls(opmlContent: string) {
+function extractOpmlFeeds(opmlContent: string) {
   const document = new DOMParser().parseFromString(opmlContent, "text/xml");
   return Array.from(document.querySelectorAll("outline[xmlUrl]"))
-    .map((node) => node.getAttribute("xmlUrl")?.trim())
-    .filter((value): value is string => Boolean(value));
+    .map((node) => {
+      const feedUrl = node.getAttribute("xmlUrl")?.trim();
+      if (!feedUrl) {
+        return null;
+      }
+
+      return {
+        feedUrl,
+        title: node.getAttribute("title") ?? node.getAttribute("text") ?? feedUrl,
+      };
+    })
+    .filter((value): value is { feedUrl: string; title: string } => Boolean(value));
 }
