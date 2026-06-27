@@ -33,10 +33,15 @@ import { richTextToPlainText } from "@/lib/utils";
 
 interface PodcastDetailsProps {
   episodes: Episode[];
+  isLoadingEpisodes?: boolean;
   podcast: Podcast;
 }
 
-export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
+export function PodcastDetails({
+  episodes,
+  isLoadingEpisodes = false,
+  podcast,
+}: PodcastDetailsProps) {
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
   const isMobile = useIsMobile();
   const navigate = useNavigate();
@@ -59,7 +64,7 @@ export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
       playEpisode(latestEpisode);
       toast.success(`Playing: ${latestEpisode.title}`);
     } else {
-      toast.error("No episodes available");
+      toast.error(isLoadingEpisodes ? "Episodes are still loading" : "No episodes available");
     }
   };
 
@@ -131,7 +136,9 @@ export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
                       ? formatDistanceToNow(new Date(latestEpisode.publishedAt), {
                           addSuffix: true,
                         })
-                      : "No episodes"}
+                      : isLoadingEpisodes
+                        ? ""
+                        : "No episodes"}
                   </span>
                 </div>
               </div>
@@ -191,8 +198,12 @@ export function PodcastDetails({ episodes, podcast }: PodcastDetailsProps) {
               ) : (
                 <>
                   <Play className="h-4 w-4 opacity-50" />
-                  <span className="hidden sm:inline">No Episodes Available</span>
-                  <span className="sm:hidden">No Episodes</span>
+                  <span className="hidden sm:inline">
+                    {isLoadingEpisodes ? "Latest Episode" : "No Episodes Available"}
+                  </span>
+                  <span className="sm:hidden">
+                    {isLoadingEpisodes ? "Latest" : "No Episodes"}
+                  </span>
                 </>
               )}
             </Button>

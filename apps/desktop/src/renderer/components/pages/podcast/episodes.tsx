@@ -47,7 +47,7 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
     <div>
       <h2 className="text-xl font-semibold px-2">Episodes</h2>
       <EpisodeList
-        isLoadingEpisodes={Boolean(pageState?.isLoading && !pageState.loaded)}
+        isLoadingEpisodes={Boolean(!pageState?.loaded)}
         episodes={episodes}
         playbackProgress={playbackProgress}
         playEpisode={playEpisode}

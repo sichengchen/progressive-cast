@@ -15,6 +15,7 @@ export function PodcastRoutePage({ podcastId }: { podcastId: string }) {
   const podcastEpisodes = usePodcastStore(
     (state) => state.episodeCache.get(podcastId) ?? emptyEpisodes,
   );
+  const pageState = usePodcastStore((state) => state.episodePageState.get(podcastId));
   const setCurrentPage = usePodcastStore((state) => state.setCurrentPage);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
 
@@ -30,7 +31,11 @@ export function PodcastRoutePage({ podcastId }: { podcastId: string }) {
       <AppPageLayout backTo="/library" title={isMobile ? podcast?.title : undefined}>
         {podcast ? (
           <>
-            <PodcastDetails episodes={podcastEpisodes} podcast={podcast} />
+            <PodcastDetails
+              episodes={podcastEpisodes}
+              isLoadingEpisodes={Boolean(!pageState?.loaded)}
+              podcast={podcast}
+            />
             <PodcastEpisodes podcastId={podcastId} />
           </>
         ) : (
