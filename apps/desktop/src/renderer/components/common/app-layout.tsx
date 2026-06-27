@@ -192,7 +192,7 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
         <div ref={desktopLayoutRef} className="flex h-screen overflow-hidden">
           {/* Desktop: Sidebar */}
           <div
-            className="flex-shrink-0 bg-sidebar text-sidebar-foreground"
+            className="flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
             style={{
               minWidth: MIN_SIDEBAR_WIDTH,
               width: panelSizes.sidebarWidth,
@@ -202,7 +202,6 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
           </div>
 
           <ResizeHandle
-            active={activeResize?.kind === "sidebar"}
             ariaLabel="Resize sidebar"
             onPointerDown={startResize("sidebar")}
           />
@@ -215,14 +214,13 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
             {/* Right Panel (Show Notes) */}
             {showNotesOpen && (
               <ResizeHandle
-                active={activeResize?.kind === "rightPanel"}
                 ariaLabel="Resize show notes"
                 onPointerDown={startResize("rightPanel")}
               />
             )}
 
             <div
-              className={`flex-shrink-0 bg-background ${
+              className={`flex-shrink-0 border-l border-sidebar-border bg-background ${
                 showNotesOpen ? "" : "overflow-hidden"
               } ${activeResize?.kind === "rightPanel" ? "no-transition" : "transition-[width] duration-200 ease-in-out"}`}
               style={{
@@ -243,20 +241,16 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
 }
 
 function ResizeHandle({
-  active,
   ariaLabel,
   onPointerDown,
 }: {
-  active: boolean;
   ariaLabel: string;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
 }) {
   return (
     <div
       aria-label={ariaLabel}
-      className={`app-no-drag group relative z-20 w-1 flex-shrink-0 cursor-col-resize bg-sidebar-border transition-colors hover:bg-ring ${
-        active ? "bg-ring" : ""
-      }`}
+      className="app-no-drag relative z-20 w-0 flex-shrink-0 cursor-col-resize"
       onPointerDown={onPointerDown}
       role="separator"
     >
