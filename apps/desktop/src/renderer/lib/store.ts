@@ -272,7 +272,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
     try {
       for (const [index, feed] of feeds.entries()) {
-        updateProgress(index + 1, `Importing: ${feed.title}`);
+        updateProgress(index + 1, feed.title);
 
         try {
           const existing = get().podcasts.find((podcast) => podcast.feedUrl === feed.feedUrl);
