@@ -437,15 +437,24 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         total: 3,
       },
     });
-    const podcast = toPodcast(await desktopApi.library.subscribe(feedUrl));
-    set((state) => ({
-      podcasts: [podcast, ...state.podcasts.filter((entry) => entry.id !== podcast.id)],
-      progressDialog: { ...state.progressDialog, isOpen: false },
-      selectedPodcastId: podcast.id,
-      showAddPodcastDialog: false,
-    }));
-    await get().loadEpisodes(podcast.id);
-    get().clearLatestEpisodesCache();
+    try {
+      const podcast = toPodcast(await desktopApi.library.subscribe(feedUrl));
+      set((state) => ({
+        podcasts: [podcast, ...state.podcasts.filter((entry) => entry.id !== podcast.id)],
+        progressDialog: { ...state.progressDialog, isOpen: false },
+        selectedPodcastId: podcast.id,
+        showAddPodcastDialog: false,
+      }));
+      await get().loadEpisodes(podcast.id);
+      get().clearLatestEpisodesCache();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to add podcast.";
+      set((state) => ({
+        error: message,
+        progressDialog: { ...state.progressDialog, isOpen: false },
+      }));
+      throw new Error(message);
+    }
   },
 
   toggleShowNotes: () => set((state) => ({ showNotesOpen: !state.showNotesOpen })),

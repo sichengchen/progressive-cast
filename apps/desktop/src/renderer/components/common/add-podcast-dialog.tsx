@@ -113,7 +113,7 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
         handleClose();
       }
     } catch (error) {
-      toast.error("Failed to subscribe to podcast");
+      toast.error(error instanceof Error ? error.message : "Failed to subscribe to podcast");
       console.error("Subscribe error:", error);
     }
   };

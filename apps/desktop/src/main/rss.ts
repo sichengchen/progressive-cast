@@ -18,17 +18,28 @@ const parser = new XMLParser({
   trimValues: true,
 });
 
+const feedRequestHeaders = {
+  Accept: [
+    "application/rss+xml",
+    "application/atom+xml;q=0.9",
+    "application/xml;q=0.8",
+    "text/xml;q=0.8",
+    "*/*;q=0.5",
+  ].join(", "),
+  "Accept-Language": "en-US,en;q=0.9",
+  "User-Agent": "Newcastle/0.9.0 (macOS; Podcast RSS Reader)",
+};
+
 export class RssService {
   async fetchFeed(feedUrl: string): Promise<ParsedFeed> {
     const normalizedFeedUrl = new URL(feedUrl).toString();
     const response = await fetch(normalizedFeedUrl, {
-      headers: {
-        "User-Agent": "Newcastle/0.1",
-      },
+      headers: feedRequestHeaders,
     });
 
     if (!response.ok) {
-      throw new Error(`Feed request failed with HTTP ${response.status}`);
+      const statusText = response.statusText ? ` ${response.statusText}` : "";
+      throw new Error(`Feed request failed with HTTP ${response.status}${statusText}`);
     }
 
     return this.parseFeed(normalizedFeedUrl, await response.text());
