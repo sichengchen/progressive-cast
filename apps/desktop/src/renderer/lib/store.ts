@@ -308,7 +308,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set({ isLoading: true });
     try {
       const podcasts = (await desktopApi.library.list()).map(toPodcast);
-      const selectedPodcastId = get().selectedPodcastId ?? podcasts[0]?.id ?? null;
+      const selectedPodcastId = selectPodcastId(get().selectedPodcastId, podcasts);
+      set({ isLoading: false, podcasts, selectedPodcastId });
+
       const allEpisodes = (await desktopApi.episodes.listAll()).map(toEpisode);
       const episodeCache = groupEpisodesByPodcast(allEpisodes, podcasts);
       const downloadedEpisodes = allEpisodes.filter((episode) => episode.isDownloaded);
@@ -317,9 +319,6 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodeCache,
         episodesHydrated: true,
         episodes: selectedPodcastId ? (episodeCache.get(selectedPodcastId) ?? []) : [],
-        isLoading: false,
-        podcasts,
-        selectedPodcastId,
         storageStats: {
           downloadedEpisodes: downloadedEpisodes.length,
           totalSize: downloadedEpisodes.reduce((sum, episode) => sum + (episode.fileSize ?? 0), 0),
@@ -634,6 +633,14 @@ function groupEpisodesByPodcast(episodes: Episode[], podcasts: Podcast[] = []) {
   }
 
   return episodeCache;
+}
+
+function selectPodcastId(currentPodcastId: string | null, podcasts: Podcast[]) {
+  if (currentPodcastId && podcasts.some((podcast) => podcast.id === currentPodcastId)) {
+    return currentPodcastId;
+  }
+
+  return podcasts[0]?.id ?? null;
 }
 
 function findEpisode(episodeId: string, state: PodcastStore) {
