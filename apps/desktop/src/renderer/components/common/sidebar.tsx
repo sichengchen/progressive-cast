@@ -82,12 +82,12 @@ export function PodcastSidebar() {
     <>
       <div className="h-full flex flex-col">
         <div className="flex flex-col gap-2 p-2 flex-shrink-0">
-          <div className="flex items-center min-w-0 px-2 py-2">
+          <div className="app-drag flex items-center min-w-0 px-2 py-2">
             <h2 className="text-lg font-semibold truncate">Newcastle</h2>
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
+        <div className="app-no-drag flex flex-col flex-1 min-h-0 overflow-hidden">
           {/* Fixed sections */}
           <div className="flex-shrink-0">
             <div className="relative flex w-full min-w-0 flex-col p-2">

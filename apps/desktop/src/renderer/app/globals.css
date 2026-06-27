@@ -120,6 +120,37 @@
     @apply bg-background text-foreground;
   }
 
+  html,
+  body,
+  #root {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"],
+  .selectable-text,
+  .selectable-text * {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  button,
+  input,
+  textarea,
+  select,
+  a,
+  [role="button"],
+  [data-radix-popper-content-wrapper],
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+
   /* Prevent flash of unstyled content during theme changes */
   html {
     color-scheme: light;

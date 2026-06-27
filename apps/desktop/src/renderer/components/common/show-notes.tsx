@@ -197,10 +197,10 @@ export function ShowNotes() {
   }, [content, currentEpisode, handleTimestampClick]);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="app-no-drag h-full flex flex-col">
       {/* Episode header info */}
       {currentEpisode && (
-        <div className="p-4 border-b flex-shrink-0 min-w-0">
+        <div className="app-drag p-4 border-b flex-shrink-0 min-w-0">
           <ScrollingText
             text={currentEpisode.title}
             className="font-semibold text-base mb-2 leading-tight"
@@ -223,7 +223,7 @@ export function ShowNotes() {
           content ? (
             <div
               ref={contentRef}
-              className="prose prose-sm dark:prose-invert max-w-full leading-relaxed break-words
+              className="selectable-text prose prose-sm dark:prose-invert max-w-full leading-relaxed break-words
                         prose-headings:text-foreground prose-headings:font-semibold prose-headings:break-words
                         prose-p:text-foreground prose-p:leading-relaxed prose-p:break-words prose-p:mb-4
                         prose-a:text-primary prose-a:underline prose-a:decoration-solid prose-a:underline-offset-2 prose-a:break-all prose-a:cursor-pointer prose-a:font-mono prose-a:bg-transparent prose-a:border-0 prose-a:p-0

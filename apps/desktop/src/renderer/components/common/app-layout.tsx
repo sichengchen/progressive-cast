@@ -18,7 +18,7 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
   return (
     <>
       {isMobile ? (
-        <div className="flex flex-col h-screen">
+        <div className="flex flex-col h-screen app-no-drag">
           {/* Mobile: Show Notes Overlay */}
           {showNotesOpen && <div className="fixed inset-0 z-40 bg-background">{rightPanel}</div>}
 
@@ -36,7 +36,7 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
           </div>
 
           {/* Desktop: Main Content Area */}
-          <div className="flex flex-1 overflow-hidden">
+          <div className="app-drag flex flex-1 overflow-hidden">
             {/* Main Content */}
             <div className="flex-1 bg-background overflow-hidden">{mainContent}</div>
 

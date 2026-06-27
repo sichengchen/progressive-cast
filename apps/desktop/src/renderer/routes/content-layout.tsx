@@ -83,7 +83,7 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
                 : "0",
           }}
         >
-          <div className="mx-auto max-w-6xl px-4 py-3">
+          <div className="app-drag mx-auto max-w-6xl px-4 py-3">
             {title ? (
               <div className="mt-6 flex items-center gap-3 px-2">
                 {isMobile && backTo ? (
@@ -119,7 +119,7 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
               </div>
             ) : null}
 
-            {children}
+            <div className="app-no-drag">{children}</div>
           </div>
         </div>
       </div>
