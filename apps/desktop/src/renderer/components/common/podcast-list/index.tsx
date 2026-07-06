@@ -23,7 +23,7 @@ export interface PodcastListPodcast {
   imageUrl?: string;
 }
 
-interface PodcastListProps<TPodcast extends PodcastListPodcast> {
+interface PodcastListItemsProps<TPodcast extends PodcastListPodcast> {
   getDescription?: (podcast: TPodcast) => ReactNode;
   getKey?: (podcast: TPodcast) => string;
   getMeta?: (podcast: TPodcast) => ReactNode;
@@ -32,14 +32,14 @@ interface PodcastListProps<TPodcast extends PodcastListPodcast> {
   renderActions?: (podcast: TPodcast) => ReactNode;
 }
 
-export function PodcastList<TPodcast extends PodcastListPodcast>({
+export function PodcastListItems<TPodcast extends PodcastListPodcast>({
   getDescription = (podcast) => podcast.author || podcast.description || "Podcast",
   getKey = (podcast) => podcast.id,
   getMeta = () => "Podcast",
   onOpen,
   podcasts,
   renderActions,
-}: PodcastListProps<TPodcast>) {
+}: PodcastListItemsProps<TPodcast>) {
   const handleKeyDown = (podcast: TPodcast, event: KeyboardEvent<HTMLDivElement>) => {
     if (!onOpen || (event.key !== "Enter" && event.key !== " ")) {
       return;
@@ -50,7 +50,7 @@ export function PodcastList<TPodcast extends PodcastListPodcast>({
   };
 
   return (
-    <List className="px-0">
+    <>
       {podcasts.map((podcast) => {
         const actions = renderActions?.(podcast);
         const trailing = actions ?? (
@@ -96,6 +96,16 @@ export function PodcastList<TPodcast extends PodcastListPodcast>({
           </ListItem>
         );
       })}
+    </>
+  );
+}
+
+export function PodcastList<TPodcast extends PodcastListPodcast>(
+  props: PodcastListItemsProps<TPodcast>,
+) {
+  return (
+    <List className="px-0">
+      <PodcastListItems {...props} />
     </List>
   );
 }
