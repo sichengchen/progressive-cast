@@ -7,7 +7,7 @@ import { AddPodcastDialog } from "@/components/common/add-podcast-dialog";
 import { WelcomeScreen } from "@/components/common/welcome";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePodcastStore } from "@/lib/store";
-import { ArrowLeft, Radio, Settings, Sparkles } from "lucide-react";
+import { ArrowLeft, Radio, Search, Settings, Sparkles } from "lucide-react";
 
 interface ToolbarAction {
   disabled?: boolean;
@@ -17,13 +17,18 @@ interface ToolbarAction {
 }
 
 interface AppPageLayoutProps {
-  backTo?: "/downloaded" | "/library" | "/resume-playing" | "/settings" | "/whats-new";
+  backTo?: "/downloaded" | "/library" | "/resume-playing" | "/search" | "/settings" | "/whats-new";
   children: ReactNode;
   title?: string;
   toolBar?: ToolbarAction[];
 }
 
 const mobileTabItems: MobileTabBarItem[] = [
+  {
+    id: "search",
+    icon: Search,
+    label: "Search",
+  },
   {
     id: "whats-new",
     icon: Sparkles,
@@ -42,6 +47,10 @@ const mobileTabItems: MobileTabBarItem[] = [
 ];
 
 function getActiveTab(pathname: string) {
+  if (pathname.startsWith("/search")) {
+    return "search";
+  }
+
   if (pathname.startsWith("/settings")) {
     return "settings";
   }
@@ -129,6 +138,11 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
           activeTab={getActiveTab(location.pathname)}
           items={mobileTabItems}
           onTabChange={(tabId) => {
+            if (tabId === "search") {
+              navigate({ to: "/search" });
+              return;
+            }
+
             if (tabId === "library") {
               navigate({ to: "/library" });
               return;

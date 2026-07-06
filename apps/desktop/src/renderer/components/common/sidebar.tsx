@@ -1,6 +1,5 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
   Plus,
@@ -13,7 +12,6 @@ import {
   Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { CoverImage } from "@/components/ui/cover-image";
 import { usePodcastStore } from "@/lib/store";
@@ -21,6 +19,11 @@ import { toast } from "sonner";
 
 // Menu items
 const menuItems = [
+  {
+    title: "Search",
+    icon: Search,
+    to: "/search" as const,
+  },
   {
     title: "What's New",
     icon: Sparkles,
@@ -44,8 +47,6 @@ const menuItems = [
 ];
 
 export function PodcastSidebar() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const deferredSearchQuery = useDeferredValue(searchQuery);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -56,17 +57,6 @@ export function PodcastSidebar() {
   const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
-
-  const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
-  const filteredPodcasts = useMemo(
-    () =>
-      podcasts.filter(
-        (podcast) =>
-          podcast.title.toLowerCase().includes(normalizedQuery) ||
-          podcast.description.toLowerCase().includes(normalizedQuery),
-      ),
-    [normalizedQuery, podcasts],
-  );
 
   const activePodcastId = location.pathname.startsWith("/podcast/")
     ? decodeURIComponent(location.pathname.replace("/podcast/", ""))
@@ -123,28 +113,9 @@ export function PodcastSidebar() {
             <Separator className="bg-sidebar-border mx-2 w-auto" />
 
             <div className="relative flex w-full min-w-0 flex-col p-2">
-              <div className="text-sidebar-foreground/70 ring-sidebar-ring flex h-8 shrink-0 items-center rounded-md px-2 text-xs font-medium">
-                Search
-              </div>
-              <div className="w-full text-sm">
-                <div className="relative px-2 min-w-0 max-w-full">
-                  <Search className="absolute left-5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
-                  <Input
-                    placeholder="Search subscribed podcasts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="bg-background h-8 w-full shadow-none pl-10 min-w-0"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <Separator className="bg-sidebar-border mx-2 w-auto" />
-
-            <div className="relative flex w-full min-w-0 flex-col p-2">
               <div className="flex items-center justify-between h-8 px-2 min-w-0">
                 <div className="text-sidebar-foreground/70 ring-sidebar-ring p-0 flex-1 min-w-0 text-xs font-medium">
-                  <span className="truncate">Podcasts ({filteredPodcasts.length})</span>
+                  <span className="truncate">Podcasts ({podcasts.length})</span>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   <Button
@@ -186,21 +157,15 @@ export function PodcastSidebar() {
                   </div>
                   <p className="text-sm">Loading podcasts...</p>
                 </div>
-              ) : filteredPodcasts.length === 0 ? (
+              ) : podcasts.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground px-2 min-w-0 max-w-full">
-                  {podcasts.length === 0 ? (
-                    <>
-                      <Radio className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="truncate">No podcasts yet</p>
-                      <p className="text-sm truncate">Add your first podcast to get started</p>
-                    </>
-                  ) : (
-                    <p className="truncate">No podcasts match your search</p>
-                  )}
+                  <Radio className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="truncate">No podcasts yet</p>
+                  <p className="text-sm truncate">Add your first podcast to get started</p>
                 </div>
               ) : (
                 <ul className="flex w-full min-w-0 flex-col gap-1">
-                  {filteredPodcasts.map((podcast) => (
+                  {podcasts.map((podcast) => (
                     <li key={podcast.id} className="group/menu-item relative">
                       <button
                         onClick={() => {

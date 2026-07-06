@@ -11,6 +11,7 @@ import { DownloadedRoutePage } from "@/routes/downloaded-route";
 import { LibraryRoutePage } from "@/routes/library-route";
 import { PodcastRoutePage } from "@/routes/podcast-route";
 import { ResumePlayingRoutePage } from "@/routes/resume-playing-route";
+import { SearchRoutePage } from "@/routes/search-route";
 import { SettingsRoutePage } from "@/routes/settings-route";
 import { WhatsNewRoutePage } from "@/routes/whats-new-route";
 
@@ -30,6 +31,12 @@ const whatsNewRoute = createRoute({
   component: WhatsNewRoutePage,
   getParentRoute: () => rootRoute,
   path: "/whats-new",
+});
+
+const searchRoute = createRoute({
+  component: SearchRoutePage,
+  getParentRoute: () => rootRoute,
+  path: "/search",
 });
 
 const libraryRoute = createRoute({
@@ -69,6 +76,7 @@ const podcastRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  searchRoute,
   whatsNewRoute,
   libraryRoute,
   resumePlayingRoute,

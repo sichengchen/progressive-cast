@@ -197,7 +197,7 @@ export function SettingsPage() {
         <SettingsGroup title="Search">
           <SettingsSwitch
             label="Search from iTunes"
-            description='Enable iTunes search tab in the "Add New Podcast"'
+            description="Enable podcast discovery from iTunes in the Search tab"
             checked={preferences.itunesSearchEnabled ?? true}
             onCheckedChange={handleItunesSearchEnabledChange}
           />
