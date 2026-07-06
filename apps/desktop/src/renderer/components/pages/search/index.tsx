@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -231,7 +230,10 @@ function TruncatedResultsNote({
 export function SearchPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const deferredQuery = useDeferredValue(query);
+  const [submittedQueries, setSubmittedQueries] = useState<Record<SearchSource, string>>({
+    discover: "",
+    library: "",
+  });
   const [activeSource, setActiveSource] = useState<SearchSource>("discover");
   const [activeFilter, setActiveFilter] = useState<SearchFilter>("top");
   const [discoverResults, setDiscoverResults] = useState<iTunesPodcast[]>([]);
@@ -255,11 +257,16 @@ export function SearchPage() {
 
   const discoverEnabled = preferences.itunesSearchEnabled ?? true;
   const source: SearchSource = discoverEnabled ? activeSource : "library";
-  const currentDiscoverTerm = query.trim();
+  const trimmedQuery = query.trim();
+  const submittedQuery = submittedQueries[source];
+  const currentTerm = trimmedQuery === submittedQuery ? submittedQuery.trim() : "";
+  const currentDiscoverTerm = source === "discover" ? currentTerm : "";
+  const isSearchingActiveSource =
+    source === "discover" ? isDiscoverLoading : isLibraryEpisodeSearching;
   const hasCurrentDiscoverResults =
     hasDiscoverSearched && currentDiscoverTerm === discoverTerm;
   const normalizedLibraryQuery =
-    source === "library" ? normalizeSearchText(deferredQuery) : "";
+    source === "library" ? normalizeSearchText(currentTerm) : "";
   const shouldSearchLibraryEpisodes =
     source === "library" && activeFilter !== "podcasts" && normalizedLibraryQuery !== "";
 
@@ -384,15 +391,22 @@ export function SearchPage() {
           : libraryPodcastResults.length + currentLibraryEpisodeResults.length;
 
   const activeResultCount = getResultCount(activeFilter);
+  const shouldShowResultSummary =
+    Boolean(currentTerm) &&
+    (source !== "discover" || isDiscoverLoading || hasCurrentDiscoverResults);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    const term = query.trim();
+    setSubmittedQueries((current) => ({
+      ...current,
+      [source]: term,
+    }));
+
     if (source !== "discover") {
       return;
     }
-
-    const term = query.trim();
 
     if (!term) {
       setDiscoverResults([]);
@@ -428,6 +442,10 @@ export function SearchPage() {
 
   const handleClearQuery = () => {
     setQuery("");
+    setSubmittedQueries({
+      discover: "",
+      library: "",
+    });
     setDiscoverResults([]);
     setDiscoverTerm("");
     setHasDiscoverSearched(false);
@@ -465,13 +483,8 @@ export function SearchPage() {
   };
 
   const renderDiscoverContent = (filter: SearchFilter) => {
-    if (!query.trim()) {
-      return (
-        <EmptyState
-          title="Search Discover"
-          description="Find podcasts to add to your library."
-        />
-      );
+    if (!currentTerm) {
+      return <EmptyState title="Search Discover" />;
     }
 
     if (isDiscoverLoading) {
@@ -479,18 +492,12 @@ export function SearchPage() {
         <EmptyState
           icon={<Loader2 className="h-8 w-8 animate-spin" />}
           title="Searching Discover"
-          description={discoverTerm}
         />
       );
     }
 
     if (!hasCurrentDiscoverResults) {
-      return (
-        <EmptyState
-          title="Ready to search Discover"
-          description="Press Enter or the search button when your query is ready."
-        />
-      );
+      return <EmptyState title="Search Discover" />;
     }
 
     if (filter === "episodes") {
@@ -498,18 +505,12 @@ export function SearchPage() {
         <EmptyState
           icon={<CircleOff className="h-8 w-8" />}
           title="No Discover episodes"
-          description="Discover search returns podcasts only. Switch to Library to search episodes."
         />
       );
     }
 
     if (filteredDiscoverResults.length === 0) {
-      return (
-        <EmptyState
-          title="No new podcasts found"
-          description="Matching results may already be in your library."
-        />
-      );
+      return <EmptyState title="No new podcasts found" />;
     }
 
     const visibleDiscoverResults = filteredDiscoverResults.slice(0, resultRenderLimit);
@@ -542,13 +543,8 @@ export function SearchPage() {
   };
 
   const renderLibraryContent = (filter: SearchFilter) => {
-    if (!query.trim()) {
-      return (
-        <EmptyState
-          title="Search your library"
-          description="Search subscribed podcasts and saved episode text."
-        />
-      );
+    if (!currentTerm) {
+      return <EmptyState title="Search your library" />;
     }
 
     const tabResultCount = getResultCount(filter);
@@ -558,18 +554,12 @@ export function SearchPage() {
         <EmptyState
           icon={<Loader2 className="h-8 w-8 animate-spin" />}
           title="Searching your library"
-          description="Searching local episodes."
         />
       );
     }
 
     if (tabResultCount === 0) {
-      return (
-        <EmptyState
-          title="No library matches"
-          description="Try a podcast title, author, episode title, or show-note term."
-        />
-      );
+      return <EmptyState title="No library matches" />;
     }
 
     const visiblePodcasts =
@@ -630,80 +620,78 @@ export function SearchPage() {
         onValueChange={(value) => setActiveFilter(value as SearchFilter)}
         value={activeFilter}
       >
-        <div className="mx-auto flex max-w-4xl flex-col gap-4 px-2 pt-3">
-          <form className="flex w-full items-center gap-2" onSubmit={handleSubmit}>
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                autoFocus
-                className="h-10 bg-background pl-9 pr-10"
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder={`Search in ${source === "discover" ? "Discover" : "Library"}`}
-                value={query}
-              />
-              {query ? (
-                <Button
-                  aria-label="Clear search"
-                  className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
-                  onClick={handleClearQuery}
-                  size="icon"
-                  type="button"
-                  variant="ghost"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              ) : null}
-            </div>
-
-            {source === "discover" ? (
+        <div className="flex w-full flex-col gap-3 px-4 pt-3">
+          <form
+            className="flex w-full items-center gap-2"
+            onSubmit={handleSubmit}
+          >
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              <div className="relative min-w-0 flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  autoFocus
+                  className="h-10 bg-background pl-9 pr-10"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder={`Search in ${source === "discover" ? "Discover" : "Library"}`}
+                  value={query}
+                />
+                {query ? (
+                  <Button
+                    aria-label="Clear search"
+                    className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
+                    onClick={handleClearQuery}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                ) : null}
+              </div>
               <Button
                 aria-label="Search"
                 className="h-10"
-                disabled={!query.trim() || isDiscoverLoading}
+                disabled={!query.trim() || isSearchingActiveSource}
                 type="submit"
               >
-                {isDiscoverLoading ? (
+                {isSearchingActiveSource ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Search className="h-4 w-4" />
                 )}
                 <span>Search</span>
               </Button>
-            ) : null}
-          </form>
+            </div>
 
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <Tabs
-              className="w-full md:w-auto"
+              className="shrink-0"
               onValueChange={(value) => setActiveSource(value as SearchSource)}
               value={source}
             >
-              <TabsList className="w-full md:w-auto">
+              <TabsList>
                 {discoverEnabled ? <TabsTrigger value="discover">Discover</TabsTrigger> : null}
                 <TabsTrigger value="library">Library</TabsTrigger>
               </TabsList>
             </Tabs>
+          </form>
 
-            <TabsList className="grid w-full grid-cols-3 md:w-auto">
-              {filters.map((filter) => (
-                <TabsTrigger key={filter.value} value={filter.value}>
-                  {filter.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
+          <TabsList className="grid w-fit grid-cols-3 self-start">
+            {filters.map((filter) => (
+              <TabsTrigger key={filter.value} value={filter.value}>
+                {filter.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
         </div>
 
-        <div className="px-2">
-          <div className="mx-auto max-w-4xl">
-            {query.trim() ? (
+        <div className="px-4">
+          <div className="w-full">
+            {shouldShowResultSummary ? (
               <div className="mb-2 px-4 text-xs font-medium text-muted-foreground">
                 {source === "discover"
                   ? isDiscoverLoading
                     ? "Searching Discover"
-                    : hasCurrentDiscoverResults
-                      ? `${activeResultCount} result${activeResultCount === 1 ? "" : "s"} in Discover`
-                      : "Discover searches when submitted"
+                    : `${activeResultCount} result${activeResultCount === 1 ? "" : "s"} in Discover`
                   : `${activeResultCount} result${activeResultCount === 1 ? "" : "s"} in Library`}
               </div>
             ) : null}
