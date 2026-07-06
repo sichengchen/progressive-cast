@@ -4,9 +4,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   List,
   ListItem,
+  ListItemActions,
   ListItemLeading,
   ListItemContent,
-  ListItemTrailing,
   ListItemMeta,
 } from "@/components/ui-custom/list";
 
@@ -57,10 +57,10 @@ export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
             </div>
           </ListItemContent>
 
-          <ListItemTrailing>
+          <ListItemActions>
             {/* Download button skeleton */}
             <Skeleton className="w-8 h-8 rounded-full" />
-          </ListItemTrailing>
+          </ListItemActions>
         </ListItem>
       ))}
     </List>

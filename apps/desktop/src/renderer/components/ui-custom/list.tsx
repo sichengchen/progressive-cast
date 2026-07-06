@@ -53,6 +53,25 @@ const ListItemTrailing = React.forwardRef<HTMLDivElement, React.HTMLAttributes<H
 );
 ListItemTrailing.displayName = "ListItemTrailing";
 
+const ListItemActions = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
+  ({ className, onClick, onKeyDown, ...props }, ref) => (
+    <ListItemTrailing
+      ref={ref}
+      className={cn("flex items-center gap-1", className)}
+      onClick={(event) => {
+        event.stopPropagation();
+        onClick?.(event);
+      }}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        onKeyDown?.(event);
+      }}
+      {...props}
+    />
+  ),
+);
+ListItemActions.displayName = "ListItemActions";
+
 const ListItemTitle = React.forwardRef<
   HTMLHeadingElement,
   React.HTMLAttributes<HTMLHeadingElement>
@@ -82,6 +101,7 @@ export {
   ListItemLeading,
   ListItemContent,
   ListItemTrailing,
+  ListItemActions,
   ListItemTitle,
   ListItemDescription,
   ListItemMeta,

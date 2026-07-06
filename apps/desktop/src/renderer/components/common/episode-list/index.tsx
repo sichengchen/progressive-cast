@@ -13,9 +13,9 @@ import { Play, Clock } from "lucide-react";
 import {
   List,
   ListItem,
+  ListItemActions,
   ListItemLeading,
   ListItemContent,
-  ListItemTrailing,
   ListItemTitle,
   ListItemDescription,
   ListItemMeta,
@@ -170,16 +170,16 @@ export function EpisodeList({
                 )}
               </ListItemContent>
 
-              <ListItemTrailing>
-                {(showDownloadButton || showDeleteButton) && (
+              {showDownloadButton || showDeleteButton ? (
+                <ListItemActions>
                   <DownloadButton
                     episode={episode}
                     pageType={pageType}
                     onDownloadComplete={onDownloadComplete}
                     onDeleteComplete={onDeleteComplete}
                   />
-                )}
-              </ListItemTrailing>
+                </ListItemActions>
+              ) : null}
             </ListItem>
           );
         })}

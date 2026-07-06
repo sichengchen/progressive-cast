@@ -6,6 +6,7 @@ import { ChevronRight } from "lucide-react";
 import {
   List,
   ListItem,
+  ListItemActions,
   ListItemContent,
   ListItemDescription,
   ListItemLeading,
@@ -85,13 +86,10 @@ export function PodcastList<TPodcast extends PodcastListPodcast>({
               </ListItemDescription>
             </ListItemContent>
 
-            {trailing ? (
-              <ListItemTrailing
-                className={actions ? "flex items-center gap-1" : undefined}
-                onClick={actions ? (event) => event.stopPropagation() : undefined}
-              >
-                {trailing}
-              </ListItemTrailing>
+            {actions ? (
+              <ListItemActions>{actions}</ListItemActions>
+            ) : trailing ? (
+              <ListItemTrailing>{trailing}</ListItemTrailing>
             ) : null}
           </ListItem>
         );
