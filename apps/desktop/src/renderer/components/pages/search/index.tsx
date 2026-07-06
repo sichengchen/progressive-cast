@@ -620,46 +620,44 @@ export function SearchPage() {
   return (
     <div className="py-4">
       <Tabs
-        className="flex flex-col gap-5"
+        className="flex min-w-0 flex-col gap-5"
         onValueChange={(value) => setActiveFilter(value as SearchFilter)}
         value={activeFilter}
       >
-        <div className="flex w-full flex-col gap-3 px-4 pt-3">
+        <div className="flex w-full min-w-0 flex-col gap-3 px-4 pt-3">
           <form
-            className="flex w-full items-center gap-2"
+            className="grid w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2"
             onSubmit={handleSubmit}
           >
-            <div className="flex min-w-0 flex-1 items-center gap-2">
-              <div className="relative min-w-0 flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  autoFocus
-                  className="h-10 bg-background pl-9 pr-10"
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder={`Search in ${source === "discover" ? "Discover" : "Library"}`}
-                  value={query}
-                />
-                {query ? (
-                  <Button
-                    aria-label="Clear search"
-                    className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
-                    onClick={handleClearQuery}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                ) : null}
-              </div>
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                autoFocus
+                className="h-10 bg-background pl-9 pr-10"
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder={`Search in ${source === "discover" ? "Discover" : "Library"}`}
+                value={query}
+              />
+              {query ? (
+                <Button
+                  aria-label="Clear search"
+                  className="absolute right-1 top-1/2 size-8 -translate-y-1/2"
+                  onClick={handleClearQuery}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              ) : null}
             </div>
 
             <Tabs
-              className="shrink-0"
+              className="min-w-0 justify-self-end"
               onValueChange={(value) => setActiveSource(value as SearchSource)}
               value={source}
             >
-              <TabsList>
+              <TabsList className="max-w-full">
                 {discoverEnabled ? <TabsTrigger value="discover">Discover</TabsTrigger> : null}
                 <TabsTrigger value="library">Library</TabsTrigger>
               </TabsList>
@@ -677,8 +675,8 @@ export function SearchPage() {
           ) : null}
         </div>
 
-        <div className="px-4">
-          <div className="w-full">
+        <div className="min-w-0 px-4">
+          <div className="w-full min-w-0 overflow-hidden">
             {shouldShowResultSummary ? (
               <div className="mb-2 px-4 text-xs font-medium text-muted-foreground">
                 {source === "discover"
@@ -690,7 +688,7 @@ export function SearchPage() {
             ) : null}
 
             {filters.map((filter) => (
-              <TabsContent className="mt-0" key={filter.value} value={filter.value}>
+              <TabsContent className="mt-0 min-w-0" key={filter.value} value={filter.value}>
                 {filter.value === activeFilter ? renderResultsContent(filter.value) : null}
               </TabsContent>
             ))}
