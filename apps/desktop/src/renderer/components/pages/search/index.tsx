@@ -11,7 +11,6 @@ import {
 import { useNavigate } from "@tanstack/react-router";
 import {
   CircleOff,
-  ExternalLink,
   Loader2,
   Plus,
   Search,
@@ -463,6 +462,14 @@ export function SearchPage() {
     });
   };
 
+  const handleOpenDiscoverPodcast = (podcast: iTunesPodcast) => {
+    if (!podcast.itunesUrl) {
+      return;
+    }
+
+    window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
+  };
+
   const renderDiscoverContent = (filter: SearchFilter) => {
     if (!currentTerm) {
       return <EmptyState title="Search Discover" />;
@@ -503,47 +510,28 @@ export function SearchPage() {
             [podcast.author, podcast.genre].filter(Boolean).join(" · ") || "Discover"
           }
           getKey={(podcast) => `${podcast.id}-${podcast.feedUrl}`}
+          onOpen={handleOpenDiscoverPodcast}
           podcasts={visibleDiscoverResults}
           renderActions={(podcast) => (
-            <>
-              {podcast.itunesUrl ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      aria-label={`Open external listing for ${podcast.title}`}
-                      onClick={() => {
-                        window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
-                      }}
-                      size="icon"
-                      type="button"
-                      variant="ghost"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Open external listing</TooltipContent>
-                </Tooltip>
-              ) : null}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    aria-label={`Subscribe to ${podcast.title}`}
-                    disabled={subscribingFeedUrl === podcast.feedUrl}
-                    onClick={() => void handleSubscribe(podcast)}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    {subscribingFeedUrl === podcast.feedUrl ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Subscribe</TooltipContent>
-              </Tooltip>
-            </>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  aria-label={`Subscribe to ${podcast.title}`}
+                  disabled={subscribingFeedUrl === podcast.feedUrl}
+                  onClick={() => void handleSubscribe(podcast)}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  {subscribingFeedUrl === podcast.feedUrl ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Subscribe</TooltipContent>
+            </Tooltip>
           )}
         />
         {filteredDiscoverResults.length > visibleDiscoverResults.length ? (
