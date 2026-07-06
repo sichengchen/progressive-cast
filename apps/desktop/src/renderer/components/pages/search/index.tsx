@@ -14,13 +14,13 @@ import {
   CircleOff,
   ExternalLink,
   Loader2,
-  Play,
   Plus,
   Search,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { EpisodeList } from "@/components/common/episode-list";
 import {
   List,
   ListItem,
@@ -39,7 +39,7 @@ import { desktopApi } from "@/desktop-api";
 import { iTunesService, type iTunesPodcast } from "@/lib/itunes-service";
 import { usePodcastStore } from "@/lib/store";
 import type { Episode, Podcast } from "@/lib/types";
-import { formatDate, formatTime, richTextToPlainText } from "@/lib/utils";
+import { richTextToPlainText } from "@/lib/utils";
 import type { EpisodeSummary } from "../../../../shared/types";
 
 type SearchSource = "discover" | "library";
@@ -251,6 +251,7 @@ export function SearchPage() {
 
   const podcasts = usePodcastStore((state) => state.podcasts);
   const preferences = usePodcastStore((state) => state.preferences);
+  const playbackProgress = usePodcastStore((state) => state.playbackProgress);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const subscribeToPodcast = usePodcastStore((state) => state.subscribeToPodcast);
@@ -343,11 +344,6 @@ export function SearchPage() {
 
   const subscribedFeedUrls = useMemo(
     () => new Set(podcasts.map((podcast) => normalizeFeedUrl(podcast.feedUrl))),
-    [podcasts],
-  );
-
-  const podcastById = useMemo(
-    () => new Map(podcasts.map((podcast) => [podcast.id, podcast])),
     [podcasts],
   );
 
@@ -477,10 +473,6 @@ export function SearchPage() {
     });
   };
 
-  const handlePlayEpisode = (episode: Episode) => {
-    playEpisode(episode);
-  };
-
   const renderDiscoverContent = (filter: SearchFilter) => {
     if (!currentTerm) {
       return <EmptyState title="Search Discover" />;
@@ -580,24 +572,27 @@ export function SearchPage() {
 
     return (
       <>
-        <List className="px-0">
-          {visiblePodcasts.map(({ podcast }) => (
-            <LibraryPodcastRow
-              key={podcast.id}
-              podcast={podcast}
-              onOpen={() => handleOpenPodcast(podcast.id)}
-            />
-          ))}
+        {visiblePodcasts.length > 0 ? (
+          <List className="px-0">
+            {visiblePodcasts.map(({ podcast }) => (
+              <LibraryPodcastRow
+                key={podcast.id}
+                podcast={podcast}
+                onOpen={() => handleOpenPodcast(podcast.id)}
+              />
+            ))}
+          </List>
+        ) : null}
 
-          {visibleEpisodes.map((episode) => (
-            <LibraryEpisodeRow
-              key={episode.id}
-              episode={episode}
-              podcast={podcastById.get(episode.podcastId)}
-              onPlay={() => handlePlayEpisode(episode)}
-            />
-          ))}
-        </List>
+        {visibleEpisodes.length > 0 ? (
+          <EpisodeList
+            episodes={visibleEpisodes}
+            isLoadingEpisodes={false}
+            playbackProgress={playbackProgress}
+            playEpisode={playEpisode}
+          />
+        ) : null}
+
         {hasHiddenResults ? (
           <TruncatedResultsNote
             hasMore={(filter === "top" || filter === "episodes") && currentLibraryEpisodeResultsHaveMore}
@@ -796,75 +791,6 @@ function LibraryPodcastRow({
 
       <ListItemTrailing>
         <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-      </ListItemTrailing>
-    </ListItem>
-  );
-}
-
-function LibraryEpisodeRow({
-  episode,
-  onPlay,
-  podcast,
-}: {
-  episode: Episode;
-  onPlay: () => void;
-  podcast?: Podcast;
-}) {
-  return (
-    <ListItem
-      className="group px-3 py-3"
-      interactive
-      onClick={onPlay}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onPlay();
-        }
-      }}
-      role="button"
-    >
-      <ListItemLeading>
-        <CoverImage
-          alt={`${episode.title} cover`}
-          className="h-14 w-14 rounded-md"
-          loading="lazy"
-          src={episode.imageUrl || podcast?.imageUrl}
-        >
-          <div className="absolute inset-0 flex items-center justify-center bg-black/45 opacity-0 transition-opacity group-hover:opacity-100">
-            <Play className="h-5 w-5 fill-current text-white" />
-          </div>
-        </CoverImage>
-      </ListItemLeading>
-
-      <ListItemContent className="min-w-0">
-        <ListItemMeta>
-          {[
-            podcast?.title,
-            formatDate(episode.publishedAt),
-            episode.duration ? formatTime(episode.duration) : null,
-          ]
-            .filter(Boolean)
-            .join(" · ")}
-        </ListItemMeta>
-        <ListItemTitle className="line-clamp-1 text-base">{episode.title}</ListItemTitle>
-        <ListItemDescription className="line-clamp-1">
-          {richTextToPlainText(episode.description || episode.showNotes || episode.content)}
-        </ListItemDescription>
-      </ListItemContent>
-
-      <ListItemTrailing>
-        <Button
-          aria-label={`Play ${episode.title}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            onPlay();
-          }}
-          size="icon"
-          type="button"
-          variant="secondary"
-        >
-          <Play className="h-4 w-4 fill-current" />
-        </Button>
       </ListItemTrailing>
     </ListItem>
   );
