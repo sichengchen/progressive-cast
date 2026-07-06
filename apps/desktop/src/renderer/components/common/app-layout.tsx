@@ -207,7 +207,7 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
           />
 
           {/* Desktop: Main Content Area */}
-          <div className="app-drag flex min-w-0 flex-1 overflow-hidden">
+          <div className="app-drag desktop-window-content-safe-area flex min-w-0 flex-1 overflow-hidden">
             {/* Main Content */}
             <div className="min-w-0 flex-1 bg-background overflow-hidden">{mainContent}</div>
 

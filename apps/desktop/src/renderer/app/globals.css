@@ -201,6 +201,10 @@
     background: transparent;
   }
 
+  .desktop-window-content-safe-area {
+    padding-block: 12px;
+  }
+
   /* Firefox scrollbar */
   * {
     scrollbar-width: thin;
