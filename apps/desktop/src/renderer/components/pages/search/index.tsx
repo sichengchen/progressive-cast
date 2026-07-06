@@ -261,8 +261,7 @@ export function SearchPage() {
   const submittedQuery = submittedQueries[source];
   const currentTerm = trimmedQuery === submittedQuery ? submittedQuery.trim() : "";
   const currentDiscoverTerm = source === "discover" ? currentTerm : "";
-  const isSearchingActiveSource =
-    source === "discover" ? isDiscoverLoading : isLibraryEpisodeSearching;
+  const shouldShowFilters = Boolean(currentTerm);
   const hasCurrentDiscoverResults =
     hasDiscoverSearched && currentDiscoverTerm === discoverTerm;
   const normalizedLibraryQuery =
@@ -648,19 +647,6 @@ export function SearchPage() {
                   </Button>
                 ) : null}
               </div>
-              <Button
-                aria-label="Search"
-                className="h-10"
-                disabled={!query.trim() || isSearchingActiveSource}
-                type="submit"
-              >
-                {isSearchingActiveSource ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Search className="h-4 w-4" />
-                )}
-                <span>Search</span>
-              </Button>
             </div>
 
             <Tabs
@@ -675,13 +661,15 @@ export function SearchPage() {
             </Tabs>
           </form>
 
-          <TabsList className="grid w-fit grid-cols-3 self-start">
-            {filters.map((filter) => (
-              <TabsTrigger key={filter.value} value={filter.value}>
-                {filter.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+          {shouldShowFilters ? (
+            <TabsList className="grid w-fit grid-cols-3 self-start">
+              {filters.map((filter) => (
+                <TabsTrigger key={filter.value} value={filter.value}>
+                  {filter.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          ) : null}
         </div>
 
         <div className="px-4">
