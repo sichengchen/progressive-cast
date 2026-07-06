@@ -4,10 +4,13 @@ import { useEffect, useRef, useCallback } from "react";
 import { usePodcastStore } from "@/lib/store";
 import { processTimestamps } from "@/lib/utils";
 import DOMPurify from "dompurify";
+import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
 import { ScrollingText } from "@/components/ui/scrolling-text";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function ShowNotes() {
   const { seekToTime, playbackState } = usePodcastStore();
+  const isMobile = useIsMobile();
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Use the currently playing episode instead of selected episode
@@ -196,34 +199,11 @@ export function ShowNotes() {
     }
   }, [content, currentEpisode, handleTimestampClick]);
 
-  return (
-    <div className="app-no-drag h-full flex flex-col">
-      {/* Episode header info */}
-      {currentEpisode && (
-        <div className="app-drag p-4 border-b flex-shrink-0 min-w-0">
-          <ScrollingText
-            text={currentEpisode.title}
-            className="font-semibold text-base mb-2 leading-tight"
-          />
-          {currentEpisode.publishedAt && (
-            <p className="text-sm text-muted-foreground">
-              {new Date(currentEpisode.publishedAt).toLocaleDateString()}
-            </p>
-          )}
-        </div>
-      )}
-
+  const notesContent = currentEpisode ? (
+    content ? (
       <div
-        className="flex-1 overflow-y-auto overflow-x-hidden p-4 min-w-0"
-        style={{
-          paddingBottom: currentEpisode ? "calc(6rem + env(safe-area-inset-bottom))" : "0",
-        }}
-      >
-        {currentEpisode ? (
-          content ? (
-            <div
-              ref={contentRef}
-              className="selectable-text prose prose-sm dark:prose-invert max-w-full leading-relaxed break-words
+        ref={contentRef}
+        className="selectable-text prose prose-sm dark:prose-invert max-w-full leading-relaxed break-words
                         prose-headings:text-foreground prose-headings:font-semibold prose-headings:break-words
                         prose-p:text-foreground prose-p:leading-relaxed prose-p:break-words prose-p:mb-4
                         prose-a:text-primary prose-a:underline prose-a:decoration-solid prose-a:underline-offset-2 prose-a:break-all prose-a:cursor-pointer prose-a:font-mono prose-a:bg-transparent prose-a:border-0 prose-a:p-0
@@ -242,21 +222,52 @@ export function ShowNotes() {
                         [&_.timestamp-link]:underline-offset-2 [&_.timestamp-link]:font-mono [&_.timestamp-link]:bg-transparent
                         [&_.timestamp-link]:border-0 [&_.timestamp-link]:p-0 [&_.timestamp-link]:cursor-pointer
                         [&_.timestamp-link:hover]:text-primary/80"
-              dangerouslySetInnerHTML={{
-                __html: processContent(content),
-              }}
-            />
-          ) : (
-            <div className="text-center text-muted-foreground py-8">
-              <p>No show notes available for this episode</p>
-            </div>
-          )
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            <p>Start playing an episode to view show notes</p>
-          </div>
-        )}
+        dangerouslySetInnerHTML={{
+          __html: processContent(content),
+        }}
+      />
+    ) : (
+      <div className="text-center text-muted-foreground py-8">
+        <p>No show notes available for this episode</p>
       </div>
+    )
+  ) : (
+    <div className="text-center text-muted-foreground py-8">
+      <p>Start playing an episode to view show notes</p>
+    </div>
+  );
+
+  return (
+    <div className="app-no-drag h-full flex flex-col">
+      {/* Episode header info */}
+      {currentEpisode && (
+        <div className="app-drag p-4 border-b flex-shrink-0 min-w-0">
+          <ScrollingText
+            text={currentEpisode.title}
+            className="font-semibold text-base mb-2 leading-tight"
+          />
+          {currentEpisode.publishedAt && (
+            <p className="text-sm text-muted-foreground">
+              {new Date(currentEpisode.publishedAt).toLocaleDateString()}
+            </p>
+          )}
+        </div>
+      )}
+
+      {isMobile ? (
+        <div
+          className="flex-1 overflow-y-auto overflow-x-hidden p-4 min-w-0"
+          style={{
+            paddingBottom: currentEpisode ? "calc(6rem + env(safe-area-inset-bottom))" : "0",
+          }}
+        >
+          {notesContent}
+        </div>
+      ) : (
+        <DesktopSafeScrollArea className="flex-1" contentClassName="p-4">
+          {notesContent}
+        </DesktopSafeScrollArea>
+      )}
     </div>
   );
 }

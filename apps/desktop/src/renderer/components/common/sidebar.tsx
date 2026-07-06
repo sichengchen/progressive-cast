@@ -14,6 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CoverImage } from "@/components/ui/cover-image";
+import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
 import { usePodcastStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -53,7 +54,6 @@ export function PodcastSidebar() {
   const podcasts = usePodcastStore((state) => state.podcasts);
   const isLoading = usePodcastStore((state) => state.isLoading);
   const isRefreshing = usePodcastStore((state) => state.isRefreshing);
-  const hasActiveEpisode = usePodcastStore((state) => Boolean(state.playbackState.currentEpisode));
   const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
@@ -143,11 +143,9 @@ export function PodcastSidebar() {
           </div>
 
           {/* Scrollable podcasts list */}
-          <div
-            className="flex-1 min-h-0 overflow-y-auto p-2 pt-0"
-            style={{
-              paddingBottom: hasActiveEpisode ? "calc(6rem + env(safe-area-inset-bottom))" : "0",
-            }}
+          <DesktopSafeScrollArea
+            className="flex-1"
+            contentClassName="p-2 pt-0 pb-[var(--desktop-window-safe-area-block)]"
           >
             <div className="w-full text-sm">
               {isLoading ? (
@@ -206,7 +204,7 @@ export function PodcastSidebar() {
                 </ul>
               )}
             </div>
-          </div>
+          </DesktopSafeScrollArea>
         </div>
       </div>
     </>

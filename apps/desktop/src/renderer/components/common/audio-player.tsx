@@ -449,7 +449,9 @@ export function AudioPlayer() {
 
   return (
     <div
-      className={`app-no-drag fixed left-0 right-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-safe ${isMobile ? "bottom-16" : "bottom-0 border-t"}`}
+      className={`app-no-drag z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-safe ${
+        isMobile ? "fixed left-0 right-0 bottom-16" : "shrink-0 border-t"
+      }`}
     >
       <audio ref={audioRef} />
 

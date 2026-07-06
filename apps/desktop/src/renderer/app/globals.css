@@ -202,7 +202,8 @@
   }
 
   .desktop-window-content-safe-area {
-    padding-block: 12px;
+    --desktop-window-safe-area-block: 12px;
+    --desktop-window-safe-area-inline-end: 12px;
   }
 
   /* Firefox scrollbar */

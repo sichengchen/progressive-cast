@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { MobileTabBar, type MobileTabBarItem } from "@/components/ui-custom/mobile-tab-bar";
 import { AddPodcastDialog } from "@/components/common/add-podcast-dialog";
+import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
 import { WelcomeScreen } from "@/components/common/welcome";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePodcastStore } from "@/lib/store";
@@ -76,61 +77,64 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
   const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
 
   const hasActiveEpisode = !!playbackState.currentEpisode;
+  const pageContent = (
+    <div className="app-drag mx-auto max-w-6xl px-4 py-3">
+      {title ? (
+        <div className="mt-6 flex items-center gap-3 px-2">
+          {isMobile && backTo ? (
+            <Button
+              className="-ml-2 p-2"
+              onClick={() => navigate({ to: backTo })}
+              size="sm"
+              variant="outline"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
+            </Button>
+          ) : null}
+
+          <h1 className="flex-1 line-clamp-1 text-2xl font-bold">{title}</h1>
+
+          {isMobile
+            ? toolBar?.map((item) => (
+                <Button
+                  className="p-2"
+                  disabled={item.disabled}
+                  key={item.label}
+                  onClick={item.onClick}
+                  size="sm"
+                  title={item.label}
+                  variant="outline"
+                >
+                  {item.icon}
+                  <span className="sr-only">{item.label}</span>
+                </Button>
+              ))
+            : null}
+        </div>
+      ) : null}
+
+      <div className="app-no-drag">{children}</div>
+    </div>
+  );
 
   return (
     <>
-      <div className="flex h-full flex-col">
-        <div
-          className="flex-1 overflow-y-auto"
-          style={{
-            paddingBottom: isMobile
-              ? hasActiveEpisode
+      <div className="flex h-full min-h-0 flex-col">
+        {isMobile ? (
+          <div
+            className="flex-1 overflow-y-auto"
+            style={{
+              paddingBottom: hasActiveEpisode
                 ? "calc(10rem + env(safe-area-inset-bottom))"
-                : "calc(4rem + env(safe-area-inset-bottom))"
-              : hasActiveEpisode
-                ? "calc(6rem + env(safe-area-inset-bottom))"
-                : "0",
-          }}
-        >
-          <div className="app-drag mx-auto max-w-6xl px-4 py-3">
-            {title ? (
-              <div className="mt-6 flex items-center gap-3 px-2">
-                {isMobile && backTo ? (
-                  <Button
-                    className="-ml-2 p-2"
-                    onClick={() => navigate({ to: backTo })}
-                    size="sm"
-                    variant="outline"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="sr-only">Back</span>
-                  </Button>
-                ) : null}
-
-                <h1 className="flex-1 line-clamp-1 text-2xl font-bold">{title}</h1>
-
-                {isMobile
-                  ? toolBar?.map((item) => (
-                      <Button
-                        className="p-2"
-                        disabled={item.disabled}
-                        key={item.label}
-                        onClick={item.onClick}
-                        size="sm"
-                        title={item.label}
-                        variant="outline"
-                      >
-                        {item.icon}
-                        <span className="sr-only">{item.label}</span>
-                      </Button>
-                    ))
-                  : null}
-              </div>
-            ) : null}
-
-            <div className="app-no-drag">{children}</div>
+                : "calc(4rem + env(safe-area-inset-bottom))",
+            }}
+          >
+            {pageContent}
           </div>
-        </div>
+        ) : (
+          <DesktopSafeScrollArea className="flex-1">{pageContent}</DesktopSafeScrollArea>
+        )}
       </div>
 
       {isMobile ? (

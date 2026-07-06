@@ -189,50 +189,54 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
           {controlBar}
         </div>
       ) : (
-        <div ref={desktopLayoutRef} className="flex h-screen overflow-hidden">
-          {/* Desktop: Sidebar */}
-          <div
-            className="flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
-            style={{
-              minWidth: MIN_SIDEBAR_WIDTH,
-              width: panelSizes.sidebarWidth,
-            }}
-          >
-            {sidebar}
-          </div>
-
-          <ResizeHandle
-            ariaLabel="Resize sidebar"
-            onPointerDown={startResize("sidebar")}
-          />
-
-          {/* Desktop: Main Content Area */}
-          <div className="app-drag desktop-window-content-safe-area flex min-w-0 flex-1 overflow-hidden">
-            {/* Main Content */}
-            <div className="min-w-0 flex-1 bg-background overflow-hidden">{mainContent}</div>
-
-            {/* Right Panel (Show Notes) */}
-            {showNotesOpen && (
-              <ResizeHandle
-                ariaLabel="Resize show notes"
-                onPointerDown={startResize("rightPanel")}
-              />
-            )}
-
+        <div
+          ref={desktopLayoutRef}
+          className="desktop-window-content-safe-area flex h-screen flex-col overflow-hidden"
+        >
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            {/* Desktop: Sidebar */}
             <div
-              className={`flex-shrink-0 border-l border-sidebar-border bg-background ${
-                showNotesOpen ? "" : "overflow-hidden"
-              } ${activeResize?.kind === "rightPanel" ? "no-transition" : "transition-[width] duration-200 ease-in-out"}`}
+              className="flex-shrink-0 border-r border-sidebar-border bg-sidebar text-sidebar-foreground"
               style={{
-                minWidth: showNotesOpen ? MIN_RIGHT_PANEL_WIDTH : 0,
-                width: showNotesOpen ? panelSizes.rightPanelWidth : 0,
+                minWidth: MIN_SIDEBAR_WIDTH,
+                width: panelSizes.sidebarWidth,
               }}
             >
-              {showNotesOpen && rightPanel}
+              {sidebar}
+            </div>
+
+            <ResizeHandle
+              ariaLabel="Resize sidebar"
+              onPointerDown={startResize("sidebar")}
+            />
+
+            {/* Desktop: Main Content Area */}
+            <div className="app-drag flex min-w-0 flex-1 overflow-hidden">
+              {/* Main Content */}
+              <div className="min-w-0 flex-1 bg-background overflow-hidden">{mainContent}</div>
+
+              {/* Right Panel (Show Notes) */}
+              {showNotesOpen && (
+                <ResizeHandle
+                  ariaLabel="Resize show notes"
+                  onPointerDown={startResize("rightPanel")}
+                />
+              )}
+
+              <div
+                className={`flex-shrink-0 border-l border-sidebar-border bg-background ${
+                  showNotesOpen ? "" : "overflow-hidden"
+                } ${activeResize?.kind === "rightPanel" ? "no-transition" : "transition-[width] duration-200 ease-in-out"}`}
+                style={{
+                  minWidth: showNotesOpen ? MIN_RIGHT_PANEL_WIDTH : 0,
+                  width: showNotesOpen ? panelSizes.rightPanelWidth : 0,
+                }}
+              >
+                {showNotesOpen && rightPanel}
+              </div>
             </div>
           </div>
 
-          {/* Desktop: Control Bar (Audio Player) */}
           {controlBar}
         </div>
       )}
