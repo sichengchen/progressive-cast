@@ -7,6 +7,7 @@ import type {
   DownloadStatus,
   EpisodePage,
   EpisodePageRequest,
+  EpisodeSearchRequest,
   EpisodeSummary,
   PlaybackProgressInput,
   PodcastSummary,
@@ -321,6 +322,70 @@ export class LocalDatabase {
       )
       .all()
       .map(toEpisodeSummary);
+  }
+
+  searchEpisodes(request: EpisodeSearchRequest): EpisodePage {
+    const query = request.query.trim().toLowerCase();
+    const page = normalizePageRequest(request);
+
+    if (!query) {
+      return {
+        episodes: [],
+        hasMore: false,
+        nextOffset: page.offset,
+      };
+    }
+
+    const escapedQuery = escapeLikePattern(query);
+    const contains = `%${escapedQuery}%`;
+    const prefix = `${escapedQuery}%`;
+    const wordPrefix = `% ${escapedQuery}%`;
+    const rows = this.db
+      .prepare(
+        `SELECT
+          id,
+          podcast_id,
+          guid,
+          title,
+          description,
+          content,
+          audio_url,
+          image_url,
+          published_at,
+          duration,
+          downloaded_path,
+          file_size,
+          downloaded_at
+        FROM episodes
+        WHERE LOWER(title) LIKE ? ESCAPE '\\'
+          OR LOWER(COALESCE(description, '')) LIKE ? ESCAPE '\\'
+          OR LOWER(COALESCE(content, '')) LIKE ? ESCAPE '\\'
+        ORDER BY
+          CASE
+            WHEN LOWER(title) = ? THEN 0
+            WHEN LOWER(title) LIKE ? ESCAPE '\\' THEN 1
+            WHEN LOWER(title) LIKE ? ESCAPE '\\' THEN 2
+            WHEN LOWER(title) LIKE ? ESCAPE '\\' THEN 3
+            ELSE 5
+          END,
+          published_at DESC,
+          id DESC
+        LIMIT ? OFFSET ?`,
+      )
+      .all(
+        contains,
+        contains,
+        contains,
+        query,
+        prefix,
+        wordPrefix,
+        contains,
+        page.limit + 1,
+        page.offset,
+      )
+      .map(toEpisodeSummary);
+
+    return toEpisodePage(rows, page);
   }
 
   getEpisode(episodeId: string): EpisodeSummary | null {
@@ -677,6 +742,10 @@ function maybeNumber(value: unknown): number | undefined {
   }
 
   return undefined;
+}
+
+function escapeLikePattern(value: string): string {
+  return value.replace(/[\\%_]/g, (match) => `\\${match}`);
 }
 
 function requireString(row: Row, key: string): string {

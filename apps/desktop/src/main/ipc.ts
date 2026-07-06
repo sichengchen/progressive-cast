@@ -35,6 +35,9 @@ export function registerIpcHandlers(db: LocalDatabase, downloadsDir: string): vo
   ipcMain.handle(ipcChannels.episodes.listByPodcastPage, (_event, podcastId: string, request) =>
     library.listEpisodesByPodcastPage(podcastId, request),
   );
+  ipcMain.handle(ipcChannels.episodes.search, (_event, request) =>
+    library.searchEpisodes(request),
+  );
 
   ipcMain.handle(ipcChannels.downloads.start, (_event, episodeId: string) =>
     downloads.start(episodeId),

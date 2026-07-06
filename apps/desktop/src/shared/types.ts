@@ -31,6 +31,10 @@ export interface EpisodePageRequest {
   offset?: number;
 }
 
+export interface EpisodeSearchRequest extends EpisodePageRequest {
+  query: string;
+}
+
 export interface EpisodePage {
   episodes: EpisodeSummary[];
   hasMore: boolean;

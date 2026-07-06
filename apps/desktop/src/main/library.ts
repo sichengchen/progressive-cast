@@ -1,4 +1,10 @@
-import type { EpisodePage, EpisodePageRequest, EpisodeSummary, PodcastSummary } from "../shared/types";
+import type {
+  EpisodePage,
+  EpisodePageRequest,
+  EpisodeSearchRequest,
+  EpisodeSummary,
+  PodcastSummary,
+} from "../shared/types";
 import type { LocalDatabase } from "./db";
 import { RssService } from "./rss";
 
@@ -64,5 +70,9 @@ export class LibraryService {
 
   async listEpisodes(): Promise<EpisodeSummary[]> {
     return this.db.listEpisodes();
+  }
+
+  async searchEpisodes(request: EpisodeSearchRequest): Promise<EpisodePage> {
+    return this.db.searchEpisodes(request);
   }
 }

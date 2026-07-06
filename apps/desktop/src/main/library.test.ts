@@ -114,6 +114,49 @@ test("lists podcasts and episodes in stable local ordering", async () => {
   }
 });
 
+test("searches episodes with title ranking and bounded paging", async () => {
+  const db = createTestDatabase();
+  seedPodcast(db, "podcast_1", "Example Feed", "https://example.com/feed.xml", [
+    {
+      audioUrl: "https://example.com/exact.mp3",
+      content: "No secondary match here",
+      id: "episode_exact",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      title: "Mars",
+    },
+    {
+      audioUrl: "https://example.com/prefix.mp3",
+      id: "episode_prefix",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-03T00:00:00.000Z",
+      title: "Mars Colony",
+    },
+    {
+      audioUrl: "https://example.com/body.mp3",
+      content: "A long discussion about Mars exploration",
+      id: "episode_body",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-04T00:00:00.000Z",
+      title: "Space News",
+    },
+  ]);
+  const library = new LibraryService(db, feedReader(feed()));
+
+  try {
+    const page = await library.searchEpisodes({ limit: 2, query: "mars" });
+
+    assert.deepEqual(
+      page.episodes.map((episode) => episode.id),
+      ["episode_exact", "episode_prefix"],
+    );
+    assert.equal(page.hasMore, true);
+    assert.equal(page.nextOffset, 2);
+  } finally {
+    db.close();
+  }
+});
+
 test("refresh updates feed content while preserving subscription date and downloaded state", async () => {
   const db = createTestDatabase();
   seedPodcast(db, "podcast_1", "Old Title");

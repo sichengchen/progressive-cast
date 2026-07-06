@@ -51,12 +51,6 @@ interface RankedPodcast {
   score: number;
 }
 
-interface RankedEpisode {
-  episode: Episode;
-  publishedAtTime: number;
-  score: number;
-}
-
 interface PodcastSearchEntry {
   normalizedAuthor: string;
   normalizedDescription: string;
@@ -65,19 +59,9 @@ interface PodcastSearchEntry {
   titleWords: string[];
 }
 
-interface EpisodeSearchEntry {
-  episode: Episode;
-  normalizedBody: string;
-  normalizedTitle: string;
-  publishedAtTime: number;
-  titleWords: string[];
-}
-
 const resultRenderLimit = 75;
-const emptyLibraryResults = {
-  episodes: [] as RankedEpisode[],
-  podcasts: [] as RankedPodcast[],
-};
+const emptyPodcastResults: RankedPodcast[] = [];
+const emptyEpisodeResults: Episode[] = [];
 
 const filters: Array<{ label: string; value: SearchFilter }> = [
   { label: "Top Results", value: "top" },
@@ -162,25 +146,6 @@ function createPodcastSearchEntry(podcast: Podcast): PodcastSearchEntry {
   };
 }
 
-function createEpisodeSearchEntry(episode: Episode): EpisodeSearchEntry {
-  const normalizedTitle = normalizeSearchText(episode.title);
-  const normalizedBody = [
-    episode.description,
-    episode.showNotes,
-    episode.content,
-  ]
-    .map(normalizeSearchText)
-    .join(" ");
-
-  return {
-    episode,
-    normalizedBody,
-    normalizedTitle,
-    publishedAtTime: new Date(episode.publishedAt).getTime(),
-    titleWords: splitNormalizedWords(normalizedTitle),
-  };
-}
-
 function podcastMatchScore(entry: PodcastSearchEntry, query: string) {
   const titleScore = titleMatchScore(entry.normalizedTitle, entry.titleWords, query);
 
@@ -199,20 +164,6 @@ function podcastMatchScore(entry: PodcastSearchEntry, query: string) {
   return null;
 }
 
-function episodeMatchScore(entry: EpisodeSearchEntry, query: string) {
-  const titleScore = titleMatchScore(entry.normalizedTitle, entry.titleWords, query);
-
-  if (titleScore !== null) {
-    return titleScore;
-  }
-
-  if (entry.normalizedBody.includes(query)) {
-    return 5;
-  }
-
-  return null;
-}
-
 function sortRankedPodcasts(a: RankedPodcast, b: RankedPodcast) {
   if (a.score !== b.score) {
     return a.score - b.score;
@@ -221,49 +172,21 @@ function sortRankedPodcasts(a: RankedPodcast, b: RankedPodcast) {
   return a.podcast.title.localeCompare(b.podcast.title);
 }
 
-function sortRankedEpisodes(a: RankedEpisode, b: RankedEpisode) {
-  if (a.score !== b.score) {
-    return a.score - b.score;
-  }
-
-  return b.publishedAtTime - a.publishedAtTime;
-}
-
-function getLibraryResults(
+function getPodcastResults(
   query: string,
   podcasts: PodcastSearchEntry[],
-  episodes: EpisodeSearchEntry[],
 ) {
   if (!query) {
-    return emptyLibraryResults;
+    return emptyPodcastResults;
   }
 
-  const rankedPodcasts = podcasts
+  return podcasts
     .map((entry) => {
       const score = podcastMatchScore(entry, query);
       return score === null ? null : { podcast: entry.podcast, score };
     })
     .filter((result): result is RankedPodcast => result !== null)
     .sort(sortRankedPodcasts);
-
-  const rankedEpisodes = episodes
-    .map((entry) => {
-      const score = episodeMatchScore(entry, query);
-      return score === null
-        ? null
-        : {
-            episode: entry.episode,
-            publishedAtTime: entry.publishedAtTime,
-            score,
-          };
-    })
-    .filter((result): result is RankedEpisode => result !== null)
-    .sort(sortRankedEpisodes);
-
-  return {
-    episodes: rankedEpisodes,
-    podcasts: rankedPodcasts,
-  };
 }
 
 function EmptyState({
@@ -289,15 +212,18 @@ function EmptyState({
 }
 
 function TruncatedResultsNote({
+  hasMore = false,
   shownCount,
   totalCount,
 }: {
+  hasMore?: boolean;
   shownCount: number;
   totalCount: number;
 }) {
   return (
     <p className="px-4 py-3 text-xs text-muted-foreground">
-      Showing first {shownCount} of {totalCount} results. Narrow your search to see more.
+      Showing first {shownCount} of {hasMore ? `${totalCount}+` : totalCount} results. Narrow your
+      search to see more.
     </p>
   );
 }
@@ -312,16 +238,16 @@ export function SearchPage() {
   const [discoverTerm, setDiscoverTerm] = useState("");
   const [hasDiscoverSearched, setHasDiscoverSearched] = useState(false);
   const [isDiscoverLoading, setIsDiscoverLoading] = useState(false);
-  const [isLibraryHydrating, setIsLibraryHydrating] = useState(false);
-  const [searchEpisodes, setSearchEpisodes] = useState<Episode[]>(
-    () => usePodcastStore.getState().libraryEpisodes,
-  );
+  const [isLibraryEpisodeSearching, setIsLibraryEpisodeSearching] = useState(false);
+  const [libraryEpisodeResults, setLibraryEpisodeResults] =
+    useState<Episode[]>(emptyEpisodeResults);
+  const [libraryEpisodeResultsHaveMore, setLibraryEpisodeResultsHaveMore] = useState(false);
+  const [libraryEpisodeTerm, setLibraryEpisodeTerm] = useState("");
   const [subscribingFeedUrl, setSubscribingFeedUrl] = useState<string | null>(null);
   const discoverRequestId = useRef(0);
-  const latestLibraryEpisodesRef = useRef(searchEpisodes);
+  const libraryRequestId = useRef(0);
 
   const podcasts = usePodcastStore((state) => state.podcasts);
-  const libraryEpisodes = usePodcastStore((state) => state.libraryEpisodes);
   const preferences = usePodcastStore((state) => state.preferences);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
@@ -334,6 +260,8 @@ export function SearchPage() {
     hasDiscoverSearched && currentDiscoverTerm === discoverTerm;
   const normalizedLibraryQuery =
     source === "library" ? normalizeSearchText(deferredQuery) : "";
+  const shouldSearchLibraryEpisodes =
+    source === "library" && activeFilter !== "podcasts" && normalizedLibraryQuery !== "";
 
   useEffect(() => {
     if (!discoverEnabled && activeSource !== "library") {
@@ -342,50 +270,70 @@ export function SearchPage() {
   }, [activeSource, discoverEnabled]);
 
   useEffect(() => {
-    latestLibraryEpisodesRef.current = libraryEpisodes;
-    setSearchEpisodes(libraryEpisodes);
-  }, [libraryEpisodes]);
-
-  useEffect(() => {
-    if (source !== "library") {
+    if (!shouldSearchLibraryEpisodes) {
+      setIsLibraryEpisodeSearching(false);
+      setLibraryEpisodeResults(emptyEpisodeResults);
+      setLibraryEpisodeResultsHaveMore(false);
+      setLibraryEpisodeTerm("");
       return;
     }
 
-    if (podcasts.length === 0) {
-      setSearchEpisodes([]);
-      setIsLibraryHydrating(false);
-      return;
-    }
+    const requestId = libraryRequestId.current + 1;
+    libraryRequestId.current = requestId;
+    setIsLibraryEpisodeSearching(true);
 
-    let cancelled = false;
-    setIsLibraryHydrating(true);
+    const timeout = window.setTimeout(() => {
+      void desktopApi.episodes
+        .search({
+          limit: resultRenderLimit + 1,
+          query: normalizedLibraryQuery,
+        })
+        .then((page) => {
+          if (libraryRequestId.current !== requestId) {
+            return;
+          }
 
-    void desktopApi.episodes
-      .listAll()
-      .then((episodes) => {
-        if (!cancelled) {
-          const mappedEpisodes = episodes.map(toSearchEpisode);
-          setSearchEpisodes(mappedEpisodes);
-          latestLibraryEpisodesRef.current = mappedEpisodes;
-        }
-      })
-      .catch((error) => {
-        console.error("Failed to hydrate library episodes for search:", error);
+          setLibraryEpisodeResults(page.episodes.map(toSearchEpisode));
+          setLibraryEpisodeResultsHaveMore(page.hasMore);
+          setLibraryEpisodeTerm(normalizedLibraryQuery);
+        })
+        .catch((error) => {
+          if (libraryRequestId.current !== requestId) {
+            return;
+          }
 
-        if (!cancelled) {
-          setSearchEpisodes(latestLibraryEpisodesRef.current);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setIsLibraryHydrating(false);
-        }
-      });
+          setLibraryEpisodeResults(emptyEpisodeResults);
+          setLibraryEpisodeResultsHaveMore(false);
+          setLibraryEpisodeTerm(normalizedLibraryQuery);
+          console.error("Failed to search library episodes:", error);
+        })
+        .finally(() => {
+          if (libraryRequestId.current === requestId) {
+            setIsLibraryEpisodeSearching(false);
+          }
+        });
+    }, 120);
 
     return () => {
-      cancelled = true;
+      window.clearTimeout(timeout);
+      if (libraryRequestId.current === requestId) {
+        setIsLibraryEpisodeSearching(false);
+      }
     };
-  }, [podcasts.length, source]);
+  }, [normalizedLibraryQuery, shouldSearchLibraryEpisodes]);
+
+  useEffect(() => {
+    if (source !== "library" || activeFilter !== "podcasts") {
+      return;
+    }
+
+    const requestId = libraryRequestId.current + 1;
+    libraryRequestId.current = requestId;
+    setLibraryEpisodeResults(emptyEpisodeResults);
+    setLibraryEpisodeResultsHaveMore(false);
+    setLibraryEpisodeTerm("");
+    setIsLibraryEpisodeSearching(false);
+  }, [activeFilter, source]);
 
   const subscribedFeedUrls = useMemo(
     () => new Set(podcasts.map((podcast) => normalizeFeedUrl(podcast.feedUrl))),
@@ -402,11 +350,6 @@ export function SearchPage() {
     [podcasts],
   );
 
-  const episodeSearchIndex = useMemo(
-    () => searchEpisodes.map(createEpisodeSearchEntry),
-    [searchEpisodes],
-  );
-
   const filteredDiscoverResults = useMemo(
     () =>
       discoverResults.filter(
@@ -415,13 +358,19 @@ export function SearchPage() {
     [discoverResults, subscribedFeedUrls],
   );
 
-  const libraryResults = useMemo(
+  const libraryPodcastResults = useMemo(
     () =>
       source === "library"
-        ? getLibraryResults(normalizedLibraryQuery, podcastSearchIndex, episodeSearchIndex)
-        : emptyLibraryResults,
-    [episodeSearchIndex, normalizedLibraryQuery, podcastSearchIndex, source],
+        ? getPodcastResults(normalizedLibraryQuery, podcastSearchIndex)
+        : emptyPodcastResults,
+    [normalizedLibraryQuery, podcastSearchIndex, source],
   );
+  const hasCurrentLibraryEpisodeResults = libraryEpisodeTerm === normalizedLibraryQuery;
+  const currentLibraryEpisodeResults = hasCurrentLibraryEpisodeResults
+    ? libraryEpisodeResults
+    : emptyEpisodeResults;
+  const currentLibraryEpisodeResultsHaveMore =
+    hasCurrentLibraryEpisodeResults && libraryEpisodeResultsHaveMore;
 
   const getResultCount = (filter: SearchFilter) =>
     source === "discover"
@@ -429,10 +378,10 @@ export function SearchPage() {
         ? 0
         : filteredDiscoverResults.length
       : filter === "episodes"
-        ? libraryResults.episodes.length
+        ? currentLibraryEpisodeResults.length
         : filter === "podcasts"
-          ? libraryResults.podcasts.length
-          : libraryResults.podcasts.length + libraryResults.episodes.length;
+          ? libraryPodcastResults.length
+          : libraryPodcastResults.length + currentLibraryEpisodeResults.length;
 
   const activeResultCount = getResultCount(activeFilter);
 
@@ -604,12 +553,12 @@ export function SearchPage() {
 
     const tabResultCount = getResultCount(filter);
 
-    if (tabResultCount === 0 && isLibraryHydrating) {
+    if (tabResultCount === 0 && isLibraryEpisodeSearching) {
       return (
         <EmptyState
           icon={<Loader2 className="h-8 w-8 animate-spin" />}
           title="Searching your library"
-          description="Loading local episodes."
+          description="Searching local episodes."
         />
       );
     }
@@ -626,7 +575,7 @@ export function SearchPage() {
     const visiblePodcasts =
       filter === "episodes"
         ? []
-        : libraryResults.podcasts.slice(0, resultRenderLimit);
+        : libraryPodcastResults.slice(0, resultRenderLimit);
     const remainingEpisodeSlots =
       filter === "top"
         ? Math.max(resultRenderLimit - visiblePodcasts.length, 0)
@@ -634,8 +583,11 @@ export function SearchPage() {
     const visibleEpisodes =
       filter === "podcasts"
         ? []
-        : libraryResults.episodes.slice(0, remainingEpisodeSlots);
+        : currentLibraryEpisodeResults.slice(0, remainingEpisodeSlots);
     const shownResultCount = visiblePodcasts.length + visibleEpisodes.length;
+    const hasHiddenResults =
+      tabResultCount > shownResultCount ||
+      ((filter === "top" || filter === "episodes") && currentLibraryEpisodeResultsHaveMore);
 
     return (
       <>
@@ -648,7 +600,7 @@ export function SearchPage() {
             />
           ))}
 
-          {visibleEpisodes.map(({ episode }) => (
+          {visibleEpisodes.map((episode) => (
             <LibraryEpisodeRow
               key={episode.id}
               episode={episode}
@@ -657,8 +609,12 @@ export function SearchPage() {
             />
           ))}
         </List>
-        {tabResultCount > shownResultCount ? (
-          <TruncatedResultsNote shownCount={shownResultCount} totalCount={tabResultCount} />
+        {hasHiddenResults ? (
+          <TruncatedResultsNote
+            hasMore={(filter === "top" || filter === "episodes") && currentLibraryEpisodeResultsHaveMore}
+            shownCount={shownResultCount}
+            totalCount={tabResultCount}
+          />
         ) : null}
       </>
     );
