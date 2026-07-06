@@ -19,12 +19,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { EpisodeListItems } from "@/components/common/episode-list";
-import { PodcastListItems } from "@/components/common/podcast-list";
+import { EpisodeList } from "@/components/common/episode-list";
+import { PodcastList } from "@/components/common/podcast-list";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { List } from "@/components/ui-custom/list";
 import { desktopApi } from "@/desktop-api";
 import { iTunesService, type iTunesPodcast } from "@/lib/itunes-service";
 import { usePodcastStore } from "@/lib/store";
@@ -498,46 +497,44 @@ export function SearchPage() {
 
     return (
       <>
-        <List className="px-0">
-          <PodcastListItems
-            getDescription={(podcast) =>
-              [podcast.author, podcast.genre].filter(Boolean).join(" · ") || "Discover"
-            }
-            getKey={(podcast) => `${podcast.id}-${podcast.feedUrl}`}
-            podcasts={visibleDiscoverResults}
-            renderActions={(podcast) => (
-              <>
-                {podcast.itunesUrl ? (
-                  <Button
-                    aria-label={`Open external listing for ${podcast.title}`}
-                    onClick={() => {
-                      window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
-                    }}
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                ) : null}
+        <PodcastList
+          getDescription={(podcast) =>
+            [podcast.author, podcast.genre].filter(Boolean).join(" · ") || "Discover"
+          }
+          getKey={(podcast) => `${podcast.id}-${podcast.feedUrl}`}
+          podcasts={visibleDiscoverResults}
+          renderActions={(podcast) => (
+            <>
+              {podcast.itunesUrl ? (
                 <Button
-                  disabled={subscribingFeedUrl === podcast.feedUrl}
-                  onClick={() => void handleSubscribe(podcast)}
-                  size="sm"
+                  aria-label={`Open external listing for ${podcast.title}`}
+                  onClick={() => {
+                    window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
+                  }}
+                  size="icon"
                   type="button"
-                  variant="secondary"
+                  variant="ghost"
                 >
-                  {subscribingFeedUrl === podcast.feedUrl ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                  <span>Subscribe</span>
+                  <ExternalLink className="h-4 w-4" />
                 </Button>
-              </>
-            )}
-          />
-        </List>
+              ) : null}
+              <Button
+                disabled={subscribingFeedUrl === podcast.feedUrl}
+                onClick={() => void handleSubscribe(podcast)}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                {subscribingFeedUrl === podcast.feedUrl ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span>Subscribe</span>
+              </Button>
+            </>
+          )}
+        />
         {filteredDiscoverResults.length > visibleDiscoverResults.length ? (
           <TruncatedResultsNote
             shownCount={visibleDiscoverResults.length}
@@ -587,25 +584,24 @@ export function SearchPage() {
 
     return (
       <>
-        <List className="px-0">
-          {visiblePodcasts.length > 0 ? (
-            <PodcastListItems
-              getDescription={(podcast) =>
-                podcast.author || richTextToPlainText(podcast.description) || "Subscribed podcast"
-              }
-              onOpen={(podcast) => handleOpenPodcast(podcast.id)}
-              podcasts={visiblePodcasts.map(({ podcast }) => podcast)}
-            />
-          ) : null}
+        {visiblePodcasts.length > 0 ? (
+          <PodcastList
+            getDescription={(podcast) =>
+              podcast.author || richTextToPlainText(podcast.description) || "Subscribed podcast"
+            }
+            onOpen={(podcast) => handleOpenPodcast(podcast.id)}
+            podcasts={visiblePodcasts.map(({ podcast }) => podcast)}
+          />
+        ) : null}
 
-          {visibleEpisodes.length > 0 ? (
-            <EpisodeListItems
-              episodes={visibleEpisodes}
-              playbackProgress={playbackProgress}
-              playEpisode={playEpisode}
-            />
-          ) : null}
-        </List>
+        {visibleEpisodes.length > 0 ? (
+          <EpisodeList
+            episodes={visibleEpisodes}
+            isLoadingEpisodes={false}
+            playbackProgress={playbackProgress}
+            playEpisode={playEpisode}
+          />
+        ) : null}
 
         {hasHiddenResults ? (
           <TruncatedResultsNote

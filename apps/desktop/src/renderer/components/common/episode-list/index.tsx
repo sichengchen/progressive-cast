@@ -45,113 +45,6 @@ interface EpisodeListProps {
   onLoadMore?: () => void | Promise<void>;
 }
 
-interface EpisodeListItemsProps {
-  episodes: Episode[];
-  playbackProgress: Map<string, PlaybackProgress>;
-  playEpisode: (episode: Episode) => void;
-  showDownloadButton?: boolean;
-  showDeleteButton?: boolean;
-  pageType?: "podcast" | "downloaded" | "other";
-  onDownloadComplete?: () => void;
-  onDeleteComplete?: () => void;
-}
-
-export function EpisodeListItems({
-  episodes,
-  playbackProgress,
-  playEpisode,
-  showDownloadButton = false,
-  showDeleteButton = false,
-  pageType = "other",
-  onDownloadComplete,
-  onDeleteComplete,
-}: EpisodeListItemsProps) {
-  const handlePlayEpisode = (episode: Episode, event?: MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    playEpisode(episode);
-  };
-
-  return (
-    <>
-      {episodes.map((episode) => {
-        const progress = playbackProgress.get(episode.id);
-        const cleanedDescription = richTextToPlainText(episode.description);
-
-        return (
-          <ListItem
-            key={episode.id}
-            interactive
-            className="group relative px-2"
-            onClick={() => handlePlayEpisode(episode)}
-          >
-            <ListItemLeading>
-              <CoverImage
-                src={episode.imageUrl}
-                alt={episode.title}
-                className="w-20 h-20 relative"
-                loading="lazy"
-              >
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                  <Play className="w-6 h-6 text-white fill-current" />
-                </div>
-              </CoverImage>
-            </ListItemLeading>
-
-            <ListItemContent className="space-y-1">
-              <ListItemMeta>
-                <div className="flex items-center gap-2">
-                  <span>{format(new Date(episode.publishedAt), "MMM d, yyyy")}</span>
-                  {episode.duration && (
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatTime(episode.duration)}
-                    </span>
-                  )}
-                </div>
-              </ListItemMeta>
-
-              <ListItemTitle className="line-clamp-2">{episode.title}</ListItemTitle>
-
-              <ListItemDescription className="line-clamp-2">
-                {cleanedDescription}
-              </ListItemDescription>
-
-              {progress && progress.currentTime > 0 && (
-                <div className="flex items-center gap-2 pt-1">
-                  <div className="flex-1 bg-secondary rounded-full h-1">
-                    <div
-                      className="bg-primary h-1 rounded-full"
-                      style={{
-                        width: `${(progress.currentTime / progress.duration) * 100}%`,
-                      }}
-                    />
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {formatTime(progress.currentTime)} / {formatTime(progress.duration)}
-                  </span>
-                </div>
-              )}
-            </ListItemContent>
-
-            <ListItemTrailing>
-              {(showDownloadButton || showDeleteButton) && (
-                <DownloadButton
-                  episode={episode}
-                  pageType={pageType}
-                  onDownloadComplete={onDownloadComplete}
-                  onDeleteComplete={onDeleteComplete}
-                />
-              )}
-            </ListItemTrailing>
-          </ListItem>
-        );
-      })}
-    </>
-  );
-}
-
 export function EpisodeList({
   isLoadingEpisodes,
   episodes,
@@ -191,6 +84,13 @@ export function EpisodeList({
     };
   }, [hasMore, isLoadingMore, onLoadMore]);
 
+  const handlePlayEpisode = (episode: Episode, event?: MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+    playEpisode(episode);
+  };
+
   // Show skeleton while loading episodes
   if (isLoadingEpisodes) {
     return <EpisodeSkeleton />;
@@ -210,16 +110,79 @@ export function EpisodeList({
   return (
     <>
       <List className="px-0">
-        <EpisodeListItems
-          episodes={episodes}
-          playbackProgress={playbackProgress}
-          playEpisode={playEpisode}
-          showDownloadButton={showDownloadButton}
-          showDeleteButton={showDeleteButton}
-          pageType={pageType}
-          onDownloadComplete={onDownloadComplete}
-          onDeleteComplete={onDeleteComplete}
-        />
+        {episodes.map((episode) => {
+          const progress = playbackProgress.get(episode.id);
+          const cleanedDescription = richTextToPlainText(episode.description);
+
+          return (
+            <ListItem
+              key={episode.id}
+              interactive
+              className="group relative px-2"
+              onClick={() => handlePlayEpisode(episode)}
+            >
+              <ListItemLeading>
+                <CoverImage
+                  src={episode.imageUrl}
+                  alt={episode.title}
+                  className="w-20 h-20 relative"
+                  loading="lazy"
+                >
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
+                    <Play className="w-6 h-6 text-white fill-current" />
+                  </div>
+                </CoverImage>
+              </ListItemLeading>
+
+              <ListItemContent className="space-y-1">
+                <ListItemMeta>
+                  <div className="flex items-center gap-2">
+                    <span>{format(new Date(episode.publishedAt), "MMM d, yyyy")}</span>
+                    {episode.duration && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {formatTime(episode.duration)}
+                      </span>
+                    )}
+                  </div>
+                </ListItemMeta>
+
+                <ListItemTitle className="line-clamp-2">{episode.title}</ListItemTitle>
+
+                <ListItemDescription className="line-clamp-2">
+                  {cleanedDescription}
+                </ListItemDescription>
+
+                {progress && progress.currentTime > 0 && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <div className="flex-1 bg-secondary rounded-full h-1">
+                      <div
+                        className="bg-primary h-1 rounded-full"
+                        style={{
+                          width: `${(progress.currentTime / progress.duration) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {formatTime(progress.currentTime)} / {formatTime(progress.duration)}
+                    </span>
+                  </div>
+                )}
+              </ListItemContent>
+
+              <ListItemTrailing>
+                {(showDownloadButton || showDeleteButton) && (
+                  <DownloadButton
+                    episode={episode}
+                    pageType={pageType}
+                    onDownloadComplete={onDownloadComplete}
+                    onDeleteComplete={onDeleteComplete}
+                  />
+                )}
+              </ListItemTrailing>
+            </ListItem>
+          );
+        })}
       </List>
       <div ref={loadMoreRef} className="h-px" />
       {isLoadingMore ? <EpisodeSkeleton count={3} /> : null}
