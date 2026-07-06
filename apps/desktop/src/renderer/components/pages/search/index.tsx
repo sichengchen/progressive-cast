@@ -10,7 +10,6 @@ import {
 } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import {
-  ChevronRight,
   CircleOff,
   ExternalLink,
   Loader2,
@@ -21,18 +20,8 @@ import {
 import { toast } from "sonner";
 
 import { EpisodeList } from "@/components/common/episode-list";
-import {
-  List,
-  ListItem,
-  ListItemContent,
-  ListItemDescription,
-  ListItemLeading,
-  ListItemMeta,
-  ListItemTitle,
-  ListItemTrailing,
-} from "@/components/ui-custom/list";
+import { PodcastList } from "@/components/common/podcast-list";
 import { Button } from "@/components/ui/button";
-import { CoverImage } from "@/components/ui/cover-image";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { desktopApi } from "@/desktop-api";
@@ -508,21 +497,44 @@ export function SearchPage() {
 
     return (
       <>
-        <List className="px-0">
-          {visibleDiscoverResults.map((podcast) => (
-            <DiscoverPodcastRow
-              key={`${podcast.id}-${podcast.feedUrl}`}
-              podcast={podcast}
-              isSubscribing={subscribingFeedUrl === podcast.feedUrl}
-              onOpenExternal={() => {
-                if (podcast.itunesUrl) {
-                  window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
-                }
-              }}
-              onSubscribe={() => void handleSubscribe(podcast)}
-            />
-          ))}
-        </List>
+        <PodcastList
+          getDescription={(podcast) =>
+            [podcast.author, podcast.genre].filter(Boolean).join(" · ") || "Discover"
+          }
+          getKey={(podcast) => `${podcast.id}-${podcast.feedUrl}`}
+          podcasts={visibleDiscoverResults}
+          renderActions={(podcast) => (
+            <>
+              {podcast.itunesUrl ? (
+                <Button
+                  aria-label={`Open external listing for ${podcast.title}`}
+                  onClick={() => {
+                    window.open(podcast.itunesUrl, "_blank", "noopener,noreferrer");
+                  }}
+                  size="icon"
+                  type="button"
+                  variant="ghost"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              ) : null}
+              <Button
+                disabled={subscribingFeedUrl === podcast.feedUrl}
+                onClick={() => void handleSubscribe(podcast)}
+                size="sm"
+                type="button"
+                variant="secondary"
+              >
+                {subscribingFeedUrl === podcast.feedUrl ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
+                <span>Subscribe</span>
+              </Button>
+            </>
+          )}
+        />
         {filteredDiscoverResults.length > visibleDiscoverResults.length ? (
           <TruncatedResultsNote
             shownCount={visibleDiscoverResults.length}
@@ -573,15 +585,13 @@ export function SearchPage() {
     return (
       <>
         {visiblePodcasts.length > 0 ? (
-          <List className="px-0">
-            {visiblePodcasts.map(({ podcast }) => (
-              <LibraryPodcastRow
-                key={podcast.id}
-                podcast={podcast}
-                onOpen={() => handleOpenPodcast(podcast.id)}
-              />
-            ))}
-          </List>
+          <PodcastList
+            getDescription={(podcast) =>
+              podcast.author || richTextToPlainText(podcast.description) || "Subscribed podcast"
+            }
+            onOpen={(podcast) => handleOpenPodcast(podcast.id)}
+            podcasts={visiblePodcasts.map(({ podcast }) => podcast)}
+          />
         ) : null}
 
         {visibleEpisodes.length > 0 ? (
@@ -688,110 +698,5 @@ export function SearchPage() {
         </div>
       </Tabs>
     </div>
-  );
-}
-
-function DiscoverPodcastRow({
-  isSubscribing,
-  onOpenExternal,
-  onSubscribe,
-  podcast,
-}: {
-  isSubscribing: boolean;
-  onOpenExternal: () => void;
-  onSubscribe: () => void;
-  podcast: iTunesPodcast;
-}) {
-  return (
-    <ListItem className="px-3 py-3">
-      <ListItemLeading>
-        <CoverImage
-          alt={`${podcast.title} cover`}
-          className="h-14 w-14 rounded-md"
-          loading="lazy"
-          src={podcast.imageUrl}
-        />
-      </ListItemLeading>
-
-      <ListItemContent className="min-w-0">
-        <ListItemMeta>Podcast</ListItemMeta>
-        <ListItemTitle className="line-clamp-1 text-base">{podcast.title}</ListItemTitle>
-        <ListItemDescription className="line-clamp-1">
-          {[podcast.author, podcast.genre].filter(Boolean).join(" · ") || "Discover"}
-        </ListItemDescription>
-      </ListItemContent>
-
-      <ListItemTrailing className="flex items-center gap-1">
-        {podcast.itunesUrl ? (
-          <Button
-            aria-label={`Open external listing for ${podcast.title}`}
-            onClick={onOpenExternal}
-            size="icon"
-            type="button"
-            variant="ghost"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </Button>
-        ) : null}
-        <Button
-          disabled={isSubscribing}
-          onClick={onSubscribe}
-          size="sm"
-          type="button"
-          variant="secondary"
-        >
-          {isSubscribing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Plus className="h-4 w-4" />
-          )}
-          <span>Subscribe</span>
-        </Button>
-      </ListItemTrailing>
-    </ListItem>
-  );
-}
-
-function LibraryPodcastRow({
-  onOpen,
-  podcast,
-}: {
-  onOpen: () => void;
-  podcast: Podcast;
-}) {
-  return (
-    <ListItem
-      className="group px-3 py-3"
-      interactive
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-      role="button"
-    >
-      <ListItemLeading>
-        <CoverImage
-          alt={`${podcast.title} cover`}
-          className="h-14 w-14 rounded-md"
-          loading="lazy"
-          src={podcast.imageUrl}
-        />
-      </ListItemLeading>
-
-      <ListItemContent className="min-w-0">
-        <ListItemMeta>Podcast</ListItemMeta>
-        <ListItemTitle className="line-clamp-1 text-base">{podcast.title}</ListItemTitle>
-        <ListItemDescription className="line-clamp-1">
-          {podcast.author || richTextToPlainText(podcast.description) || "Subscribed podcast"}
-        </ListItemDescription>
-      </ListItemContent>
-
-      <ListItemTrailing>
-        <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-      </ListItemTrailing>
-    </ListItem>
   );
 }
