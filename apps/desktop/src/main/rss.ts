@@ -27,7 +27,7 @@ const feedRequestHeaders = {
     "*/*;q=0.5",
   ].join(", "),
   "Accept-Language": "en-US,en;q=0.9",
-  "User-Agent": "Newcastle/0.9.0 (macOS; Podcast RSS Reader)",
+  "User-Agent": "Rajio/0.9.0 (macOS; Podcast RSS Reader)",
 };
 
 export class RssService {

@@ -1,4 +1,5 @@
 import { app, BrowserWindow, nativeImage } from "electron";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -7,7 +8,8 @@ import { registerIpcHandlers } from "./ipc";
 
 const mainDir =
   typeof __dirname === "string" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
-const appId = "com.scchan.newcastle";
+const appId = "com.scchan.rajio";
+const legacyUserDataPath = path.join(app.getPath("appData"), "Newcastle");
 const rendererDevServerUrl = process.env.NEWCASTLE_RENDERER_URL;
 const appIconPath = app.isPackaged
   ? path.join(process.resourcesPath, "icon.png")
@@ -21,7 +23,7 @@ function createMainWindow(): BrowserWindow {
     minHeight: 640,
     minWidth: 960,
     show: false,
-    title: "Newcastle",
+    title: "Rajio",
     ...(process.platform === "darwin"
       ? {
           titleBarStyle: "hiddenInset" as const,
@@ -50,7 +52,10 @@ function createMainWindow(): BrowserWindow {
   return window;
 }
 
-app.setName("Newcastle");
+app.setName("Rajio");
+if (existsSync(legacyUserDataPath)) {
+  app.setPath("userData", legacyUserDataPath);
+}
 app.setAppUserModelId(appId);
 
 app.whenReady().then(() => {

@@ -3,7 +3,7 @@
   "version": "0.9.0",
   "private": true,
   "type": "module",
-  "productName": "Newcastle",
+  "productName": "Rajio",
   "description": "New podCast player: Listen and Explore.",
   "main": "scripts/electron-entry.cjs",
   "scripts": {
@@ -17,8 +17,8 @@
     "preview": "pnpm build && electron ."
   },
   "build": {
-    "appId": "com.scchan.newcastle",
-    "productName": "Newcastle",
+    "appId": "com.scchan.rajio",
+    "productName": "Rajio",
     "directories": {
       "buildResources": "resources"
     },

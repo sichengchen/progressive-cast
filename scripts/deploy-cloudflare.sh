@@ -13,7 +13,7 @@ usage() {
   cat <<'EOF'
 Usage: bash ./scripts/deploy-cloudflare.sh [--rotate-secrets]
 
-Deploys the Newcastle sync backend in apps/server to Cloudflare.
+Deploys the Rajio sync backend in apps/server to Cloudflare.
 
 Options:
   --rotate-secrets  Generate a new API token and realtime signing secret instead of reusing saved values.
@@ -71,7 +71,7 @@ generate_api_token() {
   node --input-type=module <<'NODE'
 import { randomBytes } from "node:crypto";
 
-process.stdout.write(`newcastle_${randomBytes(24).toString("base64url")}`);
+process.stdout.write(`rajio_${randomBytes(24).toString("base64url")}`);
 NODE
 }
 
@@ -295,7 +295,7 @@ Personal token: $api_token
 Saved local deployment values to:
   $STATE_FILE
 
-Next step in Newcastle desktop:
+Next step in Rajio desktop:
   Settings -> Sync Backend
   Endpoint: $server_url
   Token: $api_token

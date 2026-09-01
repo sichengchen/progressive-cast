@@ -16,7 +16,7 @@ export function OPMLManager() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `newcastle-subscriptions-${new Date().toISOString().split("T")[0]}.opml`;
+    a.download = `rajio-subscriptions-${new Date().toISOString().split("T")[0]}.opml`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -101,7 +101,7 @@ function generateOPML(podcasts: any[]): string {
   let opml = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
   <head>
-    <title>Newcastle Subscriptions</title>
+    <title>Rajio Subscriptions</title>
     <dateCreated>${now}</dateCreated>
     <dateModified>${now}</dateModified>
   </head>

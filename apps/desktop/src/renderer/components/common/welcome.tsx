@@ -58,7 +58,7 @@ export function WelcomeScreen() {
         </CardHeader>
         <CardContent className="text-center space-y-4 px-8">
           <p className="text-muted-foreground text-sm">
-            Newcastle is a podcast player. Get started by adding your first podcast.
+            Rajio is a podcast player. Get started by adding your first podcast.
           </p>
 
           <div className="space-y-2">

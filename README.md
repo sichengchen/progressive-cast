@@ -1,4 +1,4 @@
-# Newcastle
+# Rajio
 
 A desktop podcast player.
 
@@ -52,7 +52,7 @@ Production deployment:
 pnpm cf:deploy
 ```
 
-The deployment script creates or reuses the D1 database, applies migrations, deploys the server Worker, and prints the sync endpoint plus bearer token for Newcastle desktop settings.
+The deployment script creates or reuses the D1 database, applies migrations, deploys the server Worker, and prints the sync endpoint plus bearer token for Rajio desktop settings.
 
 ## Quick Start
 
