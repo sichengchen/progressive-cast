@@ -1,6 +1,7 @@
 "use client";
 
 import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
+import { PlayerPanelHeader } from "@/components/common/player-panel-header";
 import { ShowNotesReader } from "@/components/common/show-notes-reader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePodcastStore } from "@/lib/store";
@@ -20,6 +21,7 @@ export function ShowNotes() {
 
   return (
     <section className="app-no-drag flex h-full min-w-0 flex-col bg-background">
+      <PlayerPanelHeader title="Show Notes" />
       {isMobile ? (
         <div
           className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-5 pb-8 pt-7"

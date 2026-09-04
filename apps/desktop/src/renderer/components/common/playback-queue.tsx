@@ -4,6 +4,7 @@ import { useState, type DragEvent } from "react";
 import { ListX, X } from "lucide-react";
 
 import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
+import { PlayerPanelHeader } from "@/components/common/player-panel-header";
 import {
   List,
   ListItem,
@@ -53,21 +54,23 @@ export function PlaybackQueue() {
 
   return (
     <section className="app-no-drag flex h-full min-w-0 flex-col bg-background">
-      <header className="flex min-h-14 items-center justify-between gap-3 border-b px-5">
-        <h2 className="font-semibold tracking-[-0.01em]">Play Queue</h2>
-        {hasQueuedEpisodes ? (
-          <Button
-            aria-label="Clear play queue"
-            className="size-8 text-muted-foreground"
-            onClick={clearQueue}
-            size="icon"
-            title="Clear play queue"
-            variant="ghost"
-          >
-            <ListX className="translate-x-px" />
-          </Button>
-        ) : null}
-      </header>
+      <PlayerPanelHeader
+        actions={
+          hasQueuedEpisodes ? (
+            <Button
+              aria-label="Clear play queue"
+              className="size-8 text-muted-foreground"
+              onClick={clearQueue}
+              size="icon"
+              title="Clear play queue"
+              variant="ghost"
+            >
+              <ListX className="translate-x-px" />
+            </Button>
+          ) : null
+        }
+        title="Play Queue"
+      />
 
       {playbackQueue.length > 0 ? (
         <DesktopSafeScrollArea className="flex-1" contentClassName="px-3 py-2">
