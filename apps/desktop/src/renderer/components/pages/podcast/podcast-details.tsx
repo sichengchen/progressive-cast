@@ -1,7 +1,8 @@
 "use client";
 
 import { type ReactNode, useMemo } from "react";
-import { Info } from "lucide-react";
+import { Info, Play } from "lucide-react";
+import { ContentMetadata } from "@/components/common/content-metadata";
 import { ContentDetailsHeader } from "@/components/common/content-details-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,7 @@ interface PodcastDetailsProps {
   actions?: ReactNode;
   episodes: Episode[];
   isLoadingEpisodes?: boolean;
+  onPlayLatest: (episode: Episode) => void;
   podcast: Podcast;
 }
 
@@ -28,6 +30,7 @@ export function PodcastDetails({
   actions,
   episodes,
   isLoadingEpisodes = false,
+  onPlayLatest,
   podcast,
 }: PodcastDetailsProps) {
   const cleanDescription = richTextToPlainText(podcast.description);
@@ -55,6 +58,25 @@ export function PodcastDetails({
       actions={actions}
       artworkAlt={podcast.title}
       artworkSrc={podcast.imageUrl}
+      controls={
+        latestEpisode || updated ? (
+          <div className="flex items-center gap-2">
+            {latestEpisode ? (
+              <Button
+                aria-label={`Play latest episode: ${latestEpisode.title}`}
+                onClick={() => onPlayLatest(latestEpisode)}
+                size="sm"
+                type="button"
+                variant="outline"
+              >
+                <Play className="size-3.5" data-icon="inline-start" fill="currentColor" />
+                Latest episode
+              </Button>
+            ) : null}
+            {updated ? <ContentMetadata className="text-sm" items={[updated]} /> : null}
+          </div>
+        ) : null
+      }
       metadataAction={
         cleanDescription ? (
           <Dialog>
@@ -77,12 +99,7 @@ export function PodcastDetails({
           </Dialog>
         ) : null
       }
-      metadataItems={[
-        podcast.author,
-        language,
-        episodes.length ? `${episodes.length} episodes` : null,
-        updated,
-      ]}
+      metadataItems={[podcast.author, language]}
       title={podcast.title}
     >
       {cleanDescription ? (

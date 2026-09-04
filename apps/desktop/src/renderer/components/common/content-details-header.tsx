@@ -8,6 +8,7 @@ interface ContentDetailsHeaderProps {
   artworkAlt: string;
   artworkSrc?: string;
   children?: ReactNode;
+  controls?: ReactNode;
   metadataAction?: ReactNode;
   metadataItems: Array<string | null | undefined | false>;
   title: string;
@@ -18,6 +19,7 @@ export function ContentDetailsHeader({
   artworkAlt,
   artworkSrc,
   children,
+  controls,
   metadataAction,
   metadataItems,
   title,
@@ -33,12 +35,9 @@ export function ContentDetailsHeader({
         />
 
         <div className="flex min-h-28 min-w-0 flex-1 flex-col gap-2.5 text-left md:min-h-36">
-          <div className="flex min-w-0 items-start justify-between gap-3">
-            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-              <ContentMetadata className="text-sm leading-5" items={metadataItems} />
-              {metadataAction}
-            </div>
-            {actions ? <div className="-mr-1 shrink-0">{actions}</div> : null}
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            <ContentMetadata className="text-sm leading-5" items={metadataItems} />
+            {metadataAction}
           </div>
 
           <h1 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-[-0.025em] md:text-[2rem]">
@@ -46,6 +45,13 @@ export function ContentDetailsHeader({
           </h1>
 
           {children}
+
+          {controls || actions ? (
+            <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
+              {controls ? <div className="min-w-0">{controls}</div> : null}
+              {actions ? <div className="shrink-0">{actions}</div> : null}
+            </div>
+          ) : null}
         </div>
       </div>
     </header>

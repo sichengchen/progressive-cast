@@ -27,6 +27,7 @@ export function PodcastRoutePage({ podcastId }: { podcastId: string }) {
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const isRefreshing = usePodcastStore((state) => state.isRefreshing);
   const refreshPodcast = usePodcastStore((state) => state.refreshPodcast);
+  const playEpisode = usePodcastStore((state) => state.playEpisode);
   const unsubscribeFromPodcast = usePodcastStore((state) => state.unsubscribeFromPodcast);
 
   const podcast = podcasts.find((item) => item.id === podcastId);
@@ -86,6 +87,7 @@ export function PodcastRoutePage({ podcastId }: { podcastId: string }) {
               }
               episodes={podcastEpisodes}
               isLoadingEpisodes={Boolean(!pageState?.loaded)}
+              onPlayLatest={playEpisode}
               podcast={podcast}
             />
             <PodcastEpisodes podcastId={podcastId} />

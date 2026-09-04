@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect } from "react";
+import { ContentMetadata } from "@/components/common/content-metadata";
 import { usePodcastStore } from "@/lib/store";
 import type { Episode } from "@/lib/types";
 import { EpisodeList } from "../../common/episode-list";
@@ -46,12 +47,14 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
 
   return (
     <section aria-labelledby="episode-list-heading" className="pt-5">
-      <h2
-        className="px-2 pb-1.5 text-lg font-semibold tracking-[-0.015em]"
-        id="episode-list-heading"
-      >
-        Episodes
-      </h2>
+      <div className="flex items-baseline gap-2 px-2 pb-1.5">
+        <h2 className="text-lg font-semibold tracking-[-0.015em]" id="episode-list-heading">
+          Episodes
+        </h2>
+        {episodes.length ? (
+          <ContentMetadata className="text-sm" items={[`${episodes.length} episodes`]} />
+        ) : null}
+      </div>
       <EpisodeList
         currentEpisodeId={currentEpisodeId}
         isLoadingEpisodes={Boolean(!pageState?.loaded)}

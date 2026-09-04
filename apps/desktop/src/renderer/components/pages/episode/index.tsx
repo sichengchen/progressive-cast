@@ -94,7 +94,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
 
   return (
     <article className="mx-auto max-w-4xl pb-12 pt-5">
-      <div className="mb-1 sm:pl-36 md:pl-44">
+      <div className="mb-1 px-2">
         <BackNavigation
           className="-ml-2"
           label={podcast?.title ?? "What's New"}
@@ -113,15 +113,14 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
         }
         artworkAlt={episode.title}
         artworkSrc={episode.imageUrl || podcast?.imageUrl}
-        metadataItems={[podcast?.title, formatEpisodeDate(episode.publishedAt)]}
-        title={episode.title}
-      >
-        <div className="mt-0.5 flex items-center">
+        controls={
           <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
-        </div>
-      </ContentDetailsHeader>
+        }
+        metadataItems={[formatEpisodeDate(episode.publishedAt)]}
+        title={episode.title}
+      />
 
-      <div className="max-w-[61rem] pt-6 sm:pl-36 md:pl-44">
+      <div className="px-2 pt-6">
         {showNotes ? (
           <ShowNotesReader content={showNotes} onSeek={handleSeek} />
         ) : (
@@ -135,7 +134,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
 function EpisodePageSkeleton() {
   return (
     <div className="mx-auto max-w-4xl pb-12 pt-5">
-      <div className="mb-1 sm:pl-36 md:pl-44">
+      <div className="mb-1 px-2">
         <Skeleton className="h-8 w-36 rounded-md" />
       </div>
       <div className="flex min-w-0 items-start gap-5 border-b border-border/60 px-2 py-5 md:gap-6">
@@ -147,7 +146,7 @@ function EpisodePageSkeleton() {
           <Skeleton className="h-7 w-36 rounded-md" />
         </div>
       </div>
-      <div className="max-w-[61rem] space-y-3 pt-6 sm:pl-36 md:pl-44">
+      <div className="space-y-3 px-2 pt-6">
         <Skeleton className="h-5 w-28" />
         <Skeleton className="h-4 w-full" />
         <Skeleton className="h-4 w-11/12" />
