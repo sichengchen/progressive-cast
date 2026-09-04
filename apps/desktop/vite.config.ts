@@ -10,7 +10,7 @@ export default defineConfig({
   base: "./",
   plugins: [react()],
   define: {
-    __APP_VERSION__: JSON.stringify("0.9.0"),
+    __APP_VERSION__: JSON.stringify("0.10.0"),
   },
   resolve: {
     alias: {

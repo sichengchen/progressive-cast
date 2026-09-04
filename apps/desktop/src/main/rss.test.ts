@@ -99,7 +99,7 @@ test("requests feeds with podcast-compatible headers", async () => {
   );
   assert.equal(
     requestedHeaders["User-Agent" as keyof typeof requestedHeaders],
-    "Rajio/0.9.0 (macOS; Podcast RSS Reader)",
+    "Rajio/0.10.0 (macOS; Podcast RSS Reader)",
   );
 });
 

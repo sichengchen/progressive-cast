@@ -10,7 +10,7 @@ const imageRequestTimeoutMs = 10_000;
 
 const imageRequestHeaders = {
   Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-  "User-Agent": "Rajio/0.9.0 (Desktop Podcast Player)",
+  "User-Agent": "Rajio/0.10.0 (Desktop Podcast Player)",
 };
 
 interface CacheMetadata {
