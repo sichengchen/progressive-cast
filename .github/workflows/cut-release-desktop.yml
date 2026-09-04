@@ -71,24 +71,35 @@ jobs:
             echo "tag=${tag}"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Validate release secrets
+      - name: Determine notarization availability
+        id: notarization
         run: |
           set -euo pipefail
-          required_secrets=(
+          notarization_secrets=(
             APPLE_API_ISSUER
             APPLE_API_KEY_BASE64
             APPLE_API_KEY_ID
             APPLE_TEAM_ID
             CSC_KEY_PASSWORD
             CSC_LINK
-            HOMEBREW_TAP_TOKEN
           )
-          for secret_name in "${required_secrets[@]}"; do
+          enabled=true
+          for secret_name in "${notarization_secrets[@]}"; do
             if [[ -z "${!secret_name}" ]]; then
-              echo "Required repository secret ${secret_name} is not configured" >&2
-              exit 1
+              enabled=false
             fi
           done
+          echo "enabled=${enabled}" >> "$GITHUB_OUTPUT"
+          if [[ "$enabled" == "false" ]]; then
+            echo "Apple notarization is not fully configured; notarization will be skipped."
+          fi
+
+      - name: Validate publishing secrets
+        run: |
+          if [[ -z "$HOMEBREW_TAP_TOKEN" ]]; then
+            echo "Required repository secret HOMEBREW_TAP_TOKEN is not configured" >&2
+            exit 1
+          fi
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -104,6 +115,7 @@ jobs:
           pnpm test
 
       - name: Prepare App Store Connect API key
+        if: steps.notarization.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           api_key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
@@ -111,25 +123,40 @@ jobs:
           chmod 600 "$api_key_path"
           echo "APPLE_API_KEY=${api_key_path}" >> "$GITHUB_ENV"
 
-      - name: Build, sign, and notarize universal macOS DMG
-        run: pnpm --filter @rajio-app/desktop package:mac
+      - name: Build universal macOS DMG
+        env:
+          NOTARIZE: ${{ steps.notarization.outputs.enabled }}
+        run: |
+          set -euo pipefail
+          if [[ "$NOTARIZE" == "true" ]]; then
+            pnpm --filter @rajio-app/desktop package:mac
+          else
+            pnpm --filter @rajio-app/desktop build
+            pnpm --filter @rajio-app/desktop exec electron-builder --mac --config.mac.notarize=false
+          fi
 
-      - name: Notarize and staple DMG
+      - name: Locate DMG
         env:
           RELEASE_VERSION: ${{ steps.versions.outputs.release }}
         run: |
           set -euo pipefail
           dmg_path="apps/desktop/release/Rajio-${RELEASE_VERSION}-universal.dmg"
           test -f "$dmg_path"
-          xcrun notarytool submit "$dmg_path" \
+          echo "dmg=${dmg_path}" >> "$GITHUB_ENV"
+
+      - name: Notarize and staple DMG
+        if: steps.notarization.outputs.enabled == 'true'
+        run: |
+          set -euo pipefail
+          xcrun notarytool submit "$dmg" \
             --issuer "$APPLE_API_ISSUER" \
             --key "$APPLE_API_KEY" \
             --key-id "$APPLE_API_KEY_ID" \
             --wait
-          xcrun stapler staple "$dmg_path"
-          echo "dmg=${dmg_path}" >> "$GITHUB_ENV"
+          xcrun stapler staple "$dmg"
 
       - name: Verify signed and notarized artifacts
+        if: steps.notarization.outputs.enabled == 'true'
         run: |
           set -euo pipefail
           app_path="apps/desktop/release/mac-universal/Rajio.app"
