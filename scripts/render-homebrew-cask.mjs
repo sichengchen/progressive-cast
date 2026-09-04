@@ -21,10 +21,10 @@ const cask = `cask "rajio" do
   version "${version}"
   sha256 "${sha256}"
 
-  url "https://github.com/sichengchen/progressive-cast/releases/download/v#{version}/Rajio-#{version}-universal.dmg"
+  url "https://github.com/sichengchen/rajio/releases/download/v#{version}/Rajio-#{version}-universal.dmg"
   name "Rajio"
   desc "Desktop podcast player"
-  homepage "https://github.com/sichengchen/progressive-cast"
+  homepage "https://github.com/sichengchen/rajio"
 
   app "Rajio.app"
 end

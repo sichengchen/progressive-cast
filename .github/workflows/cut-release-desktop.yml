@@ -132,7 +132,19 @@ jobs:
             pnpm --filter @rajio-app/desktop package:mac
           else
             pnpm --filter @rajio-app/desktop build
-            pnpm --filter @rajio-app/desktop exec electron-builder --mac --config.mac.notarize=false
+            env \
+              -u APPLE_API_ISSUER \
+              -u APPLE_API_KEY \
+              -u APPLE_API_KEY_BASE64 \
+              -u APPLE_API_KEY_ID \
+              -u APPLE_TEAM_ID \
+              -u CSC_KEY_PASSWORD \
+              -u CSC_LINK \
+              CSC_IDENTITY_AUTO_DISCOVERY=false \
+              pnpm --filter @rajio-app/desktop exec electron-builder \
+                --mac \
+                --config.mac.notarize=false \
+                --publish never
           fi
 
       - name: Locate DMG
