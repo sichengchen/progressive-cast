@@ -2,14 +2,12 @@ import type { ReactNode } from "react";
 
 import { ContentMetadata } from "@/components/common/content-metadata";
 import { CoverImage } from "@/components/ui/cover-image";
-import { cn } from "@/lib/utils";
 
 interface ContentDetailsHeaderProps {
   actions?: ReactNode;
   artworkAlt: string;
   artworkSrc?: string;
   children?: ReactNode;
-  className?: string;
   metadataAction?: ReactNode;
   metadataItems: Array<string | null | undefined | false>;
   title: string;
@@ -20,13 +18,12 @@ export function ContentDetailsHeader({
   artworkAlt,
   artworkSrc,
   children,
-  className,
   metadataAction,
   metadataItems,
   title,
 }: ContentDetailsHeaderProps) {
   return (
-    <header className={cn("border-b border-border/60 px-2 py-5", className)}>
+    <header className="border-b border-border/60 px-2 py-5">
       <div className="flex min-w-0 items-start gap-5 md:gap-6">
         <CoverImage
           alt={artworkAlt}

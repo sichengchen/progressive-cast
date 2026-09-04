@@ -93,7 +93,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
   };
 
   return (
-    <article className="mx-auto max-w-5xl px-2 pb-12 pt-5">
+    <article className="mx-auto max-w-4xl pb-12 pt-5">
       <div className="mb-1 sm:pl-36 md:pl-44">
         <BackNavigation
           className="-ml-2"
@@ -103,20 +103,21 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
       </div>
 
       <ContentDetailsHeader
-        artworkAlt={episode.title}
-        artworkSrc={episode.imageUrl || podcast?.imageUrl}
-        className="border-0 py-3"
-        metadataItems={[podcast?.title, formatEpisodeDate(episode.publishedAt)]}
-        title={episode.title}
-      >
-        <div className="mt-0.5 flex items-center gap-1.5">
-          <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
+        actions={
           <EpisodeActionsMenu
             currentEpisodeId={currentEpisodeId}
             episode={episode}
             onOpenChange={setActionsOpen}
             open={actionsOpen}
           />
+        }
+        artworkAlt={episode.title}
+        artworkSrc={episode.imageUrl || podcast?.imageUrl}
+        metadataItems={[podcast?.title, formatEpisodeDate(episode.publishedAt)]}
+        title={episode.title}
+      >
+        <div className="mt-0.5 flex items-center">
+          <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
         </div>
       </ContentDetailsHeader>
 
@@ -133,11 +134,11 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
 
 function EpisodePageSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl px-2 pb-12 pt-5">
+    <div className="mx-auto max-w-4xl pb-12 pt-5">
       <div className="mb-1 sm:pl-36 md:pl-44">
         <Skeleton className="h-8 w-36 rounded-md" />
       </div>
-      <div className="flex min-w-0 items-start gap-5 px-2 py-3 md:gap-6">
+      <div className="flex min-w-0 items-start gap-5 border-b border-border/60 px-2 py-5 md:gap-6">
         <Skeleton className="size-28 shrink-0 rounded-lg md:size-36" />
         <div className="flex min-h-28 min-w-0 flex-1 flex-col gap-2.5 pt-1 md:min-h-36">
           <Skeleton className="h-4 w-48" />
