@@ -50,7 +50,7 @@ export function PodcastDetails({
 
   return (
     <header className="border-b border-border/60 px-2 py-5">
-      <div className="flex min-w-0 items-center gap-5 md:gap-6">
+      <div className="flex min-w-0 items-start gap-5 md:gap-6">
         <div className="shrink-0">
           <CoverImage
             src={podcast.imageUrl}
@@ -60,19 +60,20 @@ export function PodcastDetails({
           />
         </div>
 
-        <div className="min-w-0 flex-1 text-left">
-          {podcast.author ? (
-            <p className="mb-1.5 truncate text-sm font-medium text-muted-foreground">
-              {podcast.author}
-            </p>
-          ) : null}
+        <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-left">
           <h1 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-[-0.025em] md:text-[2rem]">
             {podcast.title}
           </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <ContentMetadata
-              items={[language, episodes.length ? `${episodes.length} episodes` : null, updated]}
+              className="text-sm leading-5"
+              items={[
+                podcast.author,
+                language,
+                episodes.length ? `${episodes.length} episodes` : null,
+                updated,
+              ]}
             />
 
             {cleanDescription ? (
@@ -99,14 +100,11 @@ export function PodcastDetails({
 
           {cleanDescription ? (
             <Dialog>
-              <DialogTrigger asChild>
-                <button
-                  aria-label="Show full description"
-                  className="mt-3 hidden max-w-3xl text-left text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground md:line-clamp-2"
-                  type="button"
-                >
-                  {cleanDescription}
-                </button>
+              <DialogTrigger
+                aria-label="Show full description"
+                className="hidden max-w-3xl text-left text-sm leading-5 text-muted-foreground transition-colors hover:text-foreground md:line-clamp-2"
+              >
+                {cleanDescription}
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
