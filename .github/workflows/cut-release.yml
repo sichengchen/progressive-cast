@@ -1,0 +1,198 @@
+name: Cut release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Stable release version, with or without the v prefix (for example, 0.11.0)
+        required: true
+        type: string
+      next_bump:
+        description: Semantic version part to bump on main after the release
+        default: minor
+        options:
+          - minor
+          - patch
+          - major
+        required: true
+        type: choice
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cut-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, notarize, and publish
+    runs-on: macos-14
+    timeout-minutes: 90
+    env:
+      APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+      APPLE_API_KEY_BASE64: ${{ secrets.APPLE_API_KEY_BASE64 }}
+      APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+      CSC_LINK: ${{ secrets.MACOS_CERTIFICATE }}
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.12.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+          node-version: 22
+
+      - name: Resolve and validate versions
+        id: versions
+        env:
+          INPUT_NEXT_BUMP: ${{ inputs.next_bump }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          release_version="$(node scripts/version.mjs normalize "$INPUT_VERSION")"
+          next_version="$(node scripts/version.mjs bump "$release_version" "$INPUT_NEXT_BUMP")"
+          tag="v${release_version}"
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            echo "Tag ${tag} already exists" >&2
+            exit 1
+          fi
+          {
+            echo "release=${release_version}"
+            echo "next=${next_version}"
+            echo "tag=${tag}"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Validate release secrets
+        run: |
+          set -euo pipefail
+          required_secrets=(
+            APPLE_API_ISSUER
+            APPLE_API_KEY_BASE64
+            APPLE_API_KEY_ID
+            APPLE_TEAM_ID
+            CSC_KEY_PASSWORD
+            CSC_LINK
+            HOMEBREW_TAP_TOKEN
+          )
+          for secret_name in "${required_secrets[@]}"; do
+            if [[ -z "${!secret_name}" ]]; then
+              echo "Required repository secret ${secret_name} is not configured" >&2
+              exit 1
+            fi
+          done
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare release version
+        env:
+          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+        run: node scripts/version.mjs set "$RELEASE_VERSION"
+
+      - name: Check and test
+        run: |
+          pnpm check
+          pnpm test
+
+      - name: Prepare App Store Connect API key
+        run: |
+          set -euo pipefail
+          api_key_path="$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8"
+          printf '%s' "$APPLE_API_KEY_BASE64" | base64 --decode > "$api_key_path"
+          chmod 600 "$api_key_path"
+          echo "APPLE_API_KEY=${api_key_path}" >> "$GITHUB_ENV"
+
+      - name: Build, sign, and notarize universal macOS DMG
+        run: pnpm --filter @rajio-app/desktop package:mac
+
+      - name: Notarize and staple DMG
+        env:
+          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+        run: |
+          set -euo pipefail
+          dmg_path="apps/desktop/release/Rajio-${RELEASE_VERSION}-universal.dmg"
+          test -f "$dmg_path"
+          xcrun notarytool submit "$dmg_path" \
+            --issuer "$APPLE_API_ISSUER" \
+            --key "$APPLE_API_KEY" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --wait
+          xcrun stapler staple "$dmg_path"
+          echo "dmg=${dmg_path}" >> "$GITHUB_ENV"
+
+      - name: Verify signed and notarized artifacts
+        run: |
+          set -euo pipefail
+          app_path="apps/desktop/release/mac-universal/Rajio.app"
+          test -d "$app_path"
+          codesign --verify --deep --strict --verbose=2 "$app_path"
+          xcrun stapler validate "$app_path"
+          xcrun stapler validate "$dmg"
+          spctl --assess --type execute --verbose=2 "$app_path"
+
+      - name: Commit and push the release tag
+        env:
+          RELEASE_TAG: ${{ steps.versions.outputs.tag }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/package.json apps/server/package.json packages/contracts/package.json
+          if ! git diff --cached --quiet; then
+            git commit -m "release: ${RELEASE_TAG}"
+          fi
+          git tag --annotate "$RELEASE_TAG" --message "Rajio ${RELEASE_TAG}"
+          git push --atomic origin HEAD:main "refs/tags/${RELEASE_TAG}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.versions.outputs.tag }}
+        run: gh release create "$RELEASE_TAG" "$dmg" --generate-notes --title "Rajio ${RELEASE_TAG}" --verify-tag
+
+      - name: Check out Homebrew tap
+        uses: actions/checkout@v6
+        with:
+          path: homebrew-tap
+          repository: sichengchen/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+
+      - name: Update and push Homebrew cask
+        env:
+          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+        run: |
+          set -euo pipefail
+          sha256="$(shasum --algorithm 256 "$dmg" | awk '{ print $1 }')"
+          node scripts/render-homebrew-cask.mjs "$RELEASE_VERSION" "$sha256" homebrew-tap/Casks/rajio.rb
+          ruby -c homebrew-tap/Casks/rajio.rb
+          git -C homebrew-tap config user.name "github-actions[bot]"
+          git -C homebrew-tap config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C homebrew-tap add Casks/rajio.rb
+          if ! git -C homebrew-tap diff --cached --quiet; then
+            git -C homebrew-tap commit -m "rajio ${RELEASE_VERSION}"
+            git -C homebrew-tap push origin HEAD:main
+          fi
+
+      - name: Bump main to the next version
+        env:
+          NEXT_VERSION: ${{ steps.versions.outputs.next }}
+        run: |
+          set -euo pipefail
+          node scripts/version.mjs set "$NEXT_VERSION"
+          git add apps/desktop/package.json apps/server/package.json packages/contracts/package.json
+          git commit -m "chore: start ${NEXT_VERSION}"
+          git push origin HEAD:main

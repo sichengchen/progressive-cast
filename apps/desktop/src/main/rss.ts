@@ -1,6 +1,7 @@
 import { XMLParser } from "fast-xml-parser";
 
 import type { EpisodeSummary, PodcastSummary } from "../shared/types";
+import { APP_VERSION } from "../shared/version";
 
 interface ParsedFeed {
   episodes: EpisodeSummary[];
@@ -27,7 +28,7 @@ const feedRequestHeaders = {
     "*/*;q=0.5",
   ].join(", "),
   "Accept-Language": "en-US,en;q=0.9",
-  "User-Agent": "Rajio/0.10.0 (macOS; Podcast RSS Reader)",
+  "User-Agent": `Rajio/${APP_VERSION} (macOS; Podcast RSS Reader)`,
 };
 
 export class RssService {

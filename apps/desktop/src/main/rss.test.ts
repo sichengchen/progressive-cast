@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { APP_VERSION } from "../shared/version";
 import { RssService } from "./rss";
 
 test("parses RSS feeds into podcast and episode records", () => {
@@ -99,7 +100,7 @@ test("requests feeds with podcast-compatible headers", async () => {
   );
   assert.equal(
     requestedHeaders["User-Agent" as keyof typeof requestedHeaders],
-    "Rajio/0.10.0 (macOS; Podcast RSS Reader)",
+    `Rajio/${APP_VERSION} (macOS; Podcast RSS Reader)`,
   );
 });
 

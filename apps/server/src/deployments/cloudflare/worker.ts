@@ -5,12 +5,12 @@ import {
 } from "../../adapters/storage/drizzle/repositories";
 import { StaticBearerAuthGuard } from "../../core/auth";
 import { SyncService } from "../../core/sync-service";
+import serverPackage from "../../../package.json";
 import { CloudflareRealtimeCoordinator } from "./realtime-coordinator";
 import type { CloudflareBindings } from "./env";
 
 export { PlaybackRoomDurableObject } from "./playback-room";
 
-const APP_VERSION = "0.1.0";
 const DEPLOYMENT_HINT =
   "Cloudflare Workers + D1 + Durable Objects is the reference deployment. The sync API itself is infrastructure-agnostic.";
 
@@ -26,7 +26,7 @@ export default {
       deploymentHint: DEPLOYMENT_HINT,
       realtimeCoordinator,
       syncService,
-      version: APP_VERSION,
+      version: serverPackage.version,
     });
 
     return app.fetch(request, env);

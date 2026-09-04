@@ -9,9 +9,6 @@ const appDir = fileURLToPath(new URL(".", import.meta.url));
 export default defineConfig({
   base: "./",
   plugins: [react()],
-  define: {
-    __APP_VERSION__: JSON.stringify("0.10.0"),
-  },
   resolve: {
     alias: {
       "@": path.resolve(appDir, "src/renderer"),

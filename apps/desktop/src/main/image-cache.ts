@@ -2,6 +2,8 @@ import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import path from "node:path";
 
+import { APP_VERSION } from "../shared/version";
+
 const maxImageBytes = 12 * 1024 * 1024;
 const defaultMaxMemoryBytes = 48 * 1024 * 1024;
 const defaultMaxMemoryEntries = 128;
@@ -10,7 +12,7 @@ const imageRequestTimeoutMs = 10_000;
 
 const imageRequestHeaders = {
   Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-  "User-Agent": "Rajio/0.10.0 (Desktop Podcast Player)",
+  "User-Agent": `Rajio/${APP_VERSION} (Desktop Podcast Player)`,
 };
 
 interface CacheMetadata {

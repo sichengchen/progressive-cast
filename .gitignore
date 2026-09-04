@@ -22,6 +22,7 @@ playwright-report
 # production
 /build
 /apps/*/dist
+/apps/*/release
 /apps/web/build
 
 # misc
