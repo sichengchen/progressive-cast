@@ -7,7 +7,13 @@ import {
   toggleFavoriteEpisodeId,
 } from "@/lib/favorite-episodes";
 import { preloadImageUrls } from "@/lib/image-preloader";
-import { parsePlaybackQueue, putEpisodeNext, serializePlaybackQueue } from "@/lib/playback-queue";
+import {
+  mergePlaybackQueue,
+  parsePlaybackQueue,
+  putEpisodeFirst,
+  putEpisodeNext,
+  serializePlaybackQueue,
+} from "@/lib/playback-queue";
 import type {
   DownloadProgress,
   Episode,
@@ -221,12 +227,18 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       return;
     }
 
+    const currentEpisode = state.playbackState.currentEpisode;
     const episodeIds = putEpisodeNext(
-      state.playbackQueue.map((queuedEpisode) => queuedEpisode.id),
+      putEpisodeFirst(
+        state.playbackQueue.map((queuedEpisode) => queuedEpisode.id),
+        currentEpisode.id,
+      ),
       episode.id,
+      currentEpisode.id,
     );
     const episodesById = new Map([
       ...state.playbackQueue.map((queuedEpisode) => [queuedEpisode.id, queuedEpisode] as const),
+      [currentEpisode.id, currentEpisode] as const,
       [episode.id, episode] as const,
     ]);
     const playbackQueue = episodeIds.flatMap((episodeId) => {
@@ -300,8 +312,10 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     })),
 
   clearQueue: () => {
-    set({ playbackQueue: [] });
-    persistPlaybackQueue([]);
+    const currentEpisode = get().playbackState.currentEpisode;
+    const playbackQueue = currentEpisode ? [currentEpisode] : [];
+    set({ playbackQueue });
+    persistPlaybackQueue(playbackQueue);
   },
 
   clearSeekRequest: () =>
@@ -456,7 +470,13 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       ]);
       const podcasts = podcastSummaries.map(toPodcast);
       const favoriteEpisodeIds = parseFavoriteEpisodes(settings.favoriteEpisodes);
-      const queueEpisodeIds = parsePlaybackQueue(settings.playbackQueue);
+      const resumableEpisodeIds = progressSummaries
+        .filter((progress) => progress.currentTime > 0 && !progress.isCompleted)
+        .map((progress) => progress.episodeId);
+      const queueEpisodeIds = mergePlaybackQueue(
+        parsePlaybackQueue(settings.playbackQueue),
+        resumableEpisodeIds,
+      );
       const libraryEpisodes =
         favoriteEpisodeIds.length > 0 || queueEpisodeIds.length > 0
           ? await listLibraryEpisodes(podcasts)
@@ -486,6 +506,19 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
             ] as const,
         ),
       );
+      const currentPlaybackState = get().playbackState;
+      const restoredPlaybackState =
+        currentPlaybackState.currentEpisode || !playbackQueue[0]
+          ? currentPlaybackState
+          : {
+              ...createPlaybackState(
+                currentPlaybackState,
+                playbackQueue[0],
+                playbackProgress.get(playbackQueue[0].id),
+              ),
+              isLoading: false,
+              isPlaying: false,
+            };
       warmPodcastCoverImages(podcasts);
 
       set({
@@ -502,10 +535,12 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         libraryEpisodes: libraryEpisodes ?? [],
         playbackProgress,
         playbackQueue,
+        playbackState: restoredPlaybackState,
         podcasts,
         selectedPodcastId,
         storageStats: null,
       });
+      persistPlaybackQueue(playbackQueue);
     } catch (error) {
       set({
         error: error instanceof Error ? error.message : "Failed to initialize library.",
@@ -585,14 +620,28 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   playEpisode: (episode) => {
     const state = get();
+    const episodeIds = putEpisodeFirst(
+      state.playbackQueue.map((queuedEpisode) => queuedEpisode.id),
+      episode.id,
+    );
+    const episodesById = new Map([
+      ...state.playbackQueue.map((queuedEpisode) => [queuedEpisode.id, queuedEpisode] as const),
+      [episode.id, episode] as const,
+    ]);
+    const playbackQueue = episodeIds.flatMap((episodeId) => {
+      const queuedEpisode = episodesById.get(episodeId);
+      return queuedEpisode ? [queuedEpisode] : [];
+    });
+
     if (state.playbackState.currentEpisode?.id === episode.id) {
-      set({ playbackState: { ...state.playbackState, isPlaying: true } });
+      set({
+        playbackQueue,
+        playbackState: { ...state.playbackState, isPlaying: true },
+      });
+      persistPlaybackQueue(playbackQueue);
       return;
     }
 
-    const playbackQueue = state.playbackQueue.filter(
-      (queuedEpisode) => queuedEpisode.id !== episode.id,
-    );
     set({
       playbackQueue,
       playbackState: createPlaybackState(
@@ -601,19 +650,31 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         state.playbackProgress.get(episode.id),
       ),
     });
-
-    if (playbackQueue.length !== state.playbackQueue.length) {
-      persistPlaybackQueue(playbackQueue);
-    }
+    persistPlaybackQueue(playbackQueue);
   },
 
   playNextEpisode: () => {
     const state = get();
-    const [nextEpisode, ...playbackQueue] = state.playbackQueue;
+    const currentEpisodeId = state.playbackState.currentEpisode?.id;
+    const currentIndex = currentEpisodeId
+      ? state.playbackQueue.findIndex((episode) => episode.id === currentEpisodeId)
+      : -1;
+    const nextEpisode = state.playbackQueue[currentIndex >= 0 ? currentIndex + 1 : 0];
     if (!nextEpisode) {
       return false;
     }
 
+    const episodeIds = putEpisodeFirst(
+      state.playbackQueue.map((episode) => episode.id),
+      nextEpisode.id,
+    );
+    const episodesById = new Map(
+      state.playbackQueue.map((episode) => [episode.id, episode] as const),
+    );
+    const playbackQueue = episodeIds.flatMap((episodeId) => {
+      const episode = episodesById.get(episodeId);
+      return episode ? [episode] : [];
+    });
     set({
       playbackQueue,
       playbackState: createPlaybackState(
@@ -633,9 +694,17 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       return;
     }
 
-    const playbackQueue = state.playbackQueue.filter(
-      (queuedEpisode) => queuedEpisode.id !== episodeId,
+    const episodeIds = putEpisodeFirst(
+      state.playbackQueue.map((queuedEpisode) => queuedEpisode.id),
+      episodeId,
     );
+    const episodesById = new Map(
+      state.playbackQueue.map((queuedEpisode) => [queuedEpisode.id, queuedEpisode] as const),
+    );
+    const playbackQueue = episodeIds.flatMap((queuedEpisodeId) => {
+      const queuedEpisode = episodesById.get(queuedEpisodeId);
+      return queuedEpisode ? [queuedEpisode] : [];
+    });
     set({
       playbackQueue,
       playbackState: createPlaybackState(
@@ -694,6 +763,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   },
 
   removeFromQueue: (episodeId) => {
+    if (get().playbackState.currentEpisode?.id === episodeId) {
+      return;
+    }
     const playbackQueue = get().playbackQueue.filter(
       (queuedEpisode) => queuedEpisode.id !== episodeId,
     );
@@ -722,8 +794,15 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set((state) => {
       const playbackProgress = new Map(state.playbackProgress);
       playbackProgress.set(episodeId, progress);
-      return { playbackProgress };
+      const playbackQueue =
+        completedOverride === true
+          ? state.playbackQueue.filter((episode) => episode.id !== episodeId)
+          : state.playbackQueue;
+      return { playbackProgress, playbackQueue };
     });
+    if (completedOverride === true) {
+      persistPlaybackQueue(get().playbackQueue);
+    }
   },
 
   seekToTime: (time) =>

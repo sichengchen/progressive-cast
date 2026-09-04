@@ -278,9 +278,9 @@ export function AudioPlayer() {
       }
     };
 
-    const handleEnded = () => {
+    const handleEnded = async () => {
       // Save final progress
-      void saveProgress(currentEpisode.id, duration, duration);
+      await saveProgress(currentEpisode.id, duration, duration, true);
 
       if (!playNextEpisode()) {
         pausePlayback();

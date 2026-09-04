@@ -38,9 +38,35 @@ export function serializePlaybackQueue(episodeIds: string[]): string {
   return JSON.stringify(payload);
 }
 
-export function putEpisodeNext(episodeIds: string[], episodeId: string): string[] {
+export function mergePlaybackQueue(primaryIds: string[], fallbackIds: string[]): string[] {
+  return Array.from(new Set([...primaryIds, ...fallbackIds].filter(Boolean))).slice(
+    0,
+    playbackQueueLimit,
+  );
+}
+
+export function putEpisodeFirst(episodeIds: string[], episodeId: string): string[] {
   return [episodeId, ...episodeIds.filter((queuedId) => queuedId !== episodeId)].slice(
     0,
     playbackQueueLimit,
   );
+}
+
+export function putEpisodeNext(
+  episodeIds: string[],
+  episodeId: string,
+  currentEpisodeId?: string,
+): string[] {
+  const withoutEpisode = episodeIds.filter((queuedId) => queuedId !== episodeId);
+  const currentIndex = currentEpisodeId ? withoutEpisode.indexOf(currentEpisodeId) : -1;
+
+  if (currentIndex < 0) {
+    return putEpisodeFirst(withoutEpisode, episodeId);
+  }
+
+  return [
+    ...withoutEpisode.slice(0, currentIndex + 1),
+    episodeId,
+    ...withoutEpisode.slice(currentIndex + 1),
+  ].slice(0, playbackQueueLimit);
 }
