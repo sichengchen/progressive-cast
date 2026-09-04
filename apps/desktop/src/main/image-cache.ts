@@ -6,6 +6,7 @@ const maxImageBytes = 12 * 1024 * 1024;
 const defaultMaxMemoryBytes = 48 * 1024 * 1024;
 const defaultMaxMemoryEntries = 128;
 const defaultWarmConcurrency = 8;
+const imageRequestTimeoutMs = 10_000;
 
 const imageRequestHeaders = {
   Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
@@ -147,7 +148,10 @@ export class ImageCacheService {
       return cached;
     }
 
-    const response = await this.fetchImage(sourceUrl, { headers: imageRequestHeaders });
+    const response = await this.fetchImage(sourceUrl, {
+      headers: imageRequestHeaders,
+      signal: AbortSignal.timeout(imageRequestTimeoutMs),
+    });
     if (!response.ok) {
       throw new Error(`Image request failed with HTTP ${response.status}`);
     }

@@ -119,6 +119,30 @@ export class LocalDatabase {
       .map(toPodcastSummary);
   }
 
+  listPodcastArtworkUrls(): string[] {
+    return this.db
+      .prepare(
+        `SELECT image_url
+        FROM podcasts
+        WHERE image_url IS NOT NULL AND TRIM(image_url) <> ''
+        ORDER BY title COLLATE NOCASE`,
+      )
+      .all()
+      .map((row) => String((row as Row).image_url));
+  }
+
+  listEpisodeArtworkUrls(): string[] {
+    return this.db
+      .prepare(
+        `SELECT image_url
+        FROM episodes
+        WHERE image_url IS NOT NULL AND TRIM(image_url) <> ''
+        ORDER BY published_at DESC, id DESC`,
+      )
+      .all()
+      .map((row) => String((row as Row).image_url));
+  }
+
   getPodcast(podcastId: string): PodcastSummary | null {
     const row = this.db
       .prepare(

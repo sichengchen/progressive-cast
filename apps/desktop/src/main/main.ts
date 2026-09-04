@@ -18,6 +18,7 @@ const appIconPath = app.isPackaged
   : path.resolve(mainDir, "../../resources/icon.png");
 const appIcon = nativeImage.createFromPath(appIconPath);
 const startupEpisodeArtworkLimit = 24;
+const startupArtworkWaitMs = 3_000;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -86,21 +87,17 @@ app.whenReady().then(() => {
   const imageCache = registerImageCacheProtocol(
     path.join(app.getPath("userData"), "image-cache-v1"),
   );
-  const podcasts = db.listPodcasts();
-  const episodes = db.listEpisodes();
+  const podcastArtworkUrls = db.listPodcastArtworkUrls();
+  const episodeArtworkUrls = db.listEpisodeArtworkUrls();
   const startupArtworkUrls = uniqueArtworkUrls([
-    ...podcasts.map((podcast) => podcast.imageUrl),
-    ...db
-      .listLatestEpisodes({ limit: startupEpisodeArtworkLimit })
-      .episodes.map((episode) => episode.imageUrl),
+    ...podcastArtworkUrls,
+    ...episodeArtworkUrls.slice(0, startupEpisodeArtworkLimit),
   ]);
-  const allArtworkUrls = uniqueArtworkUrls([
-    ...podcasts.map((podcast) => podcast.imageUrl),
-    ...episodes.map((episode) => episode.imageUrl),
-  ]);
-  const startupArtworkReady = imageCache.warm(startupArtworkUrls);
+  const allArtworkUrls = uniqueArtworkUrls([...podcastArtworkUrls, ...episodeArtworkUrls]);
+  const initialArtworkWarmup = imageCache.warm(startupArtworkUrls);
+  const startupArtworkReady = waitUpTo(initialArtworkWarmup, startupArtworkWaitMs);
 
-  void startupArtworkReady.then(() => imageCache.warm(allArtworkUrls));
+  void initialArtworkWarmup.then(() => imageCache.warm(allArtworkUrls));
   const defaultDownloadDirectory = resolveDefaultDownloadDirectory(
     process.platform,
     app.getName(),
@@ -123,6 +120,18 @@ app.whenReady().then(() => {
 
 function uniqueArtworkUrls(urls: Array<string | undefined>): string[] {
   return [...new Set(urls.filter((url): url is string => Boolean(url)))];
+}
+
+function waitUpTo(task: Promise<unknown>, timeoutMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(resolve, timeoutMs);
+    const settle = () => {
+      clearTimeout(timeout);
+      resolve();
+    };
+
+    void task.then(settle, settle);
+  });
 }
 
 app.on("window-all-closed", () => {

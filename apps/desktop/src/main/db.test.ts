@@ -124,6 +124,45 @@ test("pages latest and podcast episodes without loading full feeds", () => {
   db.close();
 });
 
+test("lists artwork URLs without loading full podcast and episode records", () => {
+  const db = createTestDatabase();
+
+  db.upsertPodcast({
+    feedUrl: "https://example.com/feed.xml",
+    id: "podcast_1",
+    imageUrl: "https://cdn.example/show.png",
+    lastUpdated: "2026-01-01T00:00:00.000Z",
+    subscriptionDate: "2026-01-01T00:00:00.000Z",
+    title: "Example Feed",
+  });
+  db.upsertEpisodes([
+    {
+      audioUrl: "https://example.com/old.mp3",
+      id: "episode_old",
+      imageUrl: "https://cdn.example/old.png",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-01T00:00:00.000Z",
+      title: "Old",
+    },
+    {
+      audioUrl: "https://example.com/new.mp3",
+      id: "episode_new",
+      imageUrl: "https://cdn.example/new.png",
+      podcastId: "podcast_1",
+      publishedAt: "2026-01-02T00:00:00.000Z",
+      title: "New",
+    },
+  ]);
+
+  assert.deepEqual(db.listPodcastArtworkUrls(), ["https://cdn.example/show.png"]);
+  assert.deepEqual(db.listEpisodeArtworkUrls(), [
+    "https://cdn.example/new.png",
+    "https://cdn.example/old.png",
+  ]);
+
+  db.close();
+});
+
 function createTestDatabase(): LocalDatabase {
   return new LocalDatabase(path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"));
 }
