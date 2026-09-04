@@ -1,6 +1,7 @@
 "use client";
 
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import {
   Plus,
   Radio,
@@ -15,7 +16,10 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CoverImage } from "@/components/ui/cover-image";
 import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
+import { PodcastActionsMenu, RemovePodcastDialog } from "@/components/common/podcast-actions-menu";
 import { usePodcastStore } from "@/lib/store";
+import type { Podcast } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 // Menu items
@@ -55,8 +59,13 @@ export function PodcastSidebar() {
   const isLoading = usePodcastStore((state) => state.isLoading);
   const isRefreshing = usePodcastStore((state) => state.isRefreshing);
   const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
+  const refreshPodcast = usePodcastStore((state) => state.refreshPodcast);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const setShowAddPodcastDialog = usePodcastStore((state) => state.setShowAddPodcastDialog);
+  const unsubscribeFromPodcast = usePodcastStore((state) => state.unsubscribeFromPodcast);
+  const [actionsPodcastId, setActionsPodcastId] = useState<string | null>(null);
+  const [podcastPendingRemoval, setPodcastPendingRemoval] = useState<Podcast | null>(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const activePodcastId = location.pathname.startsWith("/podcast/")
     ? decodeURIComponent(location.pathname.replace("/podcast/", ""))
@@ -68,6 +77,43 @@ export function PodcastSidebar() {
       toast.success("Podcasts refreshed successfully!");
     } catch {
       toast.error("Failed to refresh podcasts");
+    }
+  };
+
+  const handleRefreshPodcast = async (podcast: Podcast) => {
+    try {
+      await refreshPodcast(podcast.id);
+      toast.success(`Updated ${podcast.title}`);
+    } catch {
+      toast.error(`Failed to update ${podcast.title}`);
+    }
+  };
+
+  const handleRemovePodcast = async () => {
+    const podcast = podcastPendingRemoval;
+    if (!podcast) {
+      return;
+    }
+
+    setIsRemoving(true);
+    try {
+      await unsubscribeFromPodcast(podcast.id);
+      setPodcastPendingRemoval(null);
+
+      if (activePodcastId === podcast.id) {
+        const nextPodcast = usePodcastStore.getState().podcasts[0];
+        if (nextPodcast) {
+          navigate({ params: { podcastId: nextPodcast.id }, to: "/podcast/$podcastId" });
+        } else {
+          navigate({ to: "/whats-new" });
+        }
+      }
+
+      toast.success(`Removed ${podcast.title}`);
+    } catch {
+      toast.error(`Failed to remove ${podcast.title}`);
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -163,50 +209,80 @@ export function PodcastSidebar() {
                 </div>
               ) : (
                 <ul className="flex w-full min-w-0 flex-col gap-1">
-                  {podcasts.map((podcast) => (
-                    <li key={podcast.id} className="group/menu-item relative">
-                      <button
-                        onClick={() => {
-                          setSelectedPodcast(podcast.id);
-                          navigate({
-                            params: {
-                              podcastId: podcast.id,
-                            },
-                            to: "/podcast/$podcastId",
-                          });
+                  {podcasts.map((podcast) => {
+                    const isActive = activePodcastId === podcast.id;
+                    const isMenuOpen = actionsPodcastId === podcast.id;
+
+                    return (
+                      <li
+                        key={podcast.id}
+                        className={cn(
+                          "group/menu-item relative flex min-w-0 items-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          isActive &&
+                            "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+                        )}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          setActionsPodcastId(podcast.id);
                         }}
-                        className={`flex h-auto w-full items-center gap-2 overflow-hidden rounded-md p-2 py-2 text-left text-sm outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-                          activePodcastId === podcast.id
-                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                            : ""
-                        }`}
                       >
-                        <div className="flex items-center gap-2 w-full min-w-0">
-                          <CoverImage
-                            src={podcast.imageUrl}
-                            alt={podcast.title}
-                            className="w-8 h-8 flex-shrink-0"
-                          />
-                          <div className="flex-1 min-w-0 text-left overflow-hidden">
-                            <div className="font-medium text-sm truncate leading-tight">
-                              {podcast.title}
-                            </div>
-                            {podcast.author && (
-                              <div className="text-xs text-muted-foreground truncate leading-tight">
-                                {podcast.author}
+                        <button
+                          onClick={() => {
+                            setSelectedPodcast(podcast.id);
+                            navigate({
+                              params: {
+                                podcastId: podcast.id,
+                              },
+                              to: "/podcast/$podcastId",
+                            });
+                          }}
+                          className="flex h-auto min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden"
+                        >
+                          <div className="flex items-center gap-2 w-full min-w-0">
+                            <CoverImage
+                              src={podcast.imageUrl}
+                              alt={podcast.title}
+                              className="w-8 h-8 flex-shrink-0"
+                            />
+                            <div className="flex-1 min-w-0 text-left overflow-hidden">
+                              <div className="font-medium text-sm truncate leading-tight">
+                                {podcast.title}
                               </div>
-                            )}
+                              {podcast.author && (
+                                <div className="text-xs text-muted-foreground truncate leading-tight">
+                                  {podcast.author}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
+                        </button>
+                        <PodcastActionsMenu
+                          isRefreshing={isRefreshing}
+                          onOpenChange={(open) => setActionsPodcastId(open ? podcast.id : null)}
+                          onRefresh={() => void handleRefreshPodcast(podcast)}
+                          onRequestRemove={() => setPodcastPendingRemoval(podcast)}
+                          open={isMenuOpen}
+                          podcastTitle={podcast.title}
+                        />
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>
           </DesktopSafeScrollArea>
         </div>
       </div>
+      <RemovePodcastDialog
+        isRemoving={isRemoving}
+        onConfirm={handleRemovePodcast}
+        onOpenChange={(open) => {
+          if (!open && !isRemoving) {
+            setPodcastPendingRemoval(null);
+          }
+        }}
+        podcast={podcastPendingRemoval}
+      />
     </>
   );
 }
