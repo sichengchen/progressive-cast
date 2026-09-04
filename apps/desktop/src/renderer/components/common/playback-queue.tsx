@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type DragEvent } from "react";
-import { GripVertical, ListX, X } from "lucide-react";
+import { ListX, X } from "lucide-react";
 
 import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
 import {
@@ -127,10 +127,6 @@ export function PlaybackQueue() {
                   </ListItemContent>
                   {isCurrentEpisode ? null : (
                     <ListItemActions className="ml-auto min-w-7 justify-end">
-                      <GripVertical
-                        aria-hidden="true"
-                        className="size-4 text-muted-foreground/70"
-                      />
                       <Button
                         aria-label={`Remove ${episode.title} from play queue`}
                         className="size-7 text-muted-foreground"
