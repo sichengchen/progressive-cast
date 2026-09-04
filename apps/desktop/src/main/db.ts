@@ -270,6 +270,9 @@ export class LocalDatabase {
 
   listEpisodesByPodcastPage(podcastId: string, request: EpisodePageRequest = {}): EpisodePage {
     const page = normalizePageRequest(request);
+    const total = readCount(
+      this.db.prepare("SELECT COUNT(*) AS total FROM episodes WHERE podcast_id = ?").get(podcastId),
+    );
     const rows = this.db
       .prepare(
         `SELECT
@@ -294,11 +297,12 @@ export class LocalDatabase {
       .all(podcastId, page.limit + 1, page.offset)
       .map(toEpisodeSummary);
 
-    return toEpisodePage(rows, page);
+    return toEpisodePage(rows, page, total);
   }
 
   listLatestEpisodes(request: EpisodePageRequest = {}): EpisodePage {
     const page = normalizePageRequest(request);
+    const total = readCount(this.db.prepare("SELECT COUNT(*) AS total FROM episodes").get());
     const rows = this.db
       .prepare(
         `SELECT
@@ -322,7 +326,7 @@ export class LocalDatabase {
       .all(page.limit + 1, page.offset)
       .map(toEpisodeSummary);
 
-    return toEpisodePage(rows, page);
+    return toEpisodePage(rows, page, total);
   }
 
   listEpisodes(): EpisodeSummary[] {
@@ -358,6 +362,7 @@ export class LocalDatabase {
         episodes: [],
         hasMore: false,
         nextOffset: page.offset,
+        total: 0,
       };
     }
 
@@ -365,6 +370,17 @@ export class LocalDatabase {
     const contains = `%${escapedQuery}%`;
     const prefix = `${escapedQuery}%`;
     const wordPrefix = `% ${escapedQuery}%`;
+    const total = readCount(
+      this.db
+        .prepare(
+          `SELECT COUNT(*) AS total
+           FROM episodes
+           WHERE LOWER(title) LIKE ? ESCAPE '\\'
+             OR LOWER(COALESCE(description, '')) LIKE ? ESCAPE '\\'
+             OR LOWER(COALESCE(content, '')) LIKE ? ESCAPE '\\'`,
+        )
+        .get(contains, contains, contains),
+    );
     const rows = this.db
       .prepare(
         `SELECT
@@ -410,7 +426,7 @@ export class LocalDatabase {
       )
       .map(toEpisodeSummary);
 
-    return toEpisodePage(rows, page);
+    return toEpisodePage(rows, page, total);
   }
 
   getEpisode(episodeId: string): EpisodeSummary | null {
@@ -819,6 +835,7 @@ function normalizePageRequest(request: EpisodePageRequest) {
 function toEpisodePage(
   rows: EpisodeSummary[],
   page: { limit: number; offset: number },
+  total: number,
 ): EpisodePage {
   const episodes = rows.slice(0, page.limit);
 
@@ -826,7 +843,12 @@ function toEpisodePage(
     episodes,
     hasMore: rows.length > page.limit,
     nextOffset: page.offset + episodes.length,
+    total,
   };
+}
+
+function readCount(row: unknown): number {
+  return maybeNumber((row as Row | undefined)?.total) ?? 0;
 }
 
 function toPodcastSummary(row: unknown): PodcastSummary {

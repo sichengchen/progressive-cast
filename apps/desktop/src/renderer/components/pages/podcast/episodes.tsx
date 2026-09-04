@@ -51,8 +51,8 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
         <h2 className="text-lg font-semibold tracking-[-0.015em]" id="episode-list-heading">
           Episodes
         </h2>
-        {episodes.length ? (
-          <ContentMetadata className="text-sm" items={[`${episodes.length} episodes`]} />
+        {pageState?.total ? (
+          <ContentMetadata className="text-sm" items={[`${pageState.total} episodes`]} />
         ) : null}
       </div>
       <EpisodeList

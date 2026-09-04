@@ -18,12 +18,15 @@ test("subscribes to a feed, persists records, and queues sync", async () => {
     assert.equal(podcast.id, "podcast_1");
     assert.equal(db.getPodcast("podcast_1")?.title, "Example Feed");
     assert.equal(db.listEpisodesByPodcast("podcast_1")[0]?.id, "episode_1");
-    assert.deepEqual(db.listOutbox().map(({ kind, payload }) => ({ kind, payload })), [
-      {
-        kind: "subscription.upsert",
-        payload: { feedUrl: "https://example.com/feed.xml" },
-      },
-    ]);
+    assert.deepEqual(
+      db.listOutbox().map(({ kind, payload }) => ({ kind, payload })),
+      [
+        {
+          kind: "subscription.upsert",
+          payload: { feedUrl: "https://example.com/feed.xml" },
+        },
+      ],
+    );
   } finally {
     db.close();
   }
@@ -56,12 +59,15 @@ test("unsubscribes existing podcasts with cascade cleanup and skips missing podc
       progress: 0,
       status: "missing",
     });
-    assert.deepEqual(db.listOutbox().map(({ kind, payload }) => ({ kind, payload })), [
-      {
-        kind: "subscription.delete",
-        payload: { feedUrl: "https://example.com/feed.xml" },
-      },
-    ]);
+    assert.deepEqual(
+      db.listOutbox().map(({ kind, payload }) => ({ kind, payload })),
+      [
+        {
+          kind: "subscription.delete",
+          payload: { feedUrl: "https://example.com/feed.xml" },
+        },
+      ],
+    );
   } finally {
     db.close();
   }
@@ -152,6 +158,7 @@ test("searches episodes with title ranking and bounded paging", async () => {
     );
     assert.equal(page.hasMore, true);
     assert.equal(page.nextOffset, 2);
+    assert.equal(page.total, 3);
   } finally {
     db.close();
   }
@@ -208,13 +215,15 @@ test("refresh rejects missing podcasts", async () => {
 });
 
 function createTestDatabase(): LocalDatabase {
-  return new LocalDatabase(path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"));
+  return new LocalDatabase(
+    path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"),
+  );
 }
 
-function feed(overrides?: {
-  episodes?: EpisodeSummary[];
-  podcast?: PodcastSummary;
-}): { episodes: EpisodeSummary[]; podcast: PodcastSummary } {
+function feed(overrides?: { episodes?: EpisodeSummary[]; podcast?: PodcastSummary }): {
+  episodes: EpisodeSummary[];
+  podcast: PodcastSummary;
+} {
   return {
     episodes: overrides?.episodes ?? [
       {

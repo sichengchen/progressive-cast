@@ -9,10 +9,11 @@ const browserFallbackApi: NewcastleApi = {
   },
   episodes: {
     listAll: () => Promise.resolve([]),
-    listLatest: () => Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0 }),
+    listLatest: () => Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0, total: 0 }),
     listByPodcast: () => Promise.resolve([]),
-    listByPodcastPage: () => Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0 }),
-    search: () => Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0 }),
+    listByPodcastPage: () =>
+      Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0, total: 0 }),
+    search: () => Promise.resolve({ episodes: [], hasMore: false, nextOffset: 0, total: 0 }),
   },
   library: {
     list: () => Promise.resolve([]),

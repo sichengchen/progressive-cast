@@ -37,6 +37,7 @@ interface EpisodePageState {
   isLoading: boolean;
   loaded: boolean;
   nextOffset: number;
+  total: number;
 }
 
 const unloadedPageState: EpisodePageState = {
@@ -44,6 +45,7 @@ const unloadedPageState: EpisodePageState = {
   isLoading: false,
   loaded: false,
   nextOffset: 0,
+  total: 0,
 };
 
 interface ProgressDialogState {
@@ -945,6 +947,7 @@ async function loadPodcastEpisodePage(
             isLoading: false,
             loaded: true,
             nextOffset: page.nextOffset,
+            total: page.total,
           });
           warmSelectedPodcastImages(state.podcasts, podcastId, episodes);
 
@@ -993,6 +996,7 @@ async function loadLatestEpisodePage(set: StoreSet, get: () => PodcastStore, off
               isLoading: false,
               loaded: true,
               nextOffset: page.nextOffset,
+              total: page.total,
             },
             latestEpisodesVersion: state.latestEpisodesVersion + 1,
           };
@@ -1053,6 +1057,7 @@ async function reloadSelectedEpisodes(set: StoreSet, get: () => PodcastStore) {
       isLoading: false,
       loaded: true,
       nextOffset: page.nextOffset,
+      total: page.total,
     });
     set({
       episodeCache,

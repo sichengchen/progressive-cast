@@ -39,6 +39,7 @@ export interface EpisodePage {
   episodes: EpisodeSummary[];
   hasMore: boolean;
   nextOffset: number;
+  total: number;
 }
 
 export interface PlaybackProgressInput {

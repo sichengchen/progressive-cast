@@ -29,7 +29,10 @@ test("stores podcasts and episodes in SQLite", () => {
   ]);
 
   assert.equal(db.listPodcasts()[0]?.title, "Example Feed");
-  assert.equal(db.listEpisodesByPodcast("podcast_1")[0]?.audioUrl, "https://example.com/episode.mp3");
+  assert.equal(
+    db.listEpisodesByPodcast("podcast_1")[0]?.audioUrl,
+    "https://example.com/episode.mp3",
+  );
   assert.equal(db.listEpisodes()[0]?.id, "episode_1");
 
   db.close();
@@ -63,7 +66,10 @@ test("persists playback progress and sync outbox entries", () => {
   });
   db.appendOutbox("playback.checkpoint", { episodeId: "episode_1" });
 
-  assert.deepEqual(db.listOutbox().map((entry) => entry.kind), ["playback.checkpoint"]);
+  assert.deepEqual(
+    db.listOutbox().map((entry) => entry.kind),
+    ["playback.checkpoint"],
+  );
 
   db.close();
 });
@@ -109,17 +115,19 @@ test("pages latest and podcast episodes without loading full feeds", () => {
     },
   ]);
 
-  assert.deepEqual(db.listLatestEpisodes({ limit: 2 }).episodes.map((episode) => episode.id), [
-    "episode_new",
-    "episode_other",
-  ]);
-  assert.equal(db.listLatestEpisodes({ limit: 2 }).hasMore, true);
   assert.deepEqual(
-    db.listEpisodesByPodcastPage("podcast_1", { limit: 1, offset: 1 }).episodes.map(
-      (episode) => episode.id,
-    ),
+    db.listLatestEpisodes({ limit: 2 }).episodes.map((episode) => episode.id),
+    ["episode_new", "episode_other"],
+  );
+  assert.equal(db.listLatestEpisodes({ limit: 2 }).hasMore, true);
+  assert.equal(db.listLatestEpisodes({ limit: 2 }).total, 3);
+  assert.deepEqual(
+    db
+      .listEpisodesByPodcastPage("podcast_1", { limit: 1, offset: 1 })
+      .episodes.map((episode) => episode.id),
     ["episode_old"],
   );
+  assert.equal(db.listEpisodesByPodcastPage("podcast_1", { limit: 1 }).total, 2);
 
   db.close();
 });
@@ -164,5 +172,7 @@ test("lists artwork URLs without loading full podcast and episode records", () =
 });
 
 function createTestDatabase(): LocalDatabase {
-  return new LocalDatabase(path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"));
+  return new LocalDatabase(
+    path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"),
+  );
 }
