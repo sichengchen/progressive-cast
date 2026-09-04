@@ -445,11 +445,11 @@ export function AudioPlayer() {
       // This will be handled by the DrawerTrigger wrapper
       return;
     } else {
-      // On desktop, clicking cover navigates to podcast page
-      if (currentEpisode?.podcastId) {
+      // On desktop, the artwork opens the episode's dedicated detail screen.
+      if (currentEpisode) {
         navigate({
-          params: { podcastId: currentEpisode.podcastId },
-          to: "/podcast/$podcastId",
+          params: { episodeId: currentEpisode.id },
+          to: "/episode/$episodeId",
         });
       }
     }
@@ -561,7 +561,7 @@ export function AudioPlayer() {
           <button
             onClick={handleCoverClick}
             className="flex-shrink-0 rounded-lg transition-transform hover:scale-105"
-            title="Jump to podcast details"
+            title="Open episode details"
           >
             <CoverImage src={currentEpisode.imageUrl} alt={currentEpisode.title} size="md" />
           </button>

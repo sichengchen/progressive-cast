@@ -86,6 +86,59 @@ export function formatEpisodeDate(date: Date | string, now = new Date()): string
   }).format(dateValue);
 }
 
+export function formatEpisodeDateGroup(date: Date | string, now = new Date()): string {
+  const dateValue = typeof date === "string" ? new Date(date) : date;
+
+  if (Number.isNaN(dateValue.getTime())) {
+    return "Earlier";
+  }
+
+  if (isSameCalendarDay(dateValue, now)) {
+    return "Today";
+  }
+
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (isSameCalendarDay(dateValue, yesterday)) {
+    return "Yesterday";
+  }
+
+  const thisWeek = startOfWeek(now);
+  if (dateValue >= thisWeek) {
+    return "This week";
+  }
+
+  const lastWeek = new Date(thisWeek);
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  if (dateValue >= lastWeek) {
+    return "Last week";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    month: "long",
+    year: dateValue.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  }).format(dateValue);
+}
+
+export function formatLastPlayedDate(date: Date | string, now = new Date()): string {
+  const dateValue = typeof date === "string" ? new Date(date) : date;
+
+  if (Number.isNaN(dateValue.getTime())) {
+    return "Played recently";
+  }
+
+  if (isSameCalendarDay(dateValue, now)) {
+    return "Played today";
+  }
+
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (isSameCalendarDay(dateValue, yesterday)) {
+    return "Played yesterday";
+  }
+
+  const formattedDate = formatEpisodeDate(dateValue, now);
+  return formattedDate === "Last week" ? "Played last week" : `Last played ${formattedDate}`;
+}
+
 // Format date to a readable string
 export function formatDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;

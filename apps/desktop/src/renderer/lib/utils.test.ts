@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { formatEpisodeDate } from "./utils";
+import { formatEpisodeDate, formatEpisodeDateGroup, formatLastPlayedDate } from "./utils";
 
 const now = new Date(2026, 8, 3, 12);
 
@@ -14,4 +14,19 @@ test("formatEpisodeDate uses compact relative labels", () => {
 test("formatEpisodeDate omits the current year and keeps older years", () => {
   assert.equal(formatEpisodeDate(new Date(2026, 5, 3, 8), now), "Jun 3");
   assert.equal(formatEpisodeDate(new Date(2025, 8, 2, 8), now), "Sep 2, 2025");
+});
+
+test("formatEpisodeDateGroup creates stable chronological sections", () => {
+  assert.equal(formatEpisodeDateGroup(new Date(2026, 8, 3, 8), now), "Today");
+  assert.equal(formatEpisodeDateGroup(new Date(2026, 8, 2, 8), now), "Yesterday");
+  assert.equal(formatEpisodeDateGroup(new Date(2026, 7, 31, 8), now), "This week");
+  assert.equal(formatEpisodeDateGroup(new Date(2026, 7, 26, 8), now), "Last week");
+  assert.equal(formatEpisodeDateGroup(new Date(2026, 5, 3, 8), now), "June");
+  assert.equal(formatEpisodeDateGroup(new Date(2025, 8, 2, 8), now), "September 2025");
+});
+
+test("formatLastPlayedDate describes playback recency without duration", () => {
+  assert.equal(formatLastPlayedDate(new Date(2026, 8, 3, 8), now), "Played today");
+  assert.equal(formatLastPlayedDate(new Date(2026, 8, 2, 8), now), "Played yesterday");
+  assert.equal(formatLastPlayedDate(new Date(2026, 7, 26, 8), now), "Played last week");
 });

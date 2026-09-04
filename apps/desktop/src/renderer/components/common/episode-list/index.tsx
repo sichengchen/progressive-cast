@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import { CircleCheck } from "lucide-react";
 import {
   List,
@@ -21,7 +22,7 @@ import {
 } from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
 import { ContentMetadata } from "@/components/common/content-metadata";
-import { formatEpisodeDate, richTextToPlainText } from "@/lib/utils";
+import { cn, formatEpisodeDate, richTextToPlainText } from "@/lib/utils";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
 import { EpisodeSkeleton } from "./episode-skeleton";
@@ -41,6 +42,9 @@ interface EpisodeListProps {
   isLoadingMore?: boolean;
   onLoadMore?: () => void | Promise<void>;
   currentEpisodeId?: string;
+  getMetadataItems?: (episode: Episode) => Array<string | null | undefined | false>;
+  skeletonCount?: number;
+  variant?: "compact" | "default" | "editorial" | "featured";
 }
 
 export function EpisodeList({
@@ -56,7 +60,11 @@ export function EpisodeList({
   isLoadingMore = false,
   onLoadMore,
   currentEpisodeId,
+  getMetadataItems,
+  skeletonCount,
+  variant = "default",
 }: EpisodeListProps) {
+  const navigate = useNavigate();
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [actionsEpisodeId, setActionsEpisodeId] = useState<string | null>(null);
 
@@ -83,7 +91,7 @@ export function EpisodeList({
 
   // Show skeleton while loading episodes
   if (isLoadingEpisodes) {
-    return <EpisodeSkeleton />;
+    return <EpisodeSkeleton count={skeletonCount} variant={variant} />;
   }
 
   if (episodes.length === 0) {
@@ -103,11 +111,30 @@ export function EpisodeList({
         {episodes.map((episode) => {
           const progress = playbackProgress.get(episode.id);
           const description = richTextToPlainText(episode.description);
+          const metadataItems = getMetadataItems?.(episode) ?? [
+            formatEpisodeDate(episode.publishedAt),
+          ];
+          const showDescription = variant !== "compact";
 
           return (
             <ListItem
+              aria-label={`Open ${episode.title}`}
               key={episode.id}
-              className="group rounded-lg px-2 py-2.5 transition-colors after:left-[4.25rem] after:right-2 hover:bg-muted/55 hover:after:hidden"
+              className={cn(
+                "group rounded-lg px-2 transition-colors hover:bg-muted/55 hover:after:hidden",
+                variant === "featured"
+                  ? "items-start py-3 after:left-[7.75rem] after:right-2"
+                  : variant === "editorial"
+                    ? "py-3 after:left-[5.25rem] after:right-2"
+                    : "py-2.5 after:left-[4.25rem] after:right-2",
+              )}
+              interactive
+              onClick={() =>
+                navigate({
+                  params: { episodeId: episode.id },
+                  to: "/episode/$episodeId",
+                })
+              }
               onContextMenu={(event) => {
                 event.preventDefault();
                 setActionsEpisodeId(episode.id);
@@ -117,14 +144,26 @@ export function EpisodeList({
                 <CoverImage
                   src={episode.imageUrl}
                   alt={episode.title}
-                  className="size-12 rounded-md"
+                  className={cn(
+                    "rounded-md",
+                    variant === "featured"
+                      ? "size-24 md:size-28"
+                      : variant === "editorial"
+                        ? "size-16"
+                        : "size-12",
+                  )}
                   loading="lazy"
                 />
               </ListItemLeading>
 
-              <ListItemContent className="flex flex-col gap-1">
+              <ListItemContent
+                className={cn(
+                  "flex flex-col gap-1",
+                  variant === "featured" && "min-h-24 justify-center md:min-h-28",
+                )}
+              >
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <ContentMetadata items={[formatEpisodeDate(episode.publishedAt)]} />
+                  <ContentMetadata items={metadataItems} />
                   {progress?.isCompleted ? (
                     <CircleCheck
                       aria-label="Listened"
@@ -133,18 +172,23 @@ export function EpisodeList({
                   ) : null}
                 </div>
 
-                <ListItemTitle className="line-clamp-2 text-[15px] leading-5 tracking-[-0.01em]">
+                <ListItemTitle
+                  className={cn(
+                    "line-clamp-2 tracking-[-0.01em]",
+                    variant === "featured" ? "text-base leading-6" : "text-[15px] leading-5",
+                  )}
+                >
                   {episode.title}
                 </ListItemTitle>
 
-                {description ? (
-                  <ListItemDescription className="line-clamp-2 mt-0 leading-5">
+                {showDescription && description ? (
+                  <ListItemDescription className="mt-0 line-clamp-2 leading-5">
                     {description}
                   </ListItemDescription>
                 ) : null}
               </ListItemContent>
 
-              <ListItemActions className="gap-2">
+              <ListItemActions className={cn("gap-2", variant === "featured" && "self-center")}>
                 <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
                 <EpisodeActionsMenu
                   currentEpisodeId={currentEpisodeId}
@@ -160,7 +204,7 @@ export function EpisodeList({
         })}
       </List>
       <div ref={loadMoreRef} className="h-px" />
-      {isLoadingMore ? <EpisodeSkeleton count={3} /> : null}
+      {isLoadingMore ? <EpisodeSkeleton count={3} variant={variant} /> : null}
     </>
   );
 }

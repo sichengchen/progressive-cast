@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import {
   List,
   ListItem,
@@ -12,15 +13,35 @@ import {
 
 interface EpisodeSkeletonProps {
   count?: number;
+  variant?: "compact" | "default" | "editorial" | "featured";
 }
 
-export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
+export function EpisodeSkeleton({ count = 10, variant = "default" }: EpisodeSkeletonProps) {
   return (
     <List className="px-0">
       {Array.from({ length: count }, (_, index) => (
-        <ListItem key={index} className="px-2 py-2.5 after:left-[4.25rem] after:right-2">
+        <ListItem
+          key={index}
+          className={cn(
+            "px-2 after:right-2",
+            variant === "featured"
+              ? "items-start py-3 after:left-[7.75rem]"
+              : variant === "editorial"
+                ? "py-3 after:left-[5.25rem]"
+                : "py-2.5 after:left-[4.25rem]",
+          )}
+        >
           <ListItemLeading>
-            <Skeleton className="size-12 rounded-md" />
+            <Skeleton
+              className={cn(
+                "rounded-md",
+                variant === "featured"
+                  ? "size-24 md:size-28"
+                  : variant === "editorial"
+                    ? "size-16"
+                    : "size-12",
+              )}
+            />
           </ListItemLeading>
 
           <ListItemContent className="flex flex-col gap-1.5">
@@ -32,7 +53,7 @@ export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
               <Skeleton className="mb-1 h-4 w-full max-w-md" />
               <Skeleton className="h-4 w-3/4" />
             </div>
-            <Skeleton className="h-3.5 w-full max-w-xl" />
+            {variant === "compact" ? null : <Skeleton className="h-3.5 w-full max-w-xl" />}
           </ListItemContent>
 
           <ListItemActions>

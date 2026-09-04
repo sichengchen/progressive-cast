@@ -9,6 +9,7 @@ import {
 
 import { AppShell } from "@/app-shell";
 import { DownloadedRoutePage } from "@/routes/downloaded-route";
+import { EpisodeRoutePage } from "@/routes/episode-route";
 import { FavoritesRoutePage } from "@/routes/favorites-route";
 import { LibraryRoutePage } from "@/routes/library-route";
 import { PodcastRoutePage } from "@/routes/podcast-route";
@@ -82,6 +83,17 @@ const podcastRoute = createRoute({
   path: "/podcast/$podcastId",
 });
 
+function EpisodeRouteComponent() {
+  const { episodeId } = useParams({ from: "/episode/$episodeId" });
+  return <EpisodeRoutePage episodeId={episodeId} />;
+}
+
+const episodeRoute = createRoute({
+  component: EpisodeRouteComponent,
+  getParentRoute: () => rootRoute,
+  path: "/episode/$episodeId",
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   searchRoute,
@@ -92,6 +104,7 @@ const routeTree = rootRoute.addChildren([
   favoritesRoute,
   settingsRoute,
   podcastRoute,
+  episodeRoute,
 ]);
 
 export const router = createRouter({

@@ -103,6 +103,7 @@ interface PodcastStore {
   deleteDownload: (episodeId: string) => Promise<void>;
   downloadEpisode: (episode: Episode) => Promise<void>;
   getDownloadedEpisodes: () => Promise<Episode[]>;
+  getEpisode: (episodeId: string) => Promise<Episode | null>;
   getLatestEpisodes: () => Promise<Episode[]>;
   getUnfinishedEpisodes: () => Promise<Episode[]>;
   importFromOPML: (opmlContent: string) => Promise<{ errors: number; imported: number }>;
@@ -355,6 +356,16 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     const downloadedEpisodes = episodes.filter((episode) => episode.isDownloaded);
     set({ downloadedEpisodes });
     return downloadedEpisodes;
+  },
+
+  getEpisode: async (episodeId) => {
+    const cachedEpisode = findEpisode(episodeId, get());
+    if (cachedEpisode) {
+      return cachedEpisode;
+    }
+
+    const episodes = await loadEpisodesFromLibrary(set, get);
+    return episodes.find((episode) => episode.id === episodeId) ?? null;
   },
 
   getLatestEpisodes: async () => {
@@ -1108,7 +1119,9 @@ function findEpisode(episodeId: string, state: PodcastStore) {
     state.downloadedEpisodes.find((episode) => episode.id === episodeId) ??
     state.favoriteEpisodes.find((episode) => episode.id === episodeId) ??
     state.playbackQueue.find((episode) => episode.id === episodeId) ??
-    state.playbackState.currentEpisode
+    (state.playbackState.currentEpisode?.id === episodeId
+      ? state.playbackState.currentEpisode
+      : undefined)
   );
 }
 

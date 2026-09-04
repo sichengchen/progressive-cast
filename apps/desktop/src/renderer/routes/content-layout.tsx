@@ -68,6 +68,7 @@ function getActiveTab(pathname: string) {
     pathname.startsWith("/favorites") ||
     pathname.startsWith("/resume-playing") ||
     pathname.startsWith("/downloaded") ||
+    pathname.startsWith("/episode/") ||
     pathname.startsWith("/podcast/")
   ) {
     return "library";

@@ -62,6 +62,7 @@ export function PodcastSidebar() {
   const location = useLocation();
 
   const podcasts = usePodcastStore((state) => state.podcasts);
+  const currentPage = usePodcastStore((state) => state.currentPage);
   const isLoading = usePodcastStore((state) => state.isLoading);
   const isRefreshing = usePodcastStore((state) => state.isRefreshing);
   const refreshAllPodcasts = usePodcastStore((state) => state.refreshAllPodcasts);
@@ -139,25 +140,37 @@ export function PodcastSidebar() {
               </div>
               <div className="w-full text-sm">
                 <ul className="flex w-full min-w-0 flex-col gap-1">
-                  {menuItems.map((item) => (
-                    <li key={item.to} className="group/menu-item relative">
-                      <button
-                        onClick={() =>
-                          navigate({
-                            to: item.to,
-                          })
-                        }
-                        className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-                          location.pathname === item.to
-                            ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-                            : ""
-                        }`}
-                      >
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className="truncate flex-1 min-w-0">{item.title}</span>
-                      </button>
-                    </li>
-                  ))}
+                  {menuItems.map((item) => {
+                    const isEpisodeDetail = location.pathname.startsWith("/episode/");
+                    const isActive =
+                      location.pathname === item.to ||
+                      (isEpisodeDetail &&
+                        ((currentPage === "whats-new" && item.to === "/whats-new") ||
+                          (currentPage === "resume-playing" && item.to === "/resume-playing") ||
+                          (currentPage === "downloaded" && item.to === "/downloaded") ||
+                          (currentPage === "favorites" && item.to === "/favorites") ||
+                          (currentPage === "settings" && item.to === "/settings")));
+
+                    return (
+                      <li key={item.to} className="group/menu-item relative">
+                        <button
+                          onClick={() =>
+                            navigate({
+                              to: item.to,
+                            })
+                          }
+                          className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
+                            isActive
+                              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                              : ""
+                          }`}
+                        >
+                          <item.icon className="h-4 w-4 flex-shrink-0" />
+                          <span className="truncate flex-1 min-w-0">{item.title}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>
