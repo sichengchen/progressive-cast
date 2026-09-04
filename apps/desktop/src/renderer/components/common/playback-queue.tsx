@@ -126,7 +126,7 @@ export function PlaybackQueue() {
                     </ListItemTitle>
                   </ListItemContent>
                   {isCurrentEpisode ? null : (
-                    <ListItemActions>
+                    <ListItemActions className="ml-auto min-w-7 justify-end">
                       <GripVertical
                         aria-hidden="true"
                         className="size-4 text-muted-foreground/70"
