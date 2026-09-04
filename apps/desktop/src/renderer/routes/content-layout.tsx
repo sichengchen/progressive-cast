@@ -23,7 +23,6 @@ interface AppPageLayoutProps {
     | "/downloaded"
     | "/favorites"
     | "/library"
-    | "/resume-playing"
     | "/search"
     | "/settings"
     | "/whats-new";
@@ -67,7 +66,6 @@ function getActiveTab(pathname: string) {
   if (
     pathname.startsWith("/library") ||
     pathname.startsWith("/favorites") ||
-    pathname.startsWith("/resume-playing") ||
     pathname.startsWith("/downloaded") ||
     pathname.startsWith("/episode/") ||
     pathname.startsWith("/podcast/")

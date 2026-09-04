@@ -66,7 +66,6 @@ interface PodcastStore {
   currentPage:
     | "podcasts"
     | "whats-new"
-    | "resume-playing"
     | "settings"
     | "downloaded"
     | "favorites"
@@ -141,7 +140,6 @@ interface PodcastStore {
     page:
       | "podcasts"
       | "whats-new"
-      | "resume-playing"
       | "settings"
       | "downloaded"
       | "favorites"

@@ -543,7 +543,7 @@ export function AudioPlayer() {
             </Button>
 
             <Button
-              aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
+              aria-label={queueOpen ? "Hide Play Queue" : "Show Play Queue"}
               aria-pressed={queueOpen}
               className={queueOpen ? "h-9 w-9 bg-muted" : "h-9 w-9"}
               onClick={toggleQueue}
@@ -649,7 +649,7 @@ export function AudioPlayer() {
             {/* Queue and Show Notes */}
             <div className="flex items-center gap-2">
               <Button
-                aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
+                aria-label={queueOpen ? "Hide Play Queue" : "Show Play Queue"}
                 aria-pressed={queueOpen}
                 className={
                   queueOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"

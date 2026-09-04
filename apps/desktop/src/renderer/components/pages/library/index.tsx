@@ -4,7 +4,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { usePodcastStore } from "@/lib/store";
 import { GridLayout, MediaCard } from "@/components/ui-custom/grid-layout";
 import { Button } from "@/components/ui/button";
-import { History, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 function LibraryContent() {
@@ -24,14 +24,6 @@ function LibraryContent() {
       {/* Header buttons - only show on mobile */}
       {isMobile && (
         <div className="flex gap-3 px-2">
-          <Button
-            variant="outline"
-            className="flex-1 h-12 justify-start gap-3"
-            onClick={() => navigate({ to: "/resume-playing" })}
-          >
-            <History className="h-5 w-5" />
-            <span>Resume Playing</span>
-          </Button>
           <Button
             variant="outline"
             className="flex-1 h-12 justify-start gap-3"

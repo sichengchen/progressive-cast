@@ -13,7 +13,6 @@ import { EpisodeRoutePage } from "@/routes/episode-route";
 import { FavoritesRoutePage } from "@/routes/favorites-route";
 import { LibraryRoutePage } from "@/routes/library-route";
 import { PodcastRoutePage } from "@/routes/podcast-route";
-import { ResumePlayingRoutePage } from "@/routes/resume-playing-route";
 import { SearchRoutePage } from "@/routes/search-route";
 import { SettingsRoutePage } from "@/routes/settings-route";
 import { WhatsNewRoutePage } from "@/routes/whats-new-route";
@@ -49,7 +48,9 @@ const libraryRoute = createRoute({
 });
 
 const resumePlayingRoute = createRoute({
-  component: ResumePlayingRoutePage,
+  beforeLoad: () => {
+    throw redirect({ to: "/whats-new" });
+  },
   getParentRoute: () => rootRoute,
   path: "/resume-playing",
 });

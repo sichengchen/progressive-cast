@@ -9,7 +9,6 @@ import {
   RefreshCw,
   Settings,
   Sparkles,
-  History,
   Download,
   Heart,
 } from "lucide-react";
@@ -38,11 +37,6 @@ const menuItems = [
     title: "What's New",
     icon: Sparkles,
     to: "/whats-new" as const,
-  },
-  {
-    title: "Resume Playing",
-    icon: History,
-    to: "/resume-playing" as const,
   },
   {
     title: "Downloaded",
@@ -150,7 +144,6 @@ export function PodcastSidebar() {
                       location.pathname === item.to ||
                       (isEpisodeDetail &&
                         ((currentPage === "whats-new" && item.to === "/whats-new") ||
-                          (currentPage === "resume-playing" && item.to === "/resume-playing") ||
                           (currentPage === "downloaded" && item.to === "/downloaded") ||
                           (currentPage === "favorites" && item.to === "/favorites") ||
                           (currentPage === "settings" && item.to === "/settings")));
