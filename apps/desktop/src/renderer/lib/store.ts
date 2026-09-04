@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 import { desktopApi } from "@/desktop-api";
 import { preloadImageUrls } from "@/lib/image-preloader";
+import { parsePlaybackQueue, putEpisodeNext, serializePlaybackQueue } from "@/lib/playback-queue";
 import type {
   DownloadProgress,
   Episode,
@@ -23,6 +24,7 @@ const defaultPreferences: UserPreferences = {
 const episodeLoadPromises = new Map<string, Promise<Episode[]>>();
 const latestEpisodeLoadPromises = new Map<number, Promise<Episode[]>>();
 const episodePageLimit = 20;
+let playbackQueuePersistence = Promise.resolve();
 
 interface EpisodePageState {
   hasMore: boolean;
@@ -63,6 +65,7 @@ interface PodcastStore {
   latestEpisodesVersion: number;
   libraryEpisodes: Episode[];
   playbackProgress: Map<string, PlaybackProgress>;
+  playbackQueue: Episode[];
   playbackState: PlaybackState;
   podcasts: Podcast[];
   preferences: UserPreferences;
@@ -71,13 +74,16 @@ interface PodcastStore {
   showAddPodcastDialog: boolean;
   showNotesOpen: boolean;
   storageStats: StorageStats | null;
+  queueOpen: boolean;
 
+  addToQueue: (episode: Episode) => void;
   cancelDownload: (episodeId: string) => Promise<void>;
   clearAllData: () => Promise<void>;
   clearAllDownloads: () => Promise<void>;
   clearError: () => void;
   clearLatestEpisodesCache: () => void;
   clearPlayback: () => void;
+  clearQueue: () => void;
   clearSeekRequest: () => void;
   closeProgressDialog: () => void;
   deleteDownload: (episodeId: string) => Promise<void>;
@@ -93,10 +99,13 @@ interface PodcastStore {
   markEpisodeCompleted: (episodeId: string) => Promise<void>;
   pausePlayback: () => void;
   playEpisode: (episode: Episode) => void;
+  playNextEpisode: () => boolean;
+  playQueuedEpisode: (episodeId: string) => void;
   refreshAllPodcasts: () => Promise<void>;
   refreshPodcast: (podcastId: string) => Promise<void>;
   refreshStorageStats: () => Promise<void>;
   resumePlayback: () => void;
+  removeFromQueue: (episodeId: string) => void;
   retryDownload: (episode: Episode) => Promise<void>;
   saveProgress: (episodeId: string, currentTime: number, duration: number) => Promise<void>;
   seekToTime: (time: number) => void;
@@ -117,6 +126,7 @@ interface PodcastStore {
   setVolume: (volume: number) => void;
   subscribeToPodcast: (feedUrl: string) => Promise<void>;
   toggleShowNotes: () => void;
+  toggleQueue: () => void;
   unsubscribeFromPodcast: (podcastId: string) => Promise<void>;
   updateDownloadProgress: (episodeId: string, progress: DownloadProgress) => void;
   updateProgress: (progress: number, currentItem?: string) => void;
@@ -143,6 +153,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   latestEpisodesVersion: 0,
   libraryEpisodes: [],
   playbackProgress: new Map(),
+  playbackQueue: [],
   playbackState: {
     currentEpisode: null,
     currentTime: 0,
@@ -166,6 +177,35 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   showAddPodcastDialog: false,
   showNotesOpen: false,
   storageStats: null,
+  queueOpen: false,
+
+  addToQueue: (episode) => {
+    const state = get();
+    if (!state.playbackState.currentEpisode) {
+      state.playEpisode(episode);
+      return;
+    }
+
+    if (state.playbackState.currentEpisode.id === episode.id) {
+      return;
+    }
+
+    const episodeIds = putEpisodeNext(
+      state.playbackQueue.map((queuedEpisode) => queuedEpisode.id),
+      episode.id,
+    );
+    const episodesById = new Map([
+      ...state.playbackQueue.map((queuedEpisode) => [queuedEpisode.id, queuedEpisode] as const),
+      [episode.id, episode] as const,
+    ]);
+    const playbackQueue = episodeIds.flatMap((episodeId) => {
+      const queuedEpisode = episodesById.get(episodeId);
+      return queuedEpisode ? [queuedEpisode] : [];
+    });
+
+    set({ playbackQueue });
+    persistPlaybackQueue(playbackQueue);
+  },
 
   cancelDownload: async (episodeId) => {
     const next = new Map(get().downloadProgress);
@@ -189,9 +229,12 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       latestEpisodesVersion: get().latestEpisodesVersion + 1,
       libraryEpisodes: [],
       playbackProgress: new Map(),
+      playbackQueue: [],
       podcasts: [],
+      queueOpen: false,
       selectedPodcastId: null,
     });
+    persistPlaybackQueue([]);
   },
 
   clearAllDownloads: async () => {
@@ -222,6 +265,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         showNotes: "",
       },
     })),
+
+  clearQueue: () => {
+    set({ playbackQueue: [] });
+    persistPlaybackQueue([]);
+  },
 
   clearSeekRequest: () =>
     set((state) => ({
@@ -343,21 +391,39 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   initializeStore: async () => {
     set({ isLoading: true });
     try {
-      const podcasts = (await desktopApi.library.list()).map(toPodcast);
+      await playbackQueuePersistence;
+      const [podcastSummaries, settings] = await Promise.all([
+        desktopApi.library.list(),
+        desktopApi.settings.get(),
+      ]);
+      const podcasts = podcastSummaries.map(toPodcast);
+      const queueEpisodeIds = parsePlaybackQueue(settings.playbackQueue);
+      const libraryEpisodes =
+        queueEpisodeIds.length > 0 ? await listLibraryEpisodes(podcasts) : null;
+      const episodesById = new Map(
+        (libraryEpisodes ?? []).map((episode) => [episode.id, episode] as const),
+      );
+      const playbackQueue = queueEpisodeIds.flatMap((episodeId) => {
+        const episode = episodesById.get(episodeId);
+        return episode ? [episode] : [];
+      });
       const selectedPodcastId = selectPodcastId(get().selectedPodcastId, podcasts);
-      set({ isLoading: false, podcasts, selectedPodcastId });
       warmPodcastCoverImages(podcasts);
 
       set({
         downloadedEpisodes: [],
         episodeCache: new Map(),
         episodePageState: new Map(),
-        episodesHydrated: false,
+        episodesHydrated: libraryEpisodes !== null,
         episodes: [],
+        isLoading: false,
         latestEpisodes: [],
         latestEpisodesPage: unloadedPageState,
         latestEpisodesVersion: get().latestEpisodesVersion + 1,
-        libraryEpisodes: [],
+        libraryEpisodes: libraryEpisodes ?? [],
+        playbackQueue,
+        podcasts,
+        selectedPodcastId,
         storageStats: null,
       });
     } catch (error) {
@@ -443,30 +509,57 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set((state) => ({ playbackState: { ...state.playbackState, isPlaying: false } }));
   },
 
-  playEpisode: (episode) =>
-    set((state) => {
-      if (state.playbackState.currentEpisode?.id === episode.id) {
-        return {
-          playbackState: {
-            ...state.playbackState,
-            isPlaying: true,
-          },
-        };
-      }
+  playEpisode: (episode) => {
+    const state = get();
+    if (state.playbackState.currentEpisode?.id === episode.id) {
+      set({ playbackState: { ...state.playbackState, isPlaying: true } });
+      return;
+    }
 
-      return {
-        playbackState: {
-          ...state.playbackState,
-          currentEpisode: episode,
-          currentTime: 0,
-          duration: episode.duration ?? 0,
-          isLoading: true,
-          isPlaying: true,
-          showNotes: episode.showNotes || episode.content || episode.description,
-        },
-        showNotesOpen: state.showNotesOpen,
-      };
-    }),
+    const playbackQueue = state.playbackQueue.filter(
+      (queuedEpisode) => queuedEpisode.id !== episode.id,
+    );
+    set({
+      playbackQueue,
+      playbackState: createPlaybackState(state.playbackState, episode),
+    });
+
+    if (playbackQueue.length !== state.playbackQueue.length) {
+      persistPlaybackQueue(playbackQueue);
+    }
+  },
+
+  playNextEpisode: () => {
+    const state = get();
+    const [nextEpisode, ...playbackQueue] = state.playbackQueue;
+    if (!nextEpisode) {
+      return false;
+    }
+
+    set({
+      playbackQueue,
+      playbackState: createPlaybackState(state.playbackState, nextEpisode),
+    });
+    persistPlaybackQueue(playbackQueue);
+    return true;
+  },
+
+  playQueuedEpisode: (episodeId) => {
+    const state = get();
+    const episode = state.playbackQueue.find((queuedEpisode) => queuedEpisode.id === episodeId);
+    if (!episode) {
+      return;
+    }
+
+    const playbackQueue = state.playbackQueue.filter(
+      (queuedEpisode) => queuedEpisode.id !== episodeId,
+    );
+    set({
+      playbackQueue,
+      playbackState: createPlaybackState(state.playbackState, episode),
+    });
+    persistPlaybackQueue(playbackQueue);
+  },
 
   refreshAllPodcasts: async () => {
     set({ isRefreshing: true });
@@ -514,6 +607,14 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set((state) => ({ playbackState: { ...state.playbackState, isPlaying: true } }));
   },
 
+  removeFromQueue: (episodeId) => {
+    const playbackQueue = get().playbackQueue.filter(
+      (queuedEpisode) => queuedEpisode.id !== episodeId,
+    );
+    set({ playbackQueue });
+    persistPlaybackQueue(playbackQueue);
+  },
+
   retryDownload: async (episode) => get().downloadEpisode(episode),
 
   saveProgress: async (episodeId, currentTime, duration) => {
@@ -541,8 +642,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       playbackState: { ...state.playbackState, currentTime: time, seekRequested: true },
     })),
 
-  setAutoPlay: (autoPlay) =>
-    set((state) => ({ preferences: { ...state.preferences, autoPlay } })),
+  setAutoPlay: (autoPlay) => set((state) => ({ preferences: { ...state.preferences, autoPlay } })),
 
   setCurrentPage: (currentPage) => set({ currentPage }),
 
@@ -567,7 +667,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   setSelectedPodcast: (selectedPodcastId) => {
     if (get().selectedPodcastId === selectedPodcastId) return;
-    const cachedEpisodes = selectedPodcastId ? get().episodeCache.get(selectedPodcastId) : undefined;
+    const cachedEpisodes = selectedPodcastId
+      ? get().episodeCache.get(selectedPodcastId)
+      : undefined;
     if (selectedPodcastId) {
       warmSelectedPodcastImages(get().podcasts, selectedPodcastId, cachedEpisodes ?? []);
     }
@@ -584,8 +686,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   setTheme: (theme) => set((state) => ({ preferences: { ...state.preferences, theme } })),
 
-  setVolume: (volume) =>
-    set((state) => ({ playbackState: { ...state.playbackState, volume } })),
+  setVolume: (volume) => set((state) => ({ playbackState: { ...state.playbackState, volume } })),
 
   subscribeToPodcast: async (feedUrl) => {
     set({
@@ -606,7 +707,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         showAddPodcastDialog: false,
       }));
       await get().loadEpisodes(podcast.id);
-      warmSelectedPodcastImages(get().podcasts, podcast.id, get().episodeCache.get(podcast.id) ?? []);
+      warmSelectedPodcastImages(
+        get().podcasts,
+        podcast.id,
+        get().episodeCache.get(podcast.id) ?? [],
+      );
       get().clearLatestEpisodesCache();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to add podcast.";
@@ -618,12 +723,32 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     }
   },
 
-  toggleShowNotes: () => set((state) => ({ showNotesOpen: !state.showNotesOpen })),
+  toggleShowNotes: () =>
+    set((state) => {
+      const showNotesOpen = !state.showNotesOpen;
+      return {
+        queueOpen: showNotesOpen ? false : state.queueOpen,
+        showNotesOpen,
+      };
+    }),
+
+  toggleQueue: () =>
+    set((state) => {
+      const queueOpen = !state.queueOpen;
+      return {
+        queueOpen,
+        showNotesOpen: queueOpen ? false : state.showNotesOpen,
+      };
+    }),
 
   unsubscribeFromPodcast: async (podcastId) => {
     await desktopApi.library.unsubscribe(podcastId);
+    const previousQueueLength = get().playbackQueue.length;
     set((state) => {
       const podcasts = state.podcasts.filter((podcast) => podcast.id !== podcastId);
+      const playbackQueue = state.playbackQueue.filter(
+        (episode) => episode.podcastId !== podcastId,
+      );
       const episodeCache = new Map(state.episodeCache);
       const episodePageState = new Map(state.episodePageState);
       episodeCache.delete(podcastId);
@@ -632,6 +757,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodeCache,
         episodePageState,
         episodes: state.selectedPodcastId === podcastId ? [] : state.episodes,
+        playbackQueue,
         podcasts,
         selectedPodcastId:
           state.selectedPodcastId === podcastId
@@ -639,6 +765,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
             : state.selectedPodcastId,
       };
     });
+    if (get().playbackQueue.length !== previousQueueLength) {
+      persistPlaybackQueue(get().playbackQueue);
+    }
     get().clearLatestEpisodesCache();
   },
 
@@ -704,11 +833,7 @@ async function loadPodcastEpisodePage(
   return loadPromise;
 }
 
-async function loadLatestEpisodePage(
-  set: StoreSet,
-  get: () => PodcastStore,
-  offset: number,
-) {
+async function loadLatestEpisodePage(set: StoreSet, get: () => PodcastStore, offset: number) {
   let loadPromise = latestEpisodeLoadPromises.get(offset);
 
   if (!loadPromise) {
@@ -721,10 +846,13 @@ async function loadLatestEpisodePage(
             offset === 0 ? [] : state.latestEpisodes,
             incomingEpisodes,
           );
-          preloadImageUrls(latestEpisodes.slice(0, 24).map((episode) => episode.imageUrl), {
-            immediate: offset === 0,
-            limit: 32,
-          });
+          preloadImageUrls(
+            latestEpisodes.slice(0, 24).map((episode) => episode.imageUrl),
+            {
+              immediate: offset === 0,
+              limit: 32,
+            },
+          );
 
           return {
             latestEpisodes,
@@ -776,10 +904,7 @@ function mergeEpisodes(currentEpisodes: Episode[], incomingEpisodes: Episode[]) 
   return merged;
 }
 
-async function reloadSelectedEpisodes(
-  set: StoreSet,
-  get: () => PodcastStore,
-) {
+async function reloadSelectedEpisodes(set: StoreSet, get: () => PodcastStore) {
   const selectedPodcastId = get().selectedPodcastId;
   if (selectedPodcastId) {
     const currentCount = get().episodeCache.get(selectedPodcastId)?.length ?? episodePageLimit;
@@ -808,10 +933,7 @@ async function reloadSelectedEpisodes(
   }
 }
 
-async function loadEpisodesFromLibrary(
-  set: StoreSet,
-  get: () => PodcastStore,
-) {
+async function loadEpisodesFromLibrary(set: StoreSet, get: () => PodcastStore) {
   if (get().episodesHydrated) {
     const episodes = get().libraryEpisodes;
     if (episodes.length > 0 || get().podcasts.length === 0) {
@@ -860,18 +982,46 @@ function warmPodcastCoverImages(podcasts: Podcast[]) {
 
 function warmSelectedPodcastImages(podcasts: Podcast[], podcastId: string, episodes: Episode[]) {
   const podcast = podcasts.find((entry) => entry.id === podcastId);
-  preloadImageUrls([podcast?.imageUrl, ...episodes.slice(0, 24).map((episode) => episode.imageUrl)], {
-    immediate: true,
-    limit: 32,
-  });
+  preloadImageUrls(
+    [podcast?.imageUrl, ...episodes.slice(0, 24).map((episode) => episode.imageUrl)],
+    {
+      immediate: true,
+      limit: 32,
+    },
+  );
 }
 
 function findEpisode(episodeId: string, state: PodcastStore) {
   return (
     state.episodes.find((episode) => episode.id === episodeId) ??
     state.downloadedEpisodes.find((episode) => episode.id === episodeId) ??
+    state.playbackQueue.find((episode) => episode.id === episodeId) ??
     state.playbackState.currentEpisode
   );
+}
+
+function createPlaybackState(playbackState: PlaybackState, episode: Episode): PlaybackState {
+  return {
+    ...playbackState,
+    currentEpisode: episode,
+    currentTime: 0,
+    duration: episode.duration ?? 0,
+    isLoading: true,
+    isPlaying: true,
+    seekRequested: false,
+    showNotes: episode.showNotes || episode.content || episode.description,
+  };
+}
+
+function persistPlaybackQueue(playbackQueue: Episode[]) {
+  const playbackQueueSetting = serializePlaybackQueue(playbackQueue.map((episode) => episode.id));
+
+  playbackQueuePersistence = playbackQueuePersistence
+    .then(() => desktopApi.settings.set({ playbackQueue: playbackQueueSetting }))
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      console.error("Failed to persist playback queue:", error);
+    });
 }
 
 function toPodcast(podcast: PodcastSummary): Podcast {
