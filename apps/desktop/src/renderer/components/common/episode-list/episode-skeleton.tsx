@@ -10,46 +10,25 @@ import {
   ListItemContent,
   ListItemMeta,
 } from "@/components/ui-custom/list";
+import { episodeListVariantStyles, type EpisodeListVariant } from "./episode-list-styles";
 
 interface EpisodeSkeletonProps {
   count?: number;
-  variant?: "compact" | "default" | "editorial" | "featured";
+  variant?: EpisodeListVariant;
 }
 
 export function EpisodeSkeleton({ count = 10, variant = "default" }: EpisodeSkeletonProps) {
+  const variantStyles = episodeListVariantStyles[variant];
+
   return (
     <List className="px-0">
       {Array.from({ length: count }, (_, index) => (
-        <ListItem
-          key={index}
-          className={cn(
-            "px-2 after:right-2",
-            variant === "featured"
-              ? "items-start py-3 after:left-[7.75rem]"
-              : variant === "editorial"
-                ? "items-stretch py-3 after:left-[8.25rem]"
-                : "py-2.5 after:left-[4.25rem]",
-          )}
-        >
+        <ListItem key={index} className={cn("px-2 after:right-2", variantStyles.item)}>
           <ListItemLeading>
-            <Skeleton
-              className={cn(
-                "rounded-md",
-                variant === "featured"
-                  ? "size-24 md:size-28"
-                  : variant === "editorial"
-                    ? "size-28"
-                    : "size-12",
-              )}
-            />
+            <Skeleton className={cn("rounded-md", variantStyles.artwork)} />
           </ListItemLeading>
 
-          <ListItemContent
-            className={cn(
-              "flex flex-col gap-1.5",
-              variant === "editorial" && "h-28 justify-center",
-            )}
-          >
+          <ListItemContent className={cn("flex flex-col gap-1.5", variantStyles.content)}>
             <ListItemMeta>
               <Skeleton className="h-3 w-16" />
             </ListItemMeta>

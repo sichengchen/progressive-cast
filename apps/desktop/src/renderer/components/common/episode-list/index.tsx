@@ -28,6 +28,7 @@ import type { Episode, PlaybackProgress } from "@/lib/types";
 import { EpisodeSkeleton } from "./episode-skeleton";
 import { EpisodeActionsContextMenu, EpisodeActionsMenu } from "./episode-actions-menu";
 import { EpisodePlaybackButton } from "./episode-playback-button";
+import { episodeListVariantStyles, type EpisodeListVariant } from "./episode-list-styles";
 
 interface EpisodeListProps {
   isLoadingEpisodes: boolean;
@@ -44,7 +45,7 @@ interface EpisodeListProps {
   currentEpisodeId?: string;
   getMetadataItems?: (episode: Episode) => Array<string | null | undefined | false>;
   skeletonCount?: number;
-  variant?: "compact" | "default" | "editorial" | "featured";
+  variant?: EpisodeListVariant;
 }
 
 export function EpisodeList({
@@ -65,6 +66,7 @@ export function EpisodeList({
   variant = "default",
 }: EpisodeListProps) {
   const navigate = useNavigate();
+  const variantStyles = episodeListVariantStyles[variant];
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [actionsEpisodeId, setActionsEpisodeId] = useState<string | null>(null);
 
@@ -128,11 +130,7 @@ export function EpisodeList({
                 aria-label={`Open ${episode.title}`}
                 className={cn(
                   "group rounded-lg px-2 transition-colors hover:bg-muted/55 hover:after:hidden",
-                  variant === "featured"
-                    ? "items-start py-3 after:left-[7.75rem] after:right-2"
-                    : variant === "editorial"
-                      ? "items-stretch py-3 after:left-[8.25rem] after:right-2"
-                      : "py-2.5 after:left-[4.25rem] after:right-2",
+                  variantStyles.item,
                 )}
                 interactive
                 onClick={() =>
@@ -146,25 +144,12 @@ export function EpisodeList({
                   <CoverImage
                     src={episode.imageUrl}
                     alt={episode.title}
-                    className={cn(
-                      "rounded-md",
-                      variant === "featured"
-                        ? "size-24 md:size-28"
-                        : variant === "editorial"
-                          ? "size-28"
-                          : "size-12",
-                    )}
+                    className={cn("rounded-md", variantStyles.artwork)}
                     loading="lazy"
                   />
                 </ListItemLeading>
 
-                <ListItemContent
-                  className={cn(
-                    "flex flex-col gap-1",
-                    variant === "featured" && "min-h-24 justify-center md:min-h-28",
-                    variant === "editorial" && "h-28 justify-center",
-                  )}
-                >
+                <ListItemContent className={cn("flex flex-col gap-1", variantStyles.content)}>
                   <div className="flex min-w-0 items-center gap-1.5">
                     <ContentMetadata items={metadataItems} />
                     {progress?.isCompleted ? (
