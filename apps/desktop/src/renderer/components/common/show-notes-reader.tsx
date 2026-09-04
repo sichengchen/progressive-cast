@@ -189,7 +189,8 @@ export function ShowNotesReader({ content, onSeek }: ShowNotesReaderProps) {
         [&_.timestamp-link]:mr-0.5 [&_.timestamp-link]:border-0 [&_.timestamp-link]:bg-transparent [&_.timestamp-link]:p-0
         [&_.timestamp-link]:font-mono [&_.timestamp-link]:text-[0.85em] [&_.timestamp-link]:font-medium [&_.timestamp-link]:tabular-nums
         [&_.timestamp-link]:text-foreground [&_.timestamp-link]:underline [&_.timestamp-link]:decoration-muted-foreground/50
-        [&_.timestamp-link]:underline-offset-4 [&_.timestamp-link]:cursor-pointer [&_.timestamp-link:hover]:decoration-foreground"
+        [&_.timestamp-link]:underline-offset-4 [&_.timestamp-link]:cursor-pointer [&_.timestamp-link:hover]:decoration-foreground
+        [&>:first-child]:mt-0"
       dangerouslySetInnerHTML={{ __html: processedContent }}
       onClick={handleClick}
     />
