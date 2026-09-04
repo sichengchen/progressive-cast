@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies
-/node_modules
+node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+test-results
+playwright-report
 
 # next.js
 /.next/
@@ -19,10 +21,13 @@
 
 # production
 /build
+/apps/*/dist
+/apps/web/build
 
 # misc
 .DS_Store
 *.pem
+/apps/*/.expo/
 
 # debug
 npm-debug.log*
@@ -35,10 +40,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+.wrangler
+/apps/server/wrangler.deploy.jsonc
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# generated service worker
-/public/sw.js

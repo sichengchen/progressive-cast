@@ -1,50 +1,75 @@
-# Progressive Cast
+# Rajio
 
-A PWA podcast player.
+A desktop podcast player.
 
 ## Tech Stack
 
-- [Next.js](https://nextjs.org/)
-- [shadcn/ui](https://ui.shadcn.com/)
-- [Tailwind CSS](https://tailwindcss.com/)
-- [Zustand](https://github.com/pmndrs/zustand)
-- [Dexie.js](https://dexie.org/)
+- Electron
+- React
+- Vite
+- Hono
+- Drizzle ORM
+- Cloudflare Workers + D1 for the reference sync backend
+
+## Workspace
+
+- `apps/desktop`: Electron desktop app
+- `apps/server`: sync backend
+- `packages/contracts`: `@rajio-app/contracts`, the shared API and sync contracts
+
+## Desktop App (`apps/desktop`)
+
+Local development:
+
+```bash
+pnpm --filter @rajio-app/desktop dev
+```
+
+Build:
+
+```bash
+pnpm --filter @rajio-app/desktop build
+```
+
+## Sync Backend (`apps/server`)
+
+`@rajio-app/server` is a sync backend for:
+
+- subscriptions
+- playback checkpoints and history
+- current cross-device resume position
+- syncable playback preferences
+
+Local development:
+
+```bash
+pnpm --filter @rajio-app/server dev
+```
+
+Production deployment:
+
+```bash
+pnpm cf:deploy
+```
+
+The deployment script creates or reuses the D1 database, applies migrations, deploys the server Worker, and prints the sync endpoint plus bearer token for Rajio desktop settings.
 
 ## Quick Start
 
-### Deploy with Vercel
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsichengchen%2Fprogressive-cast&demo-title=Progressive%20Cast%20Demo&demo-description=A%20PWA%20podcast%20player.&demo-url=https%3A%2F%2Fcast.scchan.moe)
-
-### Development
-
 ```bash
-# Install dependencies
 pnpm install
-
-# Start development server
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
-
-### Building for Production
+Checks and tests:
 
 ```bash
-# Build the application
-pnpm build
-
-# Start production server
-pnpm start
+pnpm check
+pnpm test
 ```
 
-## Usage
+## Additional Docs
 
-1. **Add Your First Podcast**: Click "Add Podcast" to search podcasts from iTunes or add with URL
-2. **Import Existing Subscriptions**: Use "Import OPML" to bulk-add from another app
-3. **Start Listening**: Click any episode to begin playback
-
-### Additional Docs
 - [Export OPML from Cosmos (小宇宙)](docs/opml-cosmos.md)
 
 ## License
