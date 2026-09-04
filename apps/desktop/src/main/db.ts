@@ -10,6 +10,7 @@ import type {
   EpisodeSearchRequest,
   EpisodeSummary,
   PlaybackProgressInput,
+  PlaybackProgressSummary,
   PodcastSummary,
 } from "../shared/types";
 
@@ -575,6 +576,31 @@ export class LocalDatabase {
     };
   }
 
+  listPlaybackProgress(): PlaybackProgressSummary[] {
+    const rows = this.db
+      .prepare(
+        `SELECT
+          episode_id,
+          podcast_id,
+          "current_time",
+          duration,
+          is_completed,
+          last_played_at
+        FROM playback_progress
+        ORDER BY last_played_at DESC`,
+      )
+      .all() as Row[];
+
+    return rows.map((row) => ({
+      currentTime: maybeNumber(row.current_time) ?? 0,
+      duration: maybeNumber(row.duration) ?? 0,
+      episodeId: requireString(row, "episode_id"),
+      isCompleted: row.is_completed === 1,
+      lastPlayedAt: requireString(row, "last_played_at"),
+      podcastId: requireString(row, "podcast_id"),
+    }));
+  }
+
   getDownloadStatus(episodeId: string): DownloadStatus {
     const row = this.db
       .prepare(
@@ -790,7 +816,10 @@ function normalizePageRequest(request: EpisodePageRequest) {
   };
 }
 
-function toEpisodePage(rows: EpisodeSummary[], page: { limit: number; offset: number }): EpisodePage {
+function toEpisodePage(
+  rows: EpisodeSummary[],
+  page: { limit: number; offset: number },
+): EpisodePage {
   const episodes = rows.slice(0, page.limit);
 
   return {

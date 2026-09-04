@@ -22,6 +22,7 @@ const browserFallbackApi: NewcastleApi = {
   },
   playback: {
     getSource: () => missingDesktopServices(),
+    listProgress: () => Promise.resolve([]),
     saveProgress: () => Promise.resolve(),
   },
   settings: {

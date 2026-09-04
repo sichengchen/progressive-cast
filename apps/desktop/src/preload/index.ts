@@ -23,11 +23,11 @@ const api: NewcastleApi = {
   },
   playback: {
     getSource: (episodeId) => ipcRenderer.invoke(ipcChannels.playback.getSource, episodeId),
+    listProgress: () => ipcRenderer.invoke(ipcChannels.playback.listProgress),
     saveProgress: (progress) => ipcRenderer.invoke(ipcChannels.playback.saveProgress, progress),
   },
   settings: {
-    chooseDownloadDirectory: () =>
-      ipcRenderer.invoke(ipcChannels.settings.chooseDownloadDirectory),
+    chooseDownloadDirectory: () => ipcRenderer.invoke(ipcChannels.settings.chooseDownloadDirectory),
     get: () => ipcRenderer.invoke(ipcChannels.settings.get),
     set: (settings) => ipcRenderer.invoke(ipcChannels.settings.set, settings),
   },

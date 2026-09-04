@@ -6,6 +6,7 @@ import type {
   DownloadStatus,
   EpisodeSummary,
   PlaybackProgressInput,
+  PlaybackProgressSummary,
   PlaybackSource,
   PodcastSummary,
 } from "./types";
@@ -30,6 +31,7 @@ export const ipcChannels = {
   },
   playback: {
     getSource: "playback:get-source",
+    listProgress: "playback:list-progress",
     saveProgress: "playback:save-progress",
   },
   settings: {
@@ -62,6 +64,7 @@ export interface NewcastleApi {
   };
   playback: {
     getSource: (episodeId: string) => Promise<PlaybackSource>;
+    listProgress: () => Promise<PlaybackProgressSummary[]>;
     saveProgress: (progress: PlaybackProgressInput) => Promise<void>;
   };
   settings: {

@@ -1,6 +1,10 @@
 import { pathToFileURL } from "node:url";
 
-import type { PlaybackProgressInput, PlaybackSource } from "../shared/types";
+import type {
+  PlaybackProgressInput,
+  PlaybackProgressSummary,
+  PlaybackSource,
+} from "../shared/types";
 import type { LocalDatabase } from "./db";
 
 export class PlaybackService {
@@ -25,6 +29,10 @@ export class PlaybackService {
       isLocal: false,
       source: episode.audioUrl,
     };
+  }
+
+  listProgress(): PlaybackProgressSummary[] {
+    return this.db.listPlaybackProgress();
   }
 
   async saveProgress(progress: PlaybackProgressInput): Promise<void> {

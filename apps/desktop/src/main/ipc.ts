@@ -35,9 +35,7 @@ export function registerIpcHandlers(db: LocalDatabase, defaultDownloadDirectory:
   ipcMain.handle(ipcChannels.episodes.listByPodcastPage, (_event, podcastId: string, request) =>
     library.listEpisodesByPodcastPage(podcastId, request),
   );
-  ipcMain.handle(ipcChannels.episodes.search, (_event, request) =>
-    library.searchEpisodes(request),
-  );
+  ipcMain.handle(ipcChannels.episodes.search, (_event, request) => library.searchEpisodes(request));
 
   ipcMain.handle(ipcChannels.downloads.start, (_event, episodeId: string) =>
     downloads.start(episodeId),
@@ -49,6 +47,7 @@ export function registerIpcHandlers(db: LocalDatabase, defaultDownloadDirectory:
   ipcMain.handle(ipcChannels.playback.getSource, (_event, episodeId: string) =>
     playback.getSource(episodeId),
   );
+  ipcMain.handle(ipcChannels.playback.listProgress, () => playback.listProgress());
   ipcMain.handle(ipcChannels.playback.saveProgress, (_event, progress) =>
     playback.saveProgress(progress),
   );

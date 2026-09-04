@@ -49,6 +49,10 @@ export interface PlaybackProgressInput {
   isCompleted: boolean;
 }
 
+export interface PlaybackProgressSummary extends PlaybackProgressInput {
+  lastPlayedAt: string;
+}
+
 export interface PlaybackSource {
   episodeId: string;
   source: string;

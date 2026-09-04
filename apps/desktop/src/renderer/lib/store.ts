@@ -110,7 +110,6 @@ interface PodcastStore {
   loadEpisodes: (podcastId: string) => Promise<void>;
   loadMoreEpisodes: (podcastId: string) => Promise<void>;
   loadMoreLatestEpisodes: () => Promise<Episode[]>;
-  markEpisodeCompleted: (episodeId: string) => Promise<void>;
   pausePlayback: () => void;
   playEpisode: (episode: Episode) => void;
   playNextEpisode: () => boolean;
@@ -121,7 +120,12 @@ interface PodcastStore {
   resumePlayback: () => void;
   removeFromQueue: (episodeId: string) => void;
   retryDownload: (episode: Episode) => Promise<void>;
-  saveProgress: (episodeId: string, currentTime: number, duration: number) => Promise<void>;
+  saveProgress: (
+    episodeId: string,
+    currentTime: number,
+    duration: number,
+    isCompleted?: boolean,
+  ) => Promise<void>;
   seekToTime: (time: number) => void;
   setAutoPlay: (autoPlay: boolean) => void;
   setCurrentPage: (
@@ -138,6 +142,7 @@ interface PodcastStore {
   setDuration: (duration: number) => void;
   setError: (error: string | null) => void;
   setItunesSearchEnabled: (enabled: boolean) => void;
+  setEpisodeListened: (episode: Episode, listened: boolean) => Promise<void>;
   setLoading: (isLoading: boolean) => void;
   setProgressDialog: (data: Partial<ProgressDialogState> & { isOpen: boolean }) => void;
   setSelectedPodcast: (podcastId: string | null) => void;
@@ -431,9 +436,10 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     set({ isLoading: true });
     try {
       await Promise.all([favoriteEpisodesPersistence, playbackQueuePersistence]);
-      const [podcastSummaries, settings] = await Promise.all([
+      const [podcastSummaries, settings, progressSummaries] = await Promise.all([
         desktopApi.library.list(),
         desktopApi.settings.get(),
+        desktopApi.playback.listProgress(),
       ]);
       const podcasts = podcastSummaries.map(toPodcast);
       const favoriteEpisodeIds = parseFavoriteEpisodes(settings.favoriteEpisodes);
@@ -454,6 +460,19 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         return episode ? [episode] : [];
       });
       const selectedPodcastId = selectPodcastId(get().selectedPodcastId, podcasts);
+      const playbackProgress = new Map(
+        progressSummaries.map(
+          (progress) =>
+            [
+              progress.episodeId,
+              {
+                ...progress,
+                id: progress.episodeId,
+                lastPlayedAt: new Date(progress.lastPlayedAt),
+              },
+            ] as const,
+        ),
+      );
       warmPodcastCoverImages(podcasts);
 
       set({
@@ -468,6 +487,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         latestEpisodesPage: unloadedPageState,
         latestEpisodesVersion: get().latestEpisodesVersion + 1,
         libraryEpisodes: libraryEpisodes ?? [],
+        playbackProgress,
         playbackQueue,
         podcasts,
         selectedPodcastId,
@@ -543,12 +563,6 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       });
     }
     return get().latestEpisodes;
-  },
-
-  markEpisodeCompleted: async (episodeId) => {
-    const episode = findEpisode(episodeId, get());
-    if (!episode) return;
-    await get().saveProgress(episodeId, get().playbackState.duration, get().playbackState.duration);
   },
 
   pausePlayback: () => {
@@ -664,15 +678,18 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   retryDownload: async (episode) => get().downloadEpisode(episode),
 
-  saveProgress: async (episodeId, currentTime, duration) => {
+  saveProgress: async (episodeId, currentTime, duration, completedOverride) => {
     const episode = findEpisode(episodeId, get());
     if (!episode) return;
+    const existingProgress = get().playbackProgress.get(episodeId);
     const progress: PlaybackProgress = {
       currentTime,
       duration,
       episodeId,
       id: episodeId,
-      isCompleted: duration > 0 && currentTime >= duration * 0.95,
+      isCompleted:
+        completedOverride ??
+        Boolean(existingProgress?.isCompleted || (duration > 0 && currentTime >= duration * 0.95)),
       lastPlayedAt: new Date(),
       podcastId: episode.podcastId,
     };
@@ -703,6 +720,15 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   setItunesSearchEnabled: (itunesSearchEnabled) =>
     set((state) => ({ preferences: { ...state.preferences, itunesSearchEnabled } })),
+
+  setEpisodeListened: async (episode, listened) => {
+    const state = get();
+    const existingProgress = state.playbackProgress.get(episode.id);
+    const currentEpisodeDuration =
+      state.playbackState.currentEpisode?.id === episode.id ? state.playbackState.duration : 0;
+    const duration = existingProgress?.duration || episode.duration || currentEpisodeDuration || 0;
+    await state.saveProgress(episode.id, listened ? duration : 0, duration, listened);
+  },
 
   setLoading: (isLoading) => {
     if (get().playbackState.isLoading === isLoading) return;
@@ -823,6 +849,12 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       );
       const episodeCache = new Map(state.episodeCache);
       const episodePageState = new Map(state.episodePageState);
+      const playbackProgress = new Map(state.playbackProgress);
+      for (const [episodeId, progress] of playbackProgress) {
+        if (progress.podcastId === podcastId) {
+          playbackProgress.delete(episodeId);
+        }
+      }
       episodeCache.delete(podcastId);
       episodePageState.delete(podcastId);
       return {
@@ -831,6 +863,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodes: state.selectedPodcastId === podcastId ? [] : state.episodes,
         favoriteEpisodes,
         playbackQueue,
+        playbackProgress,
         podcasts,
         selectedPodcastId:
           state.selectedPodcastId === podcastId
@@ -1070,6 +1103,8 @@ function warmSelectedPodcastImages(podcasts: Podcast[], podcastId: string, episo
 function findEpisode(episodeId: string, state: PodcastStore) {
   return (
     state.episodes.find((episode) => episode.id === episodeId) ??
+    state.latestEpisodes.find((episode) => episode.id === episodeId) ??
+    state.libraryEpisodes.find((episode) => episode.id === episodeId) ??
     state.downloadedEpisodes.find((episode) => episode.id === episodeId) ??
     state.favoriteEpisodes.find((episode) => episode.id === episodeId) ??
     state.playbackQueue.find((episode) => episode.id === episodeId) ??

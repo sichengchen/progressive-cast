@@ -54,6 +54,16 @@ test("saves playback progress and queues a sync checkpoint locator", async () =>
       isCompleted: true,
       podcastId: "podcast_1",
     });
+    assert.deepEqual(playback.listProgress(), [
+      {
+        currentTime: 95,
+        duration: 100,
+        episodeId: "episode_1",
+        isCompleted: true,
+        lastPlayedAt: playback.listProgress()[0]?.lastPlayedAt,
+        podcastId: "podcast_1",
+      },
+    ]);
     const outbox = db.listOutbox();
     assert.equal(outbox.length, 1);
     assert.equal(outbox[0]?.kind, "playback.checkpoint");
@@ -100,7 +110,9 @@ test("does not queue progress sync when the episode or podcast is missing", asyn
 });
 
 function createTestDatabase(): LocalDatabase {
-  return new LocalDatabase(path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"));
+  return new LocalDatabase(
+    path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite"),
+  );
 }
 
 function seedEpisode(db: LocalDatabase): void {
