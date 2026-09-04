@@ -18,7 +18,14 @@ interface ToolbarAction {
 }
 
 interface AppPageLayoutProps {
-  backTo?: "/downloaded" | "/library" | "/resume-playing" | "/search" | "/settings" | "/whats-new";
+  backTo?:
+    | "/downloaded"
+    | "/favorites"
+    | "/library"
+    | "/resume-playing"
+    | "/search"
+    | "/settings"
+    | "/whats-new";
   children: ReactNode;
   title?: string;
   toolBar?: ToolbarAction[];
@@ -58,6 +65,7 @@ function getActiveTab(pathname: string) {
 
   if (
     pathname.startsWith("/library") ||
+    pathname.startsWith("/favorites") ||
     pathname.startsWith("/resume-playing") ||
     pathname.startsWith("/downloaded") ||
     pathname.startsWith("/podcast/")

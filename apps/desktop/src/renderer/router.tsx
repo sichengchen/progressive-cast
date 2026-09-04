@@ -9,6 +9,7 @@ import {
 
 import { AppShell } from "@/app-shell";
 import { DownloadedRoutePage } from "@/routes/downloaded-route";
+import { FavoritesRoutePage } from "@/routes/favorites-route";
 import { LibraryRoutePage } from "@/routes/library-route";
 import { PodcastRoutePage } from "@/routes/podcast-route";
 import { ResumePlayingRoutePage } from "@/routes/resume-playing-route";
@@ -58,6 +59,12 @@ const downloadedRoute = createRoute({
   path: "/downloaded",
 });
 
+const favoritesRoute = createRoute({
+  component: FavoritesRoutePage,
+  getParentRoute: () => rootRoute,
+  path: "/favorites",
+});
+
 const settingsRoute = createRoute({
   component: SettingsRoutePage,
   getParentRoute: () => rootRoute,
@@ -82,6 +89,7 @@ const routeTree = rootRoute.addChildren([
   libraryRoute,
   resumePlayingRoute,
   downloadedRoute,
+  favoritesRoute,
   settingsRoute,
   podcastRoute,
 ]);

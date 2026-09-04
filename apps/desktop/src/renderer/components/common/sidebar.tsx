@@ -11,6 +11,7 @@ import {
   Sparkles,
   History,
   Download,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -43,6 +44,11 @@ const menuItems = [
     title: "Downloaded",
     icon: Download,
     to: "/downloaded" as const,
+  },
+  {
+    title: "Favorites",
+    icon: Heart,
+    to: "/favorites" as const,
   },
   {
     title: "Settings",

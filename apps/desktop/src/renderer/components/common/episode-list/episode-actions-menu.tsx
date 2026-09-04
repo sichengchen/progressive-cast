@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Ellipsis, ListPlus, RotateCcw, Trash2 } from "lucide-react";
+import { Download, Ellipsis, Heart, ListPlus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -50,6 +50,10 @@ export function EpisodeActionsMenu({
   const addToQueue = usePodcastStore((state) => state.addToQueue);
   const deleteDownload = usePodcastStore((state) => state.deleteDownload);
   const downloadEpisode = usePodcastStore((state) => state.downloadEpisode);
+  const isFavorite = usePodcastStore((state) =>
+    state.favoriteEpisodes.some((favoriteEpisode) => favoriteEpisode.id === episode.id),
+  );
+  const toggleFavoriteEpisode = usePodcastStore((state) => state.toggleFavoriteEpisode);
 
   useEffect(() => {
     setIsDownloaded(Boolean(episode.isDownloaded));
@@ -102,11 +106,15 @@ export function EpisodeActionsMenu({
             <Ellipsis data-icon="inline-start" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuContent align="end" className="w-52">
           <DropdownMenuGroup>
             <DropdownMenuItem disabled={currentEpisodeId === episode.id} onSelect={handlePlayNext}>
               <ListPlus />
               Play Next
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => toggleFavoriteEpisode(episode)}>
+              <Heart className={isFavorite ? "fill-current" : undefined} />
+              {isFavorite ? "Remove from Favorites" : "Save to Favorites"}
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />

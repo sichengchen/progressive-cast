@@ -55,7 +55,14 @@ interface ProgressDialogState {
 }
 
 interface PodcastStore {
-  currentPage: "podcasts" | "whats-new" | "resume-playing" | "settings" | "downloaded" | "library";
+  currentPage:
+    | "podcasts"
+    | "whats-new"
+    | "resume-playing"
+    | "settings"
+    | "downloaded"
+    | "favorites"
+    | "library";
   downloadedEpisodes: Episode[];
   downloadProgress: Map<string, DownloadProgress>;
   episodeCache: Map<string, Episode[]>;
@@ -118,7 +125,14 @@ interface PodcastStore {
   seekToTime: (time: number) => void;
   setAutoPlay: (autoPlay: boolean) => void;
   setCurrentPage: (
-    page: "podcasts" | "whats-new" | "resume-playing" | "settings" | "downloaded" | "library",
+    page:
+      | "podcasts"
+      | "whats-new"
+      | "resume-playing"
+      | "settings"
+      | "downloaded"
+      | "favorites"
+      | "library",
   ) => void;
   setCurrentTime: (time: number) => void;
   setDuration: (duration: number) => void;
