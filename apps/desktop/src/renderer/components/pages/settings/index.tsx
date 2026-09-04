@@ -288,7 +288,7 @@ export function SettingsPage() {
           </a>{" "}
           · View on{" "}
           <a
-            href="https://github.com/sichengchen/progressive-cast"
+            href="https://github.com/sichengchen/rajio"
             target="_blank"
             rel="noopener noreferrer"
             className="hover:underline"
