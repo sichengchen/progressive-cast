@@ -58,8 +58,6 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
         episodes={episodes}
         playbackProgress={playbackProgress}
         playEpisode={playEpisode}
-        showDownloadButton={true}
-        pageType="podcast"
         onDownloadComplete={handleDownloadComplete}
         hasMore={Boolean(pageState?.hasMore)}
         isLoadingMore={Boolean(pageState?.isLoading && pageState.loaded)}

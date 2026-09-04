@@ -283,6 +283,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   deleteDownload: async (episodeId) => {
     await desktopApi.downloads.delete(episodeId);
+    set((state) => {
+      const downloadProgress = new Map(state.downloadProgress);
+      downloadProgress.delete(episodeId);
+      return { downloadProgress };
+    });
     await reloadSelectedEpisodes(set, get);
     await get().getDownloadedEpisodes();
   },
@@ -295,15 +300,24 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       status: "downloading",
     };
     get().updateDownloadProgress(episode.id, progress);
-    await desktopApi.downloads.start(episode.id);
-    get().updateDownloadProgress(episode.id, {
-      ...progress,
-      completedAt: new Date(),
-      progress: 100,
-      status: "completed",
-    });
-    await reloadSelectedEpisodes(set, get);
-    await get().getDownloadedEpisodes();
+    try {
+      await desktopApi.downloads.start(episode.id);
+      get().updateDownloadProgress(episode.id, {
+        ...progress,
+        completedAt: new Date(),
+        progress: 100,
+        status: "completed",
+      });
+      await reloadSelectedEpisodes(set, get);
+      await get().getDownloadedEpisodes();
+    } catch (error) {
+      get().updateDownloadProgress(episode.id, {
+        ...progress,
+        error: error instanceof Error ? error.message : "Download failed",
+        status: "failed",
+      });
+      throw error;
+    }
   },
 
   getDownloadedEpisodes: async () => {

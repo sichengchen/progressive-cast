@@ -67,8 +67,6 @@ export function DownloadedPage() {
       playEpisode={playEpisode}
       noEpisodesMessage="No episodes downloaded yet"
       noEpisodesMessageDescription="Download episodes to play them offline"
-      showDeleteButton={true}
-      pageType="downloaded"
       onDeleteComplete={handleRefresh}
     />
   );

@@ -2,7 +2,7 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Play, Pause, Rewind, FastForward, Volume2, Info } from "lucide-react";
+import { Play, Pause, Rewind, FastForward, Volume2, Info, ListMusic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { CoverImage } from "@/components/ui/cover-image";
@@ -38,7 +38,10 @@ export function AudioPlayer() {
   const setLoading = usePodcastStore((state) => state.setLoading);
   const saveProgress = usePodcastStore((state) => state.saveProgress);
   const clearSeekRequest = usePodcastStore((state) => state.clearSeekRequest);
+  const playNextEpisode = usePodcastStore((state) => state.playNextEpisode);
+  const toggleQueue = usePodcastStore((state) => state.toggleQueue);
   const toggleShowNotes = usePodcastStore((state) => state.toggleShowNotes);
+  const queueOpen = usePodcastStore((state) => state.queueOpen);
   const showNotesOpen = usePodcastStore((state) => state.showNotesOpen);
 
   const { currentEpisode, isPlaying, currentTime, duration, volume, seekRequested } = playbackState;
@@ -120,6 +123,10 @@ export function AudioPlayer() {
           }
         }
       });
+
+      navigator.mediaSession.setActionHandler("nexttrack", () => {
+        playNextEpisode();
+      });
     }
   }, [
     currentEpisode,
@@ -131,6 +138,7 @@ export function AudioPlayer() {
     setCurrentTime,
     duration,
     saveProgress,
+    playNextEpisode,
   ]);
 
   // Update MediaSession playback state
@@ -271,9 +279,12 @@ export function AudioPlayer() {
     };
 
     const handleEnded = () => {
-      pausePlayback();
       // Save final progress
-      saveProgress(currentEpisode.id, duration, duration);
+      void saveProgress(currentEpisode.id, duration, duration);
+
+      if (!playNextEpisode()) {
+        pausePlayback();
+      }
 
       // Clean up blob URL if it was created for local playback
       if (audio.src.startsWith("blob:")) {
@@ -326,6 +337,7 @@ export function AudioPlayer() {
     setDuration,
     setLoading,
     pausePlayback,
+    playNextEpisode,
     saveProgress,
     setCurrentTime,
   ]);
@@ -529,6 +541,17 @@ export function AudioPlayer() {
             >
               <FastForward className="h-4 w-4" />
             </Button>
+
+            <Button
+              aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
+              aria-pressed={queueOpen}
+              className={queueOpen ? "h-9 w-9 bg-muted" : "h-9 w-9"}
+              onClick={toggleQueue}
+              size="sm"
+              variant="ghost"
+            >
+              <ListMusic />
+            </Button>
           </div>
         </div>
       ) : (
@@ -622,7 +645,20 @@ export function AudioPlayer() {
             />
           </div>
 
-          {/* Show Notes Toggle Button */}
+          {/* Queue and Show Notes */}
+          <Button
+            aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
+            aria-pressed={queueOpen}
+            className={
+              queueOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"
+            }
+            onClick={toggleQueue}
+            size="icon"
+            variant="ghost"
+          >
+            <ListMusic />
+          </Button>
+
           <Button
             aria-label={showNotesOpen ? "Hide show notes" : "Show show notes"}
             aria-pressed={showNotesOpen}
@@ -630,9 +666,7 @@ export function AudioPlayer() {
             variant="ghost"
             onClick={toggleShowNotes}
             className={
-              showNotesOpen
-                ? "bg-muted text-foreground hover:bg-muted"
-                : "text-muted-foreground"
+              showNotesOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"
             }
           >
             <Info className="h-4 w-4" />

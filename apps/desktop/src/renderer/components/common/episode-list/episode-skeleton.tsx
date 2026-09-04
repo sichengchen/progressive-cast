@@ -37,6 +37,7 @@ export function EpisodeSkeleton({ count = 10 }: EpisodeSkeletonProps) {
 
           <ListItemActions>
             <Skeleton className="h-8 w-28 rounded-md" />
+            <Skeleton className="size-7 rounded-md" />
           </ListItemActions>
         </ListItem>
       ))}

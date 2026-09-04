@@ -8,7 +8,7 @@
  * to maintain visual consistency during loading states.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   List,
   ListItem,
@@ -24,7 +24,7 @@ import { formatEpisodeDate, richTextToPlainText } from "@/lib/utils";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
 import { EpisodeSkeleton } from "./episode-skeleton";
-import { DownloadButton } from "./download-button";
+import { EpisodeActionsMenu } from "./episode-actions-menu";
 import { EpisodePlaybackButton } from "./episode-playback-button";
 
 interface EpisodeListProps {
@@ -34,11 +34,8 @@ interface EpisodeListProps {
   playEpisode: (episode: Episode) => void;
   noEpisodesMessage?: string;
   noEpisodesMessageDescription?: string;
-  showDownloadButton?: boolean;
-  showDeleteButton?: boolean;
-  pageType?: "podcast" | "downloaded" | "other";
-  onDownloadComplete?: () => void;
-  onDeleteComplete?: () => void;
+  onDownloadComplete?: () => void | Promise<void>;
+  onDeleteComplete?: () => void | Promise<void>;
   hasMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void | Promise<void>;
@@ -52,16 +49,15 @@ export function EpisodeList({
   playEpisode,
   noEpisodesMessage,
   noEpisodesMessageDescription,
-  showDownloadButton = false,
-  showDeleteButton = false,
-  pageType = "other",
   onDownloadComplete,
   onDeleteComplete,
   hasMore = false,
   isLoadingMore = false,
   onLoadMore,
+  currentEpisodeId,
 }: EpisodeListProps) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const [actionsEpisodeId, setActionsEpisodeId] = useState<string | null>(null);
 
   useEffect(() => {
     const node = loadMoreRef.current;
@@ -111,6 +107,10 @@ export function EpisodeList({
             <ListItem
               key={episode.id}
               className="group rounded-lg px-2 py-2.5 transition-colors after:left-[4.25rem] after:right-2 hover:bg-muted/55 hover:after:hidden"
+              onContextMenu={(event) => {
+                event.preventDefault();
+                setActionsEpisodeId(episode.id);
+              }}
             >
               <ListItemLeading>
                 <CoverImage
@@ -137,14 +137,14 @@ export function EpisodeList({
 
               <ListItemActions className="gap-2">
                 <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
-                {showDownloadButton || showDeleteButton ? (
-                  <DownloadButton
-                    episode={episode}
-                    pageType={pageType}
-                    onDownloadComplete={onDownloadComplete}
-                    onDeleteComplete={onDeleteComplete}
-                  />
-                ) : null}
+                <EpisodeActionsMenu
+                  currentEpisodeId={currentEpisodeId}
+                  episode={episode}
+                  onDeleteComplete={onDeleteComplete}
+                  onDownloadComplete={onDownloadComplete}
+                  onOpenChange={(open) => setActionsEpisodeId(open ? episode.id : null)}
+                  open={actionsEpisodeId === episode.id}
+                />
               </ListItemActions>
             </ListItem>
           );

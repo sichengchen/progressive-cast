@@ -2,8 +2,8 @@ import { Outlet } from "@tanstack/react-router";
 
 import { AppLayout } from "@/components/common/app-layout";
 import { AudioPlayer } from "@/components/common/audio-player";
+import { PlayerSidePanel } from "@/components/common/player-side-panel";
 import { ProgressDialog } from "@/components/common/progress-dialog";
-import { ShowNotes } from "@/components/common/show-notes";
 import { PodcastSidebar } from "@/components/common/sidebar";
 
 export function AppShell() {
@@ -12,7 +12,7 @@ export function AppShell() {
       <AppLayout
         sidebar={<PodcastSidebar />}
         mainContent={<Outlet />}
-        rightPanel={<ShowNotes />}
+        rightPanel={<PlayerSidePanel />}
         controlBar={<AudioPlayer />}
       />
       <ProgressDialog />
