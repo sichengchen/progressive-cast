@@ -64,7 +64,7 @@ export function PlaybackQueue() {
             title="Clear play queue"
             variant="ghost"
           >
-            <ListX />
+            <ListX className="translate-x-px" />
           </Button>
         ) : null}
       </header>
