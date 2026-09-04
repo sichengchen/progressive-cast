@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 
 import { ContentMetadata } from "@/components/common/content-metadata";
 import { CoverImage } from "@/components/ui/cover-image";
+import { cn } from "@/lib/utils";
 
 interface ContentDetailsHeaderProps {
   actions?: ReactNode;
@@ -24,17 +25,27 @@ export function ContentDetailsHeader({
   metadataItems,
   title,
 }: ContentDetailsHeaderProps) {
+  const hasDescription = Boolean(children);
+
   return (
     <header className="border-b border-border/60 px-2 py-5">
       <div className="flex min-w-0 items-start gap-5 md:gap-6">
         <CoverImage
           alt={artworkAlt}
-          className="size-28 shrink-0 rounded-lg shadow-sm ring-1 ring-foreground/10 md:size-36"
+          className={cn(
+            "size-32 shrink-0 rounded-lg shadow-sm ring-1 ring-foreground/10",
+            hasDescription ? "md:size-[9.5rem]" : "md:size-36",
+          )}
           fetchPriority="high"
           src={artworkSrc}
         />
 
-        <div className="flex min-h-28 min-w-0 flex-1 flex-col gap-2.5 text-left md:min-h-36">
+        <div
+          className={cn(
+            "flex min-h-32 min-w-0 flex-1 flex-col justify-center gap-2 text-left",
+            hasDescription ? "md:min-h-[9.5rem]" : "md:min-h-36",
+          )}
+        >
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
             <ContentMetadata className="text-sm leading-5" items={metadataItems} />
             {metadataAction}

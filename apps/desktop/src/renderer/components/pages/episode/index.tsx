@@ -138,8 +138,8 @@ function EpisodePageSkeleton() {
         <Skeleton className="h-8 w-36 rounded-md" />
       </div>
       <div className="flex min-w-0 items-start gap-5 border-b border-border/60 px-2 py-5 md:gap-6">
-        <Skeleton className="size-28 shrink-0 rounded-lg md:size-36" />
-        <div className="flex min-h-28 min-w-0 flex-1 flex-col gap-2.5 pt-1 md:min-h-36">
+        <Skeleton className="size-32 shrink-0 rounded-lg md:size-36" />
+        <div className="flex min-h-32 min-w-0 flex-1 flex-col justify-center gap-2 md:min-h-36">
           <Skeleton className="h-4 w-48" />
           <Skeleton className="h-8 w-full" />
           <Skeleton className="h-8 w-2/3" />
