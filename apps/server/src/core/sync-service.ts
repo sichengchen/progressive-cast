@@ -9,7 +9,7 @@ import {
   type SyncPreferences,
   type SyncStateResponse,
   type UpdatePreferencesRequest,
-} from "@newcastle/contracts";
+} from "@rajio-app/contracts";
 
 import type { ServerRepositories } from "./repositories";
 import type { RealtimeCoordinator } from "./realtime";

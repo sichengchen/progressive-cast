@@ -4,7 +4,7 @@ import {
   type PlaybackCheckpointSyncRecord,
   type SubscriptionRecord,
   type SyncPreferences,
-} from "@newcastle/contracts";
+} from "@rajio-app/contracts";
 import { desc, eq } from "drizzle-orm";
 import { drizzle, type DrizzleD1Database } from "drizzle-orm/d1";
 

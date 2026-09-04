@@ -1,4 +1,4 @@
-import { normalizeBackendUrl, type SyncStateResponse } from "@newcastle/contracts";
+import { normalizeBackendUrl, type SyncStateResponse } from "@rajio-app/contracts";
 import { hostname } from "node:os";
 
 import type { LocalDatabase, SyncOutboxEntry } from "./db";

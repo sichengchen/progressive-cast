@@ -7,7 +7,7 @@ import {
   type ServerMetaResponse,
   type SubscriptionMutationRequest,
   type UpdatePreferencesRequest,
-} from "@newcastle/contracts";
+} from "@rajio-app/contracts";
 import { Hono } from "hono";
 
 import type { AuthGuard } from "../../core/auth";

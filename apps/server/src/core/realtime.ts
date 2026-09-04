@@ -1,4 +1,4 @@
-import type { PlaybackRealtimeEvent, RealtimeTicketResponse } from "@newcastle/contracts";
+import type { PlaybackRealtimeEvent, RealtimeTicketResponse } from "@rajio-app/contracts";
 
 export interface RealtimeCoordinator {
   issueTicket(input: { baseUrl: string; deviceId: string }): Promise<RealtimeTicketResponse>;

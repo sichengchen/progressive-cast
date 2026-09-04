@@ -15,25 +15,25 @@ A desktop podcast player.
 
 - `apps/desktop`: Electron desktop app
 - `apps/server`: sync backend
-- `packages/contracts`: `@newcastle/contracts`, the shared API and sync contracts
+- `packages/contracts`: `@rajio-app/contracts`, the shared API and sync contracts
 
 ## Desktop App (`apps/desktop`)
 
 Local development:
 
 ```bash
-pnpm --filter @newcastle/desktop dev
+pnpm --filter @rajio-app/desktop dev
 ```
 
 Build:
 
 ```bash
-pnpm --filter @newcastle/desktop build
+pnpm --filter @rajio-app/desktop build
 ```
 
 ## Sync Backend (`apps/server`)
 
-`@newcastle/server` is a sync backend for:
+`@rajio-app/server` is a sync backend for:
 
 - subscriptions
 - playback checkpoints and history
@@ -43,7 +43,7 @@ pnpm --filter @newcastle/desktop build
 Local development:
 
 ```bash
-pnpm --filter @newcastle/server dev
+pnpm --filter @rajio-app/server dev
 ```
 
 Production deployment:

@@ -1,5 +1,5 @@
 {
-  "name": "@newcastle/server",
+  "name": "@rajio-app/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -8,13 +8,13 @@
     "build": "tsc -p tsconfig.json",
     "check": "vp check",
     "test": "vp test",
-    "preview": "node -e \"console.log('Use pnpm --filter @newcastle/server dev to run the personal sync backend locally.')\"",
+    "preview": "node -e \"console.log('Use pnpm --filter @rajio-app/server dev to run the personal sync backend locally.')\"",
     "cf:typegen": "wrangler types ./src/worker-configuration.d.ts --config wrangler.jsonc",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push"
   },
   "dependencies": {
-    "@newcastle/contracts": "workspace:*",
+    "@rajio-app/contracts": "workspace:*",
     "drizzle-orm": "^0.44.2",
     "hono": "^4.9.6"
   },

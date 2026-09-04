@@ -3,7 +3,7 @@ import type {
   PlaybackCheckpointSyncRecord,
   SubscriptionRecord,
   SyncPreferences,
-} from "@newcastle/contracts";
+} from "@rajio-app/contracts";
 
 export interface SubscriptionRepository {
   list(): Promise<SubscriptionRecord[]>;

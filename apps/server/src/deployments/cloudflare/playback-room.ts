@@ -1,4 +1,4 @@
-import type { PlaybackRealtimeEvent } from "@newcastle/contracts";
+import type { PlaybackRealtimeEvent } from "@rajio-app/contracts";
 import { DurableObject } from "cloudflare:workers";
 
 import type { CloudflareBindings } from "./env";

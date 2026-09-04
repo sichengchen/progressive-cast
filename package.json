@@ -7,13 +7,13 @@
     "build": "vp run -r build",
     "check": "vp run -r check",
     "test": "vp run -r test",
-    "dev:desktop": "pnpm --filter @newcastle/desktop dev",
+    "dev:desktop": "pnpm --filter @rajio-app/desktop dev",
     "test:all": "pnpm test",
     "preview": "vp run -r preview",
     "cf:deploy": "bash ./scripts/deploy-cloudflare.sh",
-    "mobile:start": "pnpm --filter @newcastle/mobile start",
-    "mobile:ios": "pnpm --filter @newcastle/mobile ios",
-    "mobile:android": "pnpm --filter @newcastle/mobile android"
+    "mobile:start": "pnpm --filter @rajio-app/mobile start",
+    "mobile:ios": "pnpm --filter @rajio-app/mobile ios",
+    "mobile:android": "pnpm --filter @rajio-app/mobile android"
   },
   "devDependencies": {
     "vite-plus": "^0.1.16"

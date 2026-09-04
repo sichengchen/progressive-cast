@@ -5,7 +5,7 @@ import type {
   RealtimeTicketResponse,
   SubscriptionRecord,
   SyncPreferences,
-} from "@newcastle/contracts";
+} from "@rajio-app/contracts";
 
 import { createApp } from "../adapters/http/create-app";
 import type { AuthGuard } from "../core/auth";

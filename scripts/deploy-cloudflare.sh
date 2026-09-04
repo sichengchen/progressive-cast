@@ -260,7 +260,7 @@ create_server_deploy_config "$server_worker_name" "$d1_database_name" "$d1_datab
 log_step "Building the server Worker"
 (
   cd "$ROOT_DIR" &&
-    pnpm --filter @newcastle/server build
+    pnpm --filter @rajio-app/server build
 )
 
 log_step "Uploading server secrets"

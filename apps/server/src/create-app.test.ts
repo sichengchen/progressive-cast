@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SyncStateResponse } from "@newcastle/contracts";
+import type { SyncStateResponse } from "@rajio-app/contracts";
 import { createApp } from "./adapters/http/create-app";
 import { StaticBearerAuthGuard } from "./core/auth";
 import { SyncService } from "./core/sync-service";

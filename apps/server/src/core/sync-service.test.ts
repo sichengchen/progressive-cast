@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_SYNC_PREFERENCES } from "@newcastle/contracts";
+import { DEFAULT_SYNC_PREFERENCES } from "@rajio-app/contracts";
 
 import { SyncService } from "./sync-service";
 import { BadRequestError } from "./errors";

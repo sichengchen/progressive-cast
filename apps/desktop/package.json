@@ -1,5 +1,5 @@
 {
-  "name": "@newcastle/desktop",
+  "name": "@rajio-app/desktop",
   "version": "0.10.0",
   "private": true,
   "type": "module",
@@ -43,7 +43,7 @@
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
-    "@newcastle/contracts": "workspace:*",
+    "@rajio-app/contracts": "workspace:*",
     "@radix-ui/react-alert-dialog": "1.1.14",
     "@radix-ui/react-context-menu": "2.3.7",
     "@radix-ui/react-dialog": "1.1.14",

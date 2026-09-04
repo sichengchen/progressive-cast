@@ -1,5 +1,5 @@
 {
-  "name": "@newcastle/contracts",
+  "name": "@rajio-app/contracts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,8 +10,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json",
-    "test": "node -e \"console.log('No tests for @newcastle/contracts')\"",
-    "preview": "node -e \"console.log('No preview for @newcastle/contracts')\""
+    "test": "node -e \"console.log('No tests for @rajio-app/contracts')\"",
+    "preview": "node -e \"console.log('No preview for @rajio-app/contracts')\""
   },
   "devDependencies": {
     "typescript": "^5.8.3"
