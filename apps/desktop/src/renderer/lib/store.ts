@@ -1,6 +1,11 @@
 import { create } from "zustand";
 
 import { desktopApi } from "@/desktop-api";
+import {
+  parseFavoriteEpisodes,
+  serializeFavoriteEpisodes,
+  toggleFavoriteEpisodeId,
+} from "@/lib/favorite-episodes";
 import { preloadImageUrls } from "@/lib/image-preloader";
 import { parsePlaybackQueue, putEpisodeNext, serializePlaybackQueue } from "@/lib/playback-queue";
 import type {
@@ -25,6 +30,7 @@ const episodeLoadPromises = new Map<string, Promise<Episode[]>>();
 const latestEpisodeLoadPromises = new Map<number, Promise<Episode[]>>();
 const episodePageLimit = 20;
 let playbackQueuePersistence = Promise.resolve();
+let favoriteEpisodesPersistence = Promise.resolve();
 
 interface EpisodePageState {
   hasMore: boolean;
@@ -57,6 +63,7 @@ interface PodcastStore {
   episodesHydrated: boolean;
   episodes: Episode[];
   error: string | null;
+  favoriteEpisodes: Episode[];
   isImporting: boolean;
   isLoading: boolean;
   isRefreshing: boolean;
@@ -127,6 +134,7 @@ interface PodcastStore {
   subscribeToPodcast: (feedUrl: string) => Promise<void>;
   toggleShowNotes: () => void;
   toggleQueue: () => void;
+  toggleFavoriteEpisode: (episode: Episode) => void;
   unsubscribeFromPodcast: (podcastId: string) => Promise<void>;
   updateDownloadProgress: (episodeId: string, progress: DownloadProgress) => void;
   updateProgress: (progress: number, currentItem?: string) => void;
@@ -145,6 +153,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   episodesHydrated: false,
   episodes: [],
   error: null,
+  favoriteEpisodes: [],
   isImporting: false,
   isLoading: false,
   isRefreshing: false,
@@ -224,6 +233,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       episodePageState: new Map(),
       episodesHydrated: true,
       episodes: [],
+      favoriteEpisodes: [],
       latestEpisodes: [],
       latestEpisodesPage: unloadedPageState,
       latestEpisodesVersion: get().latestEpisodesVersion + 1,
@@ -235,6 +245,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       selectedPodcastId: null,
     });
     persistPlaybackQueue([]);
+    persistFavoriteEpisodes([]);
   },
 
   clearAllDownloads: async () => {
@@ -405,19 +416,26 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   initializeStore: async () => {
     set({ isLoading: true });
     try {
-      await playbackQueuePersistence;
+      await Promise.all([favoriteEpisodesPersistence, playbackQueuePersistence]);
       const [podcastSummaries, settings] = await Promise.all([
         desktopApi.library.list(),
         desktopApi.settings.get(),
       ]);
       const podcasts = podcastSummaries.map(toPodcast);
+      const favoriteEpisodeIds = parseFavoriteEpisodes(settings.favoriteEpisodes);
       const queueEpisodeIds = parsePlaybackQueue(settings.playbackQueue);
       const libraryEpisodes =
-        queueEpisodeIds.length > 0 ? await listLibraryEpisodes(podcasts) : null;
+        favoriteEpisodeIds.length > 0 || queueEpisodeIds.length > 0
+          ? await listLibraryEpisodes(podcasts)
+          : null;
       const episodesById = new Map(
         (libraryEpisodes ?? []).map((episode) => [episode.id, episode] as const),
       );
       const playbackQueue = queueEpisodeIds.flatMap((episodeId) => {
+        const episode = episodesById.get(episodeId);
+        return episode ? [episode] : [];
+      });
+      const favoriteEpisodes = favoriteEpisodeIds.flatMap((episodeId) => {
         const episode = episodesById.get(episodeId);
         return episode ? [episode] : [];
       });
@@ -430,6 +448,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodePageState: new Map(),
         episodesHydrated: libraryEpisodes !== null,
         episodes: [],
+        favoriteEpisodes,
         isLoading: false,
         latestEpisodes: [],
         latestEpisodesPage: unloadedPageState,
@@ -755,12 +774,37 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
       };
     }),
 
+  toggleFavoriteEpisode: (episode) => {
+    const state = get();
+    const episodeIds = toggleFavoriteEpisodeId(
+      state.favoriteEpisodes.map((favoriteEpisode) => favoriteEpisode.id),
+      episode.id,
+    );
+    const episodesById = new Map([
+      ...state.favoriteEpisodes.map(
+        (favoriteEpisode) => [favoriteEpisode.id, favoriteEpisode] as const,
+      ),
+      [episode.id, episode] as const,
+    ]);
+    const favoriteEpisodes = episodeIds.flatMap((episodeId) => {
+      const favoriteEpisode = episodesById.get(episodeId);
+      return favoriteEpisode ? [favoriteEpisode] : [];
+    });
+
+    set({ favoriteEpisodes });
+    persistFavoriteEpisodes(favoriteEpisodes);
+  },
+
   unsubscribeFromPodcast: async (podcastId) => {
     await desktopApi.library.unsubscribe(podcastId);
+    const previousFavoriteCount = get().favoriteEpisodes.length;
     const previousQueueLength = get().playbackQueue.length;
     set((state) => {
       const podcasts = state.podcasts.filter((podcast) => podcast.id !== podcastId);
       const playbackQueue = state.playbackQueue.filter(
+        (episode) => episode.podcastId !== podcastId,
+      );
+      const favoriteEpisodes = state.favoriteEpisodes.filter(
         (episode) => episode.podcastId !== podcastId,
       );
       const episodeCache = new Map(state.episodeCache);
@@ -771,6 +815,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
         episodeCache,
         episodePageState,
         episodes: state.selectedPodcastId === podcastId ? [] : state.episodes,
+        favoriteEpisodes,
         playbackQueue,
         podcasts,
         selectedPodcastId:
@@ -781,6 +826,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     });
     if (get().playbackQueue.length !== previousQueueLength) {
       persistPlaybackQueue(get().playbackQueue);
+    }
+    if (get().favoriteEpisodes.length !== previousFavoriteCount) {
+      persistFavoriteEpisodes(get().favoriteEpisodes);
     }
     get().clearLatestEpisodesCache();
   },
@@ -1009,6 +1057,7 @@ function findEpisode(episodeId: string, state: PodcastStore) {
   return (
     state.episodes.find((episode) => episode.id === episodeId) ??
     state.downloadedEpisodes.find((episode) => episode.id === episodeId) ??
+    state.favoriteEpisodes.find((episode) => episode.id === episodeId) ??
     state.playbackQueue.find((episode) => episode.id === episodeId) ??
     state.playbackState.currentEpisode
   );
@@ -1035,6 +1084,19 @@ function persistPlaybackQueue(playbackQueue: Episode[]) {
     .then(() => undefined)
     .catch((error: unknown) => {
       console.error("Failed to persist playback queue:", error);
+    });
+}
+
+function persistFavoriteEpisodes(favoriteEpisodes: Episode[]) {
+  const favoriteEpisodesSetting = serializeFavoriteEpisodes(
+    favoriteEpisodes.map((episode) => episode.id),
+  );
+
+  favoriteEpisodesPersistence = favoriteEpisodesPersistence
+    .then(() => desktopApi.settings.set({ favoriteEpisodes: favoriteEpisodesSetting }))
+    .then(() => undefined)
+    .catch((error: unknown) => {
+      console.error("Failed to persist favorite episodes:", error);
     });
 }
 
