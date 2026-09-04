@@ -1,12 +1,8 @@
-name: Cut release
+name: Cut release (desktop)
 
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: Stable release version, with or without the v prefix (for example, 0.11.0)
-        required: true
-        type: string
       next_bump:
         description: Semantic version part to bump on main after the release
         default: minor
@@ -60,10 +56,9 @@ jobs:
         id: versions
         env:
           INPUT_NEXT_BUMP: ${{ inputs.next_bump }}
-          INPUT_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          release_version="$(node scripts/version.mjs normalize "$INPUT_VERSION")"
+          release_version="$(node scripts/version.mjs current)"
           next_version="$(node scripts/version.mjs bump "$release_version" "$INPUT_NEXT_BUMP")"
           tag="v${release_version}"
           if git show-ref --verify --quiet "refs/tags/${tag}"; then

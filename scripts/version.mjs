@@ -13,7 +13,7 @@ const packagePaths = [
 
 function usage() {
   console.error(
-    "Usage: node scripts/version.mjs <normalize|bump|set> <version> [major|minor|patch]",
+    "Usage: node scripts/version.mjs current | <normalize|set> <version> | bump <version> <major|minor|patch>",
   );
   process.exit(2);
 }
@@ -45,39 +45,50 @@ async function setVersion(version) {
 }
 
 const [command, rawVersion, bumpType] = process.argv.slice(2);
-if (!command || !rawVersion) {
+if (!command) {
   usage();
 }
 
 try {
-  const version = normalizeVersion(rawVersion);
-
-  switch (command) {
-    case "normalize":
-      console.log(version.value);
-      break;
-    case "bump": {
-      switch (bumpType) {
-        case "major":
-          console.log(`${version.major + 1}.0.0`);
-          break;
-        case "minor":
-          console.log(`${version.major}.${version.minor + 1}.0`);
-          break;
-        case "patch":
-          console.log(`${version.major}.${version.minor}.${version.patch + 1}`);
-          break;
-        default:
-          throw new Error(`Bump type must be major, minor, or patch: ${bumpType ?? "missing"}`);
-      }
-      break;
-    }
-    case "set":
-      await setVersion(version.value);
-      console.log(`Set all workspace package versions to ${version.value}`);
-      break;
-    default:
+  if (command === "current") {
+    const desktopPackage = JSON.parse(
+      await readFile(path.join(repositoryRoot, packagePaths[0]), "utf8"),
+    );
+    console.log(normalizeVersion(desktopPackage.version).value);
+  } else {
+    if (!rawVersion) {
       usage();
+    }
+
+    const version = normalizeVersion(rawVersion);
+
+    switch (command) {
+      case "normalize":
+        console.log(version.value);
+        break;
+      case "bump": {
+        switch (bumpType) {
+          case "major":
+            console.log(`${version.major + 1}.0.0`);
+            break;
+          case "minor":
+            console.log(`${version.major}.${version.minor + 1}.0`);
+            break;
+          case "patch":
+            console.log(`${version.major}.${version.minor}.${version.patch + 1}`);
+            break;
+          default:
+            throw new Error(`Bump type must be major, minor, or patch: ${bumpType ?? "missing"}`);
+        }
+        break;
+      }
+      case "set":
+        await setVersion(version.value);
+        console.log(`Set all workspace package versions to ${version.value}`);
+        break;
+      default:
+        usage();
+    }
   }
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
