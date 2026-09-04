@@ -162,7 +162,8 @@ export function EpisodeList({
 
                   <ListItemTitle
                     className={cn(
-                      "line-clamp-2 tracking-[-0.01em]",
+                      "tracking-[-0.01em]",
+                      variantStyles.title,
                       variant === "featured" ? "text-base leading-6" : "text-[15px] leading-5",
                     )}
                   >
