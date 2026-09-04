@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { getCachedImageUrl } from "@/lib/image-cache";
 import { cn } from "@/lib/utils";
 import { ScrollingText } from "../ui/scrolling-text";
 
@@ -55,8 +56,7 @@ const GridItem = React.forwardRef<HTMLDivElement, GridItemProps>(
           onClick={onClick}
           className={cn(
             getSpanClass(),
-            "text-left transition-colors focus-visible:outline-none",
-            "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+            "text-left transition-colors",
             "disabled:pointer-events-none disabled:opacity-50",
             className,
           )}
@@ -105,11 +105,12 @@ const MediaCard = React.forwardRef<HTMLDivElement, MediaCardProps>(
     ref,
   ) => {
     const [hasImageError, setHasImageError] = React.useState(false);
-    const showImage = imageUrl && !hasImageError;
+    const cachedImageUrl = getCachedImageUrl(imageUrl);
+    const showImage = cachedImageUrl && !hasImageError;
 
     React.useEffect(() => {
       setHasImageError(false);
-    }, [imageUrl]);
+    }, [cachedImageUrl]);
 
     const cardContent = (
       <>
@@ -117,7 +118,7 @@ const MediaCard = React.forwardRef<HTMLDivElement, MediaCardProps>(
         <div className="relative aspect-square overflow-hidden rounded-lg bg-muted">
           {showImage ? (
             <img
-              src={imageUrl}
+              src={cachedImageUrl}
               alt={imageAlt || title}
               className={cn(
                 "h-full w-full object-cover transition-transform duration-200",
@@ -156,7 +157,6 @@ const MediaCard = React.forwardRef<HTMLDivElement, MediaCardProps>(
           onClick={onClick}
           className={cn(
             "group relative overflow-hidden rounded-lg transition-all duration-200",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
             "hover:scale-[1.02] active:scale-[0.98]",
             "text-left w-full",
             className,

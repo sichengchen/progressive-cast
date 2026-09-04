@@ -2,9 +2,10 @@
 
 import { useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
-import { Globe, Trash2, Play, User, Clock, Tag, Info } from "lucide-react";
+import { Trash2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CoverImage } from "@/components/ui/cover-image";
+import { ContentMetadata } from "@/components/common/content-metadata";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -28,7 +29,6 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import ISO6391 from "iso-639-1";
 import type { Episode, Podcast } from "@/lib/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { richTextToPlainText } from "@/lib/utils";
 
 interface PodcastDetailsProps {
@@ -43,11 +43,9 @@ export function PodcastDetails({
   podcast,
 }: PodcastDetailsProps) {
   const [isUnsubscribing, setIsUnsubscribing] = useState(false);
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const cleanDescription = richTextToPlainText(podcast.description);
 
-  const playEpisode = usePodcastStore((state) => state.playEpisode);
   const unsubscribeFromPodcast = usePodcastStore((state) => state.unsubscribeFromPodcast);
 
   // Get the latest episode for this podcast
@@ -58,15 +56,6 @@ export function PodcastDetails({
       )[0],
     [episodes],
   );
-
-  const handlePlayLatest = () => {
-    if (latestEpisode) {
-      playEpisode(latestEpisode);
-      toast.success(`Playing: ${latestEpisode.title}`);
-    } else {
-      toast.error(isLoadingEpisodes ? "Episodes are still loading" : "No episodes available");
-    }
-  };
 
   const handleUnsubscribe = async () => {
     setIsUnsubscribing(true);
@@ -82,88 +71,82 @@ export function PodcastDetails({
     }
   };
 
+  const language = podcast.language
+    ? ISO6391.getName(podcast.language.split("-")[0]) || podcast.language
+    : null;
+  const updated = latestEpisode
+    ? `Updated ${formatDistanceToNow(new Date(latestEpisode.publishedAt), { addSuffix: true })}`
+    : isLoadingEpisodes
+      ? null
+      : "No episodes";
+
   return (
-    <div className="py-6 px-2">
-      <div className="flex flex-row gap-4 md:gap-8 md:items-start">
-        {/* Podcast Cover */}
-        <div className="flex-shrink-0 self-start">
+    <header className="border-b border-border/60 px-2 py-5">
+      <div className="flex min-w-0 items-center gap-5 md:gap-6">
+        <div className="shrink-0">
           <CoverImage
             src={podcast.imageUrl}
             alt={podcast.title}
-            className="w-32 h-32 md:w-40 md:h-40 rounded-lg shadow-md"
+            className="size-28 rounded-lg shadow-sm ring-1 ring-foreground/10 md:size-36"
             fetchPriority="high"
           />
         </div>
 
-        {/* Podcast Info */}
-        <div className="flex-1 min-w-0 text-left md:h-40 md:flex md:flex-col md:justify-between">
-          {/* Title, Author & Meta Info */}
-          <div className="space-y-2">
-            {/* Podcast Meta Info */}
-            <div className="space-y-2">
-              <div className="flex flex-col gap-2 md:flex-row text-sm text-muted-foreground">
-                {podcast.author && (
-                  <div className="flex items-center justify-start gap-1">
-                    <User className="w-4 h-4" />
-                    <span>{podcast.author}</span>
-                  </div>
-                )}
+        <div className="min-w-0 flex-1 text-left">
+          {podcast.author ? (
+            <p className="mb-1.5 truncate text-sm font-medium text-muted-foreground">
+              {podcast.author}
+            </p>
+          ) : null}
+          <h1 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-[-0.025em] md:text-[2rem]">
+            {podcast.title}
+          </h1>
 
-                {podcast.language && (
-                  <div className="flex items-center justify-start gap-1">
-                    <Globe className="w-4 h-4" />
-                    <span>
-                      {ISO6391.getName(podcast.language.split("-")[0]) || podcast.language}
-                    </span>
-                  </div>
-                )}
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <ContentMetadata
+              items={[language, episodes.length ? `${episodes.length} episodes` : null, updated]}
+            />
 
-                {!isMobile && podcast.categories && podcast.categories.length > 0 && (
-                  <div className="flex items-center justify-start gap-1">
-                    <Tag className="w-4 h-4" />
-                    <span>
-                      {podcast.categories.slice(0, 2).join(", ")}
-                      {podcast.categories.length > 2 ? "..." : ""}
-                    </span>
-                  </div>
-                )}
+            <div className="flex items-center gap-1.5">
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    aria-label="Remove from library"
+                    className="size-8 text-muted-foreground hover:text-destructive"
+                    disabled={isUnsubscribing}
+                    size="icon"
+                    title="Remove from library"
+                    variant="ghost"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Remove this show from your library?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Rajio will remove &ldquo;{podcast.title}&rdquo; and its episodes from your
+                      library. Downloaded files for this show will also be removed.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleUnsubscribe}
+                      className="bg-destructive hover:bg-destructive/90"
+                    >
+                      {isUnsubscribing ? "Removing..." : "Remove"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
 
-                <div className="flex items-center justify-start gap-1">
-                  <Clock className="w-4 h-4" />
-                  <span>
-                    {isMobile ? "" : "Updated "}
-                    {latestEpisode
-                      ? formatDistanceToNow(new Date(latestEpisode.publishedAt), {
-                          addSuffix: true,
-                        })
-                      : isLoadingEpisodes
-                        ? ""
-                        : "No episodes"}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Title */}
-            {isMobile ? (
-              <></>
-            ) : (
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold mb-2 line-clamp-2">
-                  {podcast.title}
-                </h1>
-              </div>
-            )}
-
-            {/* Description */}
-            <div className="text-sm text-muted-foreground md:mx-0">
-              {/* Desktop: Show truncated text with button */}
-              <div className="hidden md:flex items-start gap-2 w-3/5">
-                <div className="line-clamp-1 flex-1">{cleanDescription}</div>
+              {cleanDescription ? (
                 <Dialog>
                   <DialogTrigger asChild>
-                    <Button variant="link" className="text-sm p-0 h-auto">
-                      Show Description
+                    <Button className="size-8 md:hidden" size="icon" variant="ghost">
+                      <Info className="size-4" />
+                      <span className="sr-only">About this show</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent className="max-w-2xl">
@@ -171,99 +154,41 @@ export function PodcastDetails({
                       <DialogTitle>{podcast.title}</DialogTitle>
                     </DialogHeader>
                     <div className="max-h-96 overflow-y-auto">
-                      <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                      <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
                         {cleanDescription || "No description available."}
                       </p>
                     </div>
                   </DialogContent>
                 </Dialog>
-              </div>
+              ) : null}
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 md:gap-4 flex-row mt-4 md:mt-0 md:justify-start">
-            <Button
-              onClick={handlePlayLatest}
-              disabled={!latestEpisode}
-              size="default"
-              className="flex items-center gap-2 w-auto md:h-10 md:px-8"
-            >
-              {latestEpisode ? (
-                <>
-                  <Play className="h-4 w-4" />
-                  <span className="hidden sm:inline">Latest Episode</span>
-                  <span className="sm:hidden">Latest</span>
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 opacity-50" />
-                  <span className="hidden sm:inline">
-                    {isLoadingEpisodes ? "Latest Episode" : "No Episodes Available"}
-                  </span>
-                  <span className="sm:hidden">
-                    {isLoadingEpisodes ? "Latest" : "No Episodes"}
-                  </span>
-                </>
-              )}
-            </Button>
-
-            {/* Mobile: Only show button */}
-            <div className="md:hidden flex justify-start">
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="text-sm p-0 h-auto">
-                    <Info />
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{podcast.title}</DialogTitle>
-                  </DialogHeader>
-                  <div className="max-h-96 overflow-y-auto">
-                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                      {cleanDescription || "No description available."}
-                    </p>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant={isMobile ? "outline" : "ghost"}
-                  size="default"
-                  className="flex items-center gap-2 text-destructive hover:text-destructive w-auto md:h-10 md:px-3"
-                  disabled={isUnsubscribing}
+          {cleanDescription ? (
+            <Dialog>
+              <DialogTrigger asChild>
+                <button
+                  aria-label="Show full description"
+                  className="mt-3 hidden max-w-3xl text-left text-sm leading-6 text-muted-foreground transition-colors hover:text-foreground md:line-clamp-2"
+                  type="button"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  {!isMobile && <span>Unsubscribe</span>}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Unsubscribe from podcast?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Are you sure you want to unsubscribe from &ldquo;{podcast.title}&rdquo;? This
-                    will remove the podcast and all its episodes from your library. This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleUnsubscribe}
-                    className="bg-destructive hover:bg-destructive/90"
-                  >
-                    {isUnsubscribing ? "Unsubscribing..." : "Unsubscribe"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
+                  {cleanDescription}
+                </button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>{podcast.title}</DialogTitle>
+                </DialogHeader>
+                <div className="max-h-96 overflow-y-auto">
+                  <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                    {cleanDescription}
+                  </p>
+                </div>
+              </DialogContent>
+            </Dialog>
+          ) : null}
         </div>
       </div>
-    </div>
+    </header>
   );
 }

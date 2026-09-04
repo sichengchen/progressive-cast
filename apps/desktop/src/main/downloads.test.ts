@@ -28,7 +28,7 @@ test("downloads audio, records local file state, and playback prefers the local 
   };
 
   try {
-    const status = await new DownloadService(db, downloadsDir).start("episode_1");
+    const status = await new DownloadService(db, () => downloadsDir).start("episode_1");
     assert.equal(status.status, "downloaded");
     assert.equal(status.progress, 100);
     assert.ok(status.downloadedPath);
@@ -38,7 +38,7 @@ test("downloads audio, records local file state, and playback prefers the local 
     assert.equal(source.isLocal, true);
     assert.equal(source.source, pathToFileURL(status.downloadedPath).toString());
 
-    await new DownloadService(db, downloadsDir).delete("episode_1");
+    await new DownloadService(db, () => downloadsDir).delete("episode_1");
     assert.equal(existsSync(status.downloadedPath), false);
     assert.equal(db.getEpisode("episode_1")?.downloadedPath, undefined);
   } finally {
@@ -57,12 +57,38 @@ test("downloads audio with an mp3 fallback extension when the URL has no extensi
   globalThis.fetch = async () => new Response(new Uint8Array([4, 5, 6]), { status: 200 });
 
   try {
-    const status = await new DownloadService(db, downloadsDir).start("episode_1");
+    const status = await new DownloadService(db, () => downloadsDir).start("episode_1");
 
     assert.equal(status.status, "downloaded");
     assert.equal(path.extname(status.downloadedPath ?? ""), ".mp3");
     assert.equal(db.getEpisode("episode_1")?.fileSize, 3);
     assert.match(db.getEpisode("episode_1")?.downloadedAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    db.close();
+  }
+});
+
+test("resolves the download directory when each download starts", async () => {
+  const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
+  const db = new LocalDatabase(path.join(root, "test.sqlite"));
+  const firstDirectory = path.join(root, "first");
+  const secondDirectory = path.join(root, "second");
+  let currentDirectory = firstDirectory;
+  seedEpisode(db);
+  seedEpisode(db, "https://cdn.example/episode-two.mp3", "episode_2");
+
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(new Uint8Array([1]), { status: 200 });
+
+  try {
+    const service = new DownloadService(db, () => currentDirectory);
+    const firstStatus = await service.start("episode_1");
+    currentDirectory = secondDirectory;
+    const secondStatus = await service.start("episode_2");
+
+    assert.equal(path.dirname(firstStatus.downloadedPath ?? ""), firstDirectory);
+    assert.equal(path.dirname(secondStatus.downloadedPath ?? ""), secondDirectory);
   } finally {
     globalThis.fetch = originalFetch;
     db.close();
@@ -80,11 +106,14 @@ test("returns missing without fetching when an episode does not exist", async ()
   };
 
   try {
-    assert.deepEqual(await new DownloadService(db, path.join(root, "downloads")).start("missing"), {
-      episodeId: "missing",
-      progress: 0,
-      status: "missing",
-    });
+    assert.deepEqual(
+      await new DownloadService(db, () => path.join(root, "downloads")).start("missing"),
+      {
+        episodeId: "missing",
+        progress: 0,
+        status: "missing",
+      },
+    );
     assert.equal(requested, false);
   } finally {
     globalThis.fetch = originalFetch;
@@ -100,7 +129,9 @@ test("persists failed download status when fetch fails", async () => {
   globalThis.fetch = async () => new Response("", { status: 503 });
 
   try {
-    const status = await new DownloadService(db, path.join(root, "downloads")).start("episode_1");
+    const status = await new DownloadService(db, () => path.join(root, "downloads")).start(
+      "episode_1",
+    );
 
     assert.equal(status.status, "failed");
     assert.equal(status.progress, 0);
@@ -116,7 +147,7 @@ test("delete clears downloaded metadata for non-downloaded or missing episodes",
   const root = mkdtempSync(path.join(tmpdir(), "newcastle-"));
   const db = new LocalDatabase(path.join(root, "test.sqlite"));
   seedEpisode(db);
-  const service = new DownloadService(db, path.join(root, "downloads"));
+  const service = new DownloadService(db, () => path.join(root, "downloads"));
 
   try {
     await service.delete("episode_1");
@@ -136,7 +167,11 @@ test("delete clears downloaded metadata for non-downloaded or missing episodes",
   }
 });
 
-function seedEpisode(db: LocalDatabase, audioUrl = "https://cdn.example/episode.mp3"): void {
+function seedEpisode(
+  db: LocalDatabase,
+  audioUrl = "https://cdn.example/episode.mp3",
+  episodeId = "episode_1",
+): void {
   db.upsertPodcast({
     feedUrl: "https://example.com/feed.xml",
     id: "podcast_1",
@@ -147,9 +182,9 @@ function seedEpisode(db: LocalDatabase, audioUrl = "https://cdn.example/episode.
   db.upsertEpisodes([
     {
       audioUrl,
-      id: "episode_1",
+      id: episodeId,
       podcastId: "podcast_1",
-      title: "Episode One",
+      title: `Episode ${episodeId}`,
     },
   ]);
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AlertCircle, Trash2 } from "lucide-react";
+import { AlertCircle, FolderOpen, Trash2 } from "lucide-react";
 import {
   SettingsGroup,
   SettingsItem,
@@ -18,10 +18,13 @@ import { useTheme } from "next-themes";
 import { OPMLManager } from "../../common/opml-manager";
 import { toast } from "sonner";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { desktopApi } from "@/desktop-api";
 
 export function SettingsPage() {
   const [isClearingData, setIsClearingData] = useState(false);
   const [isClearingDownloads, setIsClearingDownloads] = useState(false);
+  const [isChoosingDownloadDirectory, setIsChoosingDownloadDirectory] = useState(false);
+  const [downloadDirectory, setDownloadDirectory] = useState<string | null>(null);
   const { theme, setTheme } = useTheme();
   const isMobile = useIsMobile();
 
@@ -41,6 +44,25 @@ export function SettingsPage() {
   useEffect(() => {
     refreshStorageStats();
   }, [refreshStorageStats]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    void desktopApi.settings
+      .get()
+      .then((settings) => {
+        if (isCurrent) {
+          setDownloadDirectory(settings.downloadDirectory ?? null);
+        }
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load download directory:", error);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 B";
@@ -64,6 +86,22 @@ export function SettingsPage() {
 
   const handleThemeChange = (value: string) => {
     setTheme(value);
+  };
+
+  const handleChooseDownloadDirectory = async () => {
+    setIsChoosingDownloadDirectory(true);
+    try {
+      const selectedDirectory = await desktopApi.settings.chooseDownloadDirectory();
+      if (selectedDirectory) {
+        setDownloadDirectory(selectedDirectory);
+        toast.success("Download folder updated");
+      }
+    } catch (error) {
+      toast.error("Failed to update the download folder");
+      console.error("Choose download directory error:", error);
+    } finally {
+      setIsChoosingDownloadDirectory(false);
+    }
   };
 
   const handleClearAllDownloads = async () => {
@@ -149,6 +187,17 @@ export function SettingsPage() {
 
         {/* Storage Management */}
         <SettingsGroup title="Storage Management">
+          <SettingsAction
+            label="Download Folder"
+            description={downloadDirectory ?? "Choose where new downloads are saved"}
+            actionLabel={downloadDirectory ? "Change Folder" : "Choose Folder"}
+            loadingLabel="Choosing Folder…"
+            onAction={handleChooseDownloadDirectory}
+            variant="outline"
+            icon={FolderOpen}
+            loading={isChoosingDownloadDirectory}
+          />
+
           <SettingsStats
             label="Storage Statistics"
             stats={[

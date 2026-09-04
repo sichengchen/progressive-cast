@@ -13,6 +13,7 @@ export function DownloadedPage() {
     getDownloadedEpisodes,
     isLoading: storeLoading,
   } = usePodcastStore();
+  const currentEpisodeId = usePodcastStore((state) => state.playbackState.currentEpisode?.id);
   const [isLoading, setIsLoading] = useState(true);
 
   const handleRefresh = async () => {
@@ -59,6 +60,7 @@ export function DownloadedPage() {
 
   return (
     <EpisodeList
+      currentEpisodeId={currentEpisodeId}
       isLoadingEpisodes={isLoading || storeLoading}
       episodes={processedEpisodes}
       playbackProgress={playbackProgress}

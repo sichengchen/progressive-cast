@@ -8,25 +8,24 @@
  * to maintain visual consistency during loading states.
  */
 
-import { useEffect, useRef, type MouseEvent } from "react";
-import { Play, Clock } from "lucide-react";
+import { useEffect, useRef } from "react";
 import {
   List,
   ListItem,
   ListItemActions,
   ListItemLeading,
   ListItemContent,
-  ListItemTitle,
   ListItemDescription,
-  ListItemMeta,
+  ListItemTitle,
 } from "@/components/ui-custom/list";
 import { CoverImage } from "@/components/ui/cover-image";
-import { formatTime, richTextToPlainText } from "@/lib/utils";
-import { format } from "date-fns";
+import { ContentMetadata } from "@/components/common/content-metadata";
+import { formatEpisodeDate, richTextToPlainText } from "@/lib/utils";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
 import { EpisodeSkeleton } from "./episode-skeleton";
 import { DownloadButton } from "./download-button";
+import { EpisodePlaybackButton } from "./episode-playback-button";
 
 interface EpisodeListProps {
   isLoadingEpisodes: boolean;
@@ -43,6 +42,7 @@ interface EpisodeListProps {
   hasMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => void | Promise<void>;
+  currentEpisodeId?: string;
 }
 
 export function EpisodeList({
@@ -84,13 +84,6 @@ export function EpisodeList({
     };
   }, [hasMore, isLoadingMore, onLoadMore]);
 
-  const handlePlayEpisode = (episode: Episode, event?: MouseEvent) => {
-    if (event) {
-      event.stopPropagation();
-    }
-    playEpisode(episode);
-  };
-
   // Show skeleton while loading episodes
   if (isLoadingEpisodes) {
     return <EpisodeSkeleton />;
@@ -112,74 +105,47 @@ export function EpisodeList({
       <List className="px-0">
         {episodes.map((episode) => {
           const progress = playbackProgress.get(episode.id);
-          const cleanedDescription = richTextToPlainText(episode.description);
+          const description = richTextToPlainText(episode.description);
 
           return (
             <ListItem
               key={episode.id}
-              interactive
-              className="group relative px-2"
-              onClick={() => handlePlayEpisode(episode)}
+              className="group rounded-lg px-2 py-2.5 transition-colors after:left-[4.25rem] after:right-2 hover:bg-muted/55 hover:after:hidden"
             >
               <ListItemLeading>
                 <CoverImage
                   src={episode.imageUrl}
                   alt={episode.title}
-                  className="w-20 h-20 relative"
+                  className="size-12 rounded-md"
                   loading="lazy"
-                >
-                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center">
-                    <Play className="w-6 h-6 text-white fill-current" />
-                  </div>
-                </CoverImage>
+                />
               </ListItemLeading>
 
-              <ListItemContent className="space-y-1">
-                <ListItemMeta>
-                  <div className="flex items-center gap-2">
-                    <span>{format(new Date(episode.publishedAt), "MMM d, yyyy")}</span>
-                    {episode.duration && (
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {formatTime(episode.duration)}
-                      </span>
-                    )}
-                  </div>
-                </ListItemMeta>
+              <ListItemContent className="flex flex-col gap-1">
+                <ContentMetadata items={[formatEpisodeDate(episode.publishedAt)]} />
 
-                <ListItemTitle className="line-clamp-2">{episode.title}</ListItemTitle>
+                <ListItemTitle className="line-clamp-2 text-[15px] leading-5 tracking-[-0.01em]">
+                  {episode.title}
+                </ListItemTitle>
 
-                <ListItemDescription className="line-clamp-2">
-                  {cleanedDescription}
-                </ListItemDescription>
-
-                {progress && progress.currentTime > 0 && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <div className="flex-1 bg-secondary rounded-full h-1">
-                      <div
-                        className="bg-primary h-1 rounded-full"
-                        style={{
-                          width: `${(progress.currentTime / progress.duration) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      {formatTime(progress.currentTime)} / {formatTime(progress.duration)}
-                    </span>
-                  </div>
-                )}
+                {description ? (
+                  <ListItemDescription className="line-clamp-2 mt-0 leading-5">
+                    {description}
+                  </ListItemDescription>
+                ) : null}
               </ListItemContent>
 
-              {showDownloadButton || showDeleteButton ? (
-                <ListItemActions>
+              <ListItemActions className="gap-2">
+                <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
+                {showDownloadButton || showDeleteButton ? (
                   <DownloadButton
                     episode={episode}
                     pageType={pageType}
                     onDownloadComplete={onDownloadComplete}
                     onDeleteComplete={onDeleteComplete}
                   />
-                </ListItemActions>
-              ) : null}
+                ) : null}
+              </ListItemActions>
             </ListItem>
           );
         })}

@@ -6,10 +6,10 @@ import { usePodcastStore } from "@/lib/store";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 const DEFAULT_SIDEBAR_WIDTH = 320;
-const DEFAULT_RIGHT_PANEL_WIDTH = 384;
+const DEFAULT_RIGHT_PANEL_WIDTH = 400;
 const MIN_SIDEBAR_WIDTH = 240;
 const MIN_MAIN_CONTENT_WIDTH = 320;
-const MIN_RIGHT_PANEL_WIDTH = 280;
+const MIN_RIGHT_PANEL_WIDTH = 320;
 
 interface AppLayoutProps {
   sidebar: ReactNode;
@@ -38,7 +38,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppLayoutProps) {
-  const { showNotesOpen } = usePodcastStore();
+  const showNotesOpen = usePodcastStore((state) => state.showNotesOpen);
   const isMobile = useIsMobile();
   const desktopLayoutRef = useRef<HTMLDivElement>(null);
   const [activeResize, setActiveResize] = useState<ActiveResize | null>(null);
@@ -180,7 +180,16 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
       {isMobile ? (
         <div className="flex flex-col h-screen app-no-drag">
           {/* Mobile: Show Notes Overlay */}
-          {showNotesOpen && <div className="fixed inset-0 z-40 bg-background">{rightPanel}</div>}
+          <div
+            aria-hidden={!showNotesOpen}
+            className={`fixed inset-0 z-40 bg-background transition-[opacity,transform] duration-200 ease-out ${
+              showNotesOpen
+                ? "translate-x-0 opacity-100"
+                : "pointer-events-none translate-x-3 opacity-0"
+            }`}
+          >
+            {rightPanel}
+          </div>
 
           {/* Mobile: Main Content */}
           <div className="flex-1 overflow-hidden">{mainContent}</div>
@@ -224,15 +233,19 @@ export function AppLayout({ sidebar, mainContent, rightPanel, controlBar }: AppL
               )}
 
               <div
-                className={`flex-shrink-0 border-l border-sidebar-border bg-background ${
-                  showNotesOpen ? "" : "overflow-hidden"
-                } ${activeResize?.kind === "rightPanel" ? "no-transition" : "transition-[width] duration-200 ease-in-out"}`}
+                aria-hidden={!showNotesOpen}
+                className={`flex-shrink-0 overflow-hidden border-l bg-background transition-[width,border-color] duration-200 ease-out ${
+                  showNotesOpen
+                    ? "border-l border-border/70"
+                    : "pointer-events-none border-transparent"
+                } ${activeResize?.kind === "rightPanel" ? "transition-none" : ""}`}
                 style={{
-                  minWidth: showNotesOpen ? MIN_RIGHT_PANEL_WIDTH : 0,
                   width: showNotesOpen ? panelSizes.rightPanelWidth : 0,
                 }}
               >
-                {showNotesOpen && rightPanel}
+                <div className="h-full" style={{ width: panelSizes.rightPanelWidth }}>
+                  {rightPanel}
+                </div>
               </div>
             </div>
           </div>

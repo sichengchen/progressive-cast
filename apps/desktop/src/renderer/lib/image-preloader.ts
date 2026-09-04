@@ -1,3 +1,5 @@
+import { getCachedImageUrl } from "@/lib/image-cache";
+
 const loadedUrls = new Set<string>();
 const queuedUrls = new Set<string>();
 const queue: string[] = [];
@@ -13,7 +15,7 @@ export function preloadImageUrls(
     return;
   }
 
-  const uniqueUrls = uniqueImageUrls(urls, options.limit);
+  const uniqueUrls = uniqueImageUrls(urls.map(getCachedImageUrl), options.limit);
   if (uniqueUrls.length === 0) {
     return;
   }
@@ -72,12 +74,16 @@ function pumpQueue() {
     }
 
     activeLoads += 1;
-    void loadImage(url).finally(() => {
-      activeLoads -= 1;
-      loadedUrls.add(url);
-      queuedUrls.delete(url);
-      pumpQueue();
-    });
+    void loadImage(url)
+      .then(() => {
+        loadedUrls.add(url);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        activeLoads -= 1;
+        queuedUrls.delete(url);
+        pumpQueue();
+      });
   }
 }
 
@@ -87,12 +93,12 @@ async function loadImage(url: string) {
   image.src = url;
 
   if (image.decode) {
-    await image.decode().catch(() => undefined);
+    await image.decode();
     return;
   }
 
-  await new Promise<void>((resolve) => {
+  await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
-    image.onerror = () => resolve();
+    image.onerror = () => reject(new Error(`Failed to preload image: ${url}`));
   });
 }

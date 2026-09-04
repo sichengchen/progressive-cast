@@ -7,7 +7,7 @@ import type { LocalDatabase } from "./db";
 export class DownloadService {
   constructor(
     private readonly db: LocalDatabase,
-    private readonly downloadsDir: string,
+    private readonly resolveDownloadDirectory: () => string,
   ) {}
 
   async start(episodeId: string): Promise<DownloadStatus> {
@@ -27,14 +27,18 @@ export class DownloadService {
     });
 
     try {
+      const downloadDirectory = this.resolveDownloadDirectory();
       const response = await fetch(episode.audioUrl);
       if (!response.ok) {
         throw new Error(`Download failed with HTTP ${response.status}`);
       }
 
       const bytes = Buffer.from(await response.arrayBuffer());
-      await mkdir(this.downloadsDir, { recursive: true });
-      const filePath = path.join(this.downloadsDir, `${episode.id}${extensionFromUrl(episode.audioUrl)}`);
+      await mkdir(downloadDirectory, { recursive: true });
+      const filePath = path.join(
+        downloadDirectory,
+        `${episode.id}${extensionFromUrl(episode.audioUrl)}`,
+      );
       await writeFile(filePath, bytes);
 
       this.db.markEpisodeDownloaded(episode.id, filePath, bytes.byteLength);

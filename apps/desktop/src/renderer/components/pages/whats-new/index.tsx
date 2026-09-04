@@ -16,6 +16,7 @@ export function WhatsNewPage() {
     playbackProgress,
     isImporting,
   } = usePodcastStore();
+  const currentEpisodeId = usePodcastStore((state) => state.playbackState.currentEpisode?.id);
 
   useEffect(() => {
     const loadLatestEpisodes = async () => {
@@ -76,6 +77,7 @@ export function WhatsNewPage() {
   return (
     <>
       <EpisodeList
+        currentEpisodeId={currentEpisodeId}
         isLoadingEpisodes={isLoading}
         episodes={processedEpisodes}
         playbackProgress={playbackProgress}

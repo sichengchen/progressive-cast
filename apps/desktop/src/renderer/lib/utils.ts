@@ -41,6 +41,51 @@ export function formatTime(seconds: number): string {
 // Alias for formatTime to be more explicit for duration formatting
 export const formatDuration = formatTime;
 
+function isSameCalendarDay(first: Date, second: Date): boolean {
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
+}
+
+function startOfWeek(date: Date): Date {
+  const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const daysSinceMonday = (result.getDay() + 6) % 7;
+  result.setDate(result.getDate() - daysSinceMonday);
+  return result;
+}
+
+export function formatEpisodeDate(date: Date | string, now = new Date()): string {
+  const dateValue = typeof date === "string" ? new Date(date) : date;
+
+  if (Number.isNaN(dateValue.getTime())) {
+    return "Unknown date";
+  }
+
+  if (isSameCalendarDay(dateValue, now)) {
+    return "Today";
+  }
+
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+  if (isSameCalendarDay(dateValue, yesterday)) {
+    return "Yesterday";
+  }
+
+  const thisWeek = startOfWeek(now);
+  const lastWeek = new Date(thisWeek);
+  lastWeek.setDate(lastWeek.getDate() - 7);
+  if (dateValue >= lastWeek && dateValue < thisWeek) {
+    return "Last week";
+  }
+
+  return new Intl.DateTimeFormat("en-US", {
+    day: "numeric",
+    month: "short",
+    year: dateValue.getFullYear() === now.getFullYear() ? undefined : "numeric",
+  }).format(dateValue);
+}
+
 // Format date to a readable string
 export function formatDate(date: Date | string): string {
   const dateObj = typeof date === "string" ? new Date(date) : date;

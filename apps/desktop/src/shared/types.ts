@@ -64,6 +64,7 @@ export interface DownloadStatus {
 }
 
 export interface DesktopSettings {
+  downloadDirectory?: string;
   syncAuthToken?: string;
   syncBaseUrl?: string;
 }

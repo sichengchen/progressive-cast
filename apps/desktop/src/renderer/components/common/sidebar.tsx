@@ -95,7 +95,7 @@ export function PodcastSidebar() {
                             to: item.to,
                           })
                         }
-                        className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 ${
+                        className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
                           location.pathname === item.to
                             ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                             : ""
@@ -117,7 +117,7 @@ export function PodcastSidebar() {
                 <div className="text-sidebar-foreground/70 ring-sidebar-ring p-0 flex-1 min-w-0 text-xs font-medium">
                   <span className="truncate">Podcasts ({podcasts.length})</span>
                 </div>
-                <div className="flex gap-1 flex-shrink-0">
+                <div className="-mr-2.5 flex flex-shrink-0 gap-1">
                   <Button
                     onClick={handleRefreshAll}
                     size="sm"
@@ -175,7 +175,7 @@ export function PodcastSidebar() {
                             to: "/podcast/$podcastId",
                           });
                         }}
-                        className={`flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 h-auto py-2 ${
+                        className={`flex h-auto w-full items-center gap-2 overflow-hidden rounded-md p-2 py-2 text-left text-sm outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
                           activePodcastId === podcast.id
                             ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                             : ""

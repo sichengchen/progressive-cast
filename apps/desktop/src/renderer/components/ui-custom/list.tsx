@@ -13,7 +13,7 @@ const ListItem = React.forwardRef<
   React.HTMLAttributes<HTMLDivElement> & {
     interactive?: boolean;
   }
->(({ className, interactive = false, ...props }, ref) => (
+>(({ className, interactive = false, onKeyDown, ...props }, ref) => (
   <div
     ref={ref}
     className={cn(
@@ -22,10 +22,21 @@ const ListItem = React.forwardRef<
       interactive && [
         "cursor-pointer transition-colors",
         "hover:bg-accent hover:text-accent-foreground hover:rounded-lg hover:after:hidden",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
       ],
       className,
     )}
+    onKeyDown={(event) => {
+      onKeyDown?.(event);
+      if (
+        !event.defaultPrevented &&
+        interactive &&
+        (event.key === "Enter" || event.key === " ")
+      ) {
+        event.preventDefault();
+        event.currentTarget.click();
+      }
+    }}
+    role={interactive ? "button" : undefined}
     tabIndex={interactive ? 0 : undefined}
     {...props}
   />

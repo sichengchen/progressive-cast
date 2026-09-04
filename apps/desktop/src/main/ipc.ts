@@ -1,4 +1,4 @@
-import { ipcMain } from "electron";
+import { BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from "electron";
 
 import { ipcChannels } from "../shared/ipc";
 import { DownloadService } from "./downloads";
@@ -8,11 +8,11 @@ import { PlaybackService } from "./playback";
 import { SettingsService } from "./settings";
 import { SyncService } from "./sync";
 
-export function registerIpcHandlers(db: LocalDatabase, downloadsDir: string): void {
-  const downloads = new DownloadService(db, downloadsDir);
+export function registerIpcHandlers(db: LocalDatabase, defaultDownloadDirectory: string): void {
+  const settings = new SettingsService(db, defaultDownloadDirectory);
+  const downloads = new DownloadService(db, () => settings.getDownloadDirectory());
   const library = new LibraryService(db);
   const playback = new PlaybackService(db);
-  const settings = new SettingsService(db);
   const sync = new SyncService(db);
 
   ipcMain.handle(ipcChannels.library.list, () => library.listPodcasts());
@@ -53,6 +53,25 @@ export function registerIpcHandlers(db: LocalDatabase, downloadsDir: string): vo
     playback.saveProgress(progress),
   );
 
+  ipcMain.handle(ipcChannels.settings.chooseDownloadDirectory, async (event) => {
+    const options: OpenDialogOptions = {
+      buttonLabel: "Choose",
+      defaultPath: settings.getDownloadDirectory(),
+      properties: ["openDirectory", "createDirectory"],
+      title: "Choose Download Folder",
+    };
+    const parentWindow = BrowserWindow.fromWebContents(event.sender);
+    const result = parentWindow
+      ? await dialog.showOpenDialog(parentWindow, options)
+      : await dialog.showOpenDialog(options);
+    const downloadDirectory = result.filePaths[0];
+
+    if (result.canceled || !downloadDirectory) {
+      return null;
+    }
+
+    return settings.setDownloadDirectory(downloadDirectory);
+  });
   ipcMain.handle(ipcChannels.settings.get, () => settings.get());
   ipcMain.handle(ipcChannels.settings.set, (_event, nextSettings) => settings.set(nextSettings));
 

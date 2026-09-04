@@ -25,6 +25,7 @@ const browserFallbackApi: NewcastleApi = {
     saveProgress: () => Promise.resolve(),
   },
   settings: {
+    chooseDownloadDirectory: () => Promise.resolve(null),
     get: () => Promise.resolve({}),
     set: () => missingDesktopServices(),
   },

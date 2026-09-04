@@ -241,6 +241,7 @@ export function SearchPage() {
   const podcasts = usePodcastStore((state) => state.podcasts);
   const preferences = usePodcastStore((state) => state.preferences);
   const playbackProgress = usePodcastStore((state) => state.playbackProgress);
+  const currentEpisodeId = usePodcastStore((state) => state.playbackState.currentEpisode?.id);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
   const setSelectedPodcast = usePodcastStore((state) => state.setSelectedPodcast);
   const subscribeToPodcast = usePodcastStore((state) => state.subscribeToPodcast);
@@ -595,6 +596,7 @@ export function SearchPage() {
 
         {visibleEpisodes.length > 0 ? (
           <EpisodeList
+            currentEpisodeId={currentEpisodeId}
             episodes={visibleEpisodes}
             isLoadingEpisodes={false}
             playbackProgress={playbackProgress}
@@ -651,16 +653,18 @@ export function SearchPage() {
               ) : null}
             </div>
 
-            <Tabs
-              className="min-w-0 justify-self-end"
-              onValueChange={(value) => setActiveSource(value as SearchSource)}
-              value={source}
-            >
-              <TabsList className="max-w-full">
-                {discoverEnabled ? <TabsTrigger value="discover">Discover</TabsTrigger> : null}
-                <TabsTrigger value="library">Library</TabsTrigger>
-              </TabsList>
-            </Tabs>
+            {discoverEnabled ? (
+              <Tabs
+                className="min-w-0 justify-self-end"
+                onValueChange={(value) => setActiveSource(value as SearchSource)}
+                value={source}
+              >
+                <TabsList className="max-w-full">
+                  <TabsTrigger value="discover">Discover</TabsTrigger>
+                  <TabsTrigger value="library">Library</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            ) : null}
           </form>
 
           {shouldShowFilters ? (

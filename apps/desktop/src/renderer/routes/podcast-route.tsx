@@ -30,14 +30,14 @@ export function PodcastRoutePage({ podcastId }: { podcastId: string }) {
     <RequireSubscriptions>
       <AppPageLayout backTo="/library" title={isMobile ? podcast?.title : undefined}>
         {podcast ? (
-          <>
+          <div className="mx-auto max-w-4xl">
             <PodcastDetails
               episodes={podcastEpisodes}
               isLoadingEpisodes={Boolean(!pageState?.loaded)}
               podcast={podcast}
             />
             <PodcastEpisodes podcastId={podcastId} />
-          </>
+          </div>
         ) : (
           <WelcomeScreen />
         )}

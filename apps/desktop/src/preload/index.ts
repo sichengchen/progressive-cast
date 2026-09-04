@@ -26,6 +26,8 @@ const api: NewcastleApi = {
     saveProgress: (progress) => ipcRenderer.invoke(ipcChannels.playback.saveProgress, progress),
   },
   settings: {
+    chooseDownloadDirectory: () =>
+      ipcRenderer.invoke(ipcChannels.settings.chooseDownloadDirectory),
     get: () => ipcRenderer.invoke(ipcChannels.settings.get),
     set: (settings) => ipcRenderer.invoke(ipcChannels.settings.set, settings),
   },

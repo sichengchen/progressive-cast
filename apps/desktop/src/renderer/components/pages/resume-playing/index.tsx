@@ -10,6 +10,7 @@ export function ResumePlayingPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   const { podcasts, playEpisode, playbackProgress } = usePodcastStore();
+  const currentEpisodeId = usePodcastStore((state) => state.playbackState.currentEpisode?.id);
 
   useEffect(() => {
     const loadUnfinishedEpisodes = async () => {
@@ -56,6 +57,7 @@ export function ResumePlayingPage() {
 
   return (
     <EpisodeList
+      currentEpisodeId={currentEpisodeId}
       isLoadingEpisodes={isLoading}
       episodes={processedEpisodes}
       playbackProgress={playbackProgress}

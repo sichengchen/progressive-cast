@@ -33,6 +33,7 @@ export const ipcChannels = {
     saveProgress: "playback:save-progress",
   },
   settings: {
+    chooseDownloadDirectory: "settings:choose-download-directory",
     get: "settings:get",
     set: "settings:set",
   },
@@ -64,6 +65,7 @@ export interface NewcastleApi {
     saveProgress: (progress: PlaybackProgressInput) => Promise<void>;
   };
   settings: {
+    chooseDownloadDirectory: () => Promise<string | null>;
     get: () => Promise<DesktopSettings>;
     set: (settings: DesktopSettings) => Promise<DesktopSettings>;
   };

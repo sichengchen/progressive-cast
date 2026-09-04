@@ -116,6 +116,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  :focus,
+  :focus-visible {
+    outline: none !important;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -203,7 +208,6 @@
 
   .desktop-window-content-safe-area {
     --desktop-window-safe-area-block: 12px;
-    --desktop-window-safe-area-inline-end: 12px;
   }
 
   /* Firefox scrollbar */

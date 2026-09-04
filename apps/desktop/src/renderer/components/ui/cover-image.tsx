@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Headphones } from "lucide-react";
+import { getCachedImageUrl } from "@/lib/image-cache";
 import { cn } from "@/lib/utils";
 
 interface CoverImageProps {
@@ -34,15 +35,16 @@ export function CoverImage({
   children,
 }: CoverImageProps) {
   const [hasImageError, setHasImageError] = useState(false);
+  const cachedSource = getCachedImageUrl(src);
   // Determine icon size - use larger icon for custom className that appears to be large
   const isLargeCustom =
     className?.includes("w-40") || className?.includes("w-32") || className?.includes("w-24");
   const iconSize = isLargeCustom ? "w-8 h-8" : iconSizes[size];
-  const showImage = src && !hasImageError;
+  const showImage = cachedSource && !hasImageError;
 
   useEffect(() => {
     setHasImageError(false);
-  }, [src]);
+  }, [cachedSource]);
 
   return (
     <div
@@ -53,7 +55,7 @@ export function CoverImage({
     >
       {showImage ? (
         <img
-          src={src}
+          src={cachedSource}
           alt={alt}
           className="w-full h-full object-cover"
           decoding="async"

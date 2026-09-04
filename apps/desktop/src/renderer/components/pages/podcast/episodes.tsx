@@ -15,6 +15,7 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
   const episodes = usePodcastStore((state) => state.episodeCache.get(podcastId) ?? emptyEpisodes);
   const pageState = usePodcastStore((state) => state.episodePageState.get(podcastId));
   const playbackProgress = usePodcastStore((state) => state.playbackProgress);
+  const currentEpisodeId = usePodcastStore((state) => state.playbackState.currentEpisode?.id);
   const loadEpisodes = usePodcastStore((state) => state.loadEpisodes);
   const loadMoreEpisodes = usePodcastStore((state) => state.loadMoreEpisodes);
   const playEpisode = usePodcastStore((state) => state.playEpisode);
@@ -44,9 +45,15 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
   }, [loadMoreEpisodes, podcastId]);
 
   return (
-    <div>
-      <h2 className="text-xl font-semibold px-2">Episodes</h2>
+    <section aria-labelledby="episode-list-heading" className="pt-5">
+      <h2
+        className="px-2 pb-1.5 text-lg font-semibold tracking-[-0.015em]"
+        id="episode-list-heading"
+      >
+        Episodes
+      </h2>
       <EpisodeList
+        currentEpisodeId={currentEpisodeId}
         isLoadingEpisodes={Boolean(!pageState?.loaded)}
         episodes={episodes}
         playbackProgress={playbackProgress}
@@ -58,6 +65,6 @@ export function PodcastEpisodes({ podcastId }: PodcastEpisodesProps) {
         isLoadingMore={Boolean(pageState?.isLoading && pageState.loaded)}
         onLoadMore={handleLoadMore}
       />
-    </div>
+    </section>
   );
 }

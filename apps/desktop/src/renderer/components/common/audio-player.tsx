@@ -461,7 +461,7 @@ export function AudioPlayer() {
           {/* Left: Episode cover (clickable for show notes) */}
           <Drawer>
             <DrawerTrigger asChild>
-              <button className="flex-shrink-0 transition-transform hover:scale-105 focus:outline-none rounded-lg">
+              <button className="flex-shrink-0 rounded-lg transition-transform hover:scale-105">
                 <CoverImage src={currentEpisode.imageUrl} alt={currentEpisode.title} size="md" />
               </button>
             </DrawerTrigger>
@@ -537,7 +537,7 @@ export function AudioPlayer() {
           {/* Left side: Episode image */}
           <button
             onClick={handleCoverClick}
-            className="flex-shrink-0 transition-transform hover:scale-105 focus:outline-none rounded-lg"
+            className="flex-shrink-0 rounded-lg transition-transform hover:scale-105"
             title="Jump to podcast details"
           >
             <CoverImage src={currentEpisode.imageUrl} alt={currentEpisode.title} size="md" />
@@ -624,11 +624,15 @@ export function AudioPlayer() {
 
           {/* Show Notes Toggle Button */}
           <Button
-            size="sm"
-            variant={showNotesOpen ? "default" : "ghost"}
+            aria-label={showNotesOpen ? "Hide show notes" : "Show show notes"}
+            aria-pressed={showNotesOpen}
+            size="icon"
+            variant="ghost"
             onClick={toggleShowNotes}
             className={
-              showNotesOpen ? "bg-primary text-primary-foreground" : "text-muted-foreground"
+              showNotesOpen
+                ? "bg-muted text-foreground hover:bg-muted"
+                : "text-muted-foreground"
             }
           >
             <Info className="h-4 w-4" />

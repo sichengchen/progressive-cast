@@ -1,10 +1,12 @@
-import { app, BrowserWindow, nativeImage } from "electron";
+import { app, BrowserWindow, nativeImage, protocol } from "electron";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createLocalDatabase } from "./db";
+import { imageCacheScheme, registerImageCacheProtocol } from "./image-protocol";
 import { registerIpcHandlers } from "./ipc";
+import { resolveDefaultDownloadDirectory } from "./settings";
 
 const mainDir =
   typeof __dirname === "string" ? __dirname : path.dirname(fileURLToPath(import.meta.url));
@@ -15,8 +17,21 @@ const appIconPath = app.isPackaged
   ? path.join(process.resourcesPath, "icon.png")
   : path.resolve(mainDir, "../../resources/icon.png");
 const appIcon = nativeImage.createFromPath(appIconPath);
+const startupEpisodeArtworkLimit = 24;
 
-function createMainWindow(): BrowserWindow {
+protocol.registerSchemesAsPrivileged([
+  {
+    privileges: {
+      corsEnabled: true,
+      secure: true,
+      standard: true,
+      supportFetchAPI: true,
+    },
+    scheme: imageCacheScheme,
+  },
+]);
+
+function createMainWindow(artworkReady: Promise<unknown> = Promise.resolve()): BrowserWindow {
   const window = new BrowserWindow({
     height: 860,
     icon: appIcon,
@@ -40,7 +55,11 @@ function createMainWindow(): BrowserWindow {
   });
 
   window.once("ready-to-show", () => {
-    window.show();
+    void artworkReady.finally(() => {
+      if (!window.isDestroyed()) {
+        window.show();
+      }
+    });
   });
 
   if (rendererDevServerUrl) {
@@ -64,8 +83,32 @@ app.whenReady().then(() => {
   }
 
   const db = createLocalDatabase(app.getPath("userData"));
-  registerIpcHandlers(db, path.join(app.getPath("userData"), "downloads"));
-  createMainWindow();
+  const imageCache = registerImageCacheProtocol(
+    path.join(app.getPath("userData"), "image-cache-v1"),
+  );
+  const podcasts = db.listPodcasts();
+  const episodes = db.listEpisodes();
+  const startupArtworkUrls = uniqueArtworkUrls([
+    ...podcasts.map((podcast) => podcast.imageUrl),
+    ...db
+      .listLatestEpisodes({ limit: startupEpisodeArtworkLimit })
+      .episodes.map((episode) => episode.imageUrl),
+  ]);
+  const allArtworkUrls = uniqueArtworkUrls([
+    ...podcasts.map((podcast) => podcast.imageUrl),
+    ...episodes.map((episode) => episode.imageUrl),
+  ]);
+  const startupArtworkReady = imageCache.warm(startupArtworkUrls);
+
+  void startupArtworkReady.then(() => imageCache.warm(allArtworkUrls));
+  const defaultDownloadDirectory = resolveDefaultDownloadDirectory(
+    process.platform,
+    app.getName(),
+    app.getPath("appData"),
+    app.getPath("downloads"),
+  );
+  registerIpcHandlers(db, defaultDownloadDirectory);
+  createMainWindow(startupArtworkReady);
 
   app.on("before-quit", () => {
     db.close();
@@ -77,6 +120,10 @@ app.whenReady().then(() => {
     }
   });
 });
+
+function uniqueArtworkUrls(urls: Array<string | undefined>): string[] {
+  return [...new Set(urls.filter((url): url is string => Boolean(url)))];
+}
 
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") {

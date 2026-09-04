@@ -78,7 +78,7 @@ export function AddPodcastDialog({ open, onOpenChange }: AddPodcastDialogProps) 
               value={feedUrl}
               onChange={(e) => setFeedUrl(e.target.value)}
               disabled={isSubmitting}
-              className="mt-1 focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="mt-1"
             />
           </div>
 
