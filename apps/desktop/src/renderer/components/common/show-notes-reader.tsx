@@ -172,8 +172,12 @@ export function ShowNotesReader({ content, onSeek }: ShowNotesReaderProps) {
   return (
     <article
       className="selectable-text prose max-w-none break-words text-[13.5px] leading-[1.72]
-        prose-headings:mb-2.5 prose-headings:mt-7 prose-headings:break-words prose-headings:font-semibold prose-headings:tracking-[-0.01em] prose-headings:text-foreground
-        prose-h1:text-base prose-h2:text-[14px] prose-h3:text-[14px] prose-h4:text-[13.5px]
+        [&_h1]:mb-2.5 [&_h1]:mt-7 [&_h1]:break-words [&_h1]:text-base [&_h1]:font-semibold [&_h1]:leading-6 [&_h1]:tracking-[-0.01em] [&_h1]:text-foreground
+        [&_h2]:mb-2.5 [&_h2]:mt-7 [&_h2]:break-words [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:leading-5 [&_h2]:tracking-[-0.01em] [&_h2]:text-foreground
+        [&_h3]:mb-2.5 [&_h3]:mt-6 [&_h3]:break-words [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:leading-5 [&_h3]:tracking-[-0.01em] [&_h3]:text-foreground
+        [&_h4]:mb-2 [&_h4]:mt-5 [&_h4]:break-words [&_h4]:text-[13.5px] [&_h4]:font-semibold [&_h4]:leading-5 [&_h4]:text-foreground
+        [&_h5]:mb-2 [&_h5]:mt-5 [&_h5]:break-words [&_h5]:text-[13.5px] [&_h5]:font-semibold [&_h5]:leading-5 [&_h5]:text-foreground
+        [&_h6]:mb-2 [&_h6]:mt-5 [&_h6]:break-words [&_h6]:text-[13.5px] [&_h6]:font-semibold [&_h6]:leading-5 [&_h6]:text-muted-foreground
         prose-p:mb-4 prose-p:break-words prose-p:text-foreground/84
         prose-a:break-words prose-a:font-normal prose-a:text-foreground prose-a:decoration-muted-foreground/45 prose-a:underline prose-a:underline-offset-4
         prose-a:hover:decoration-foreground prose-strong:font-semibold prose-strong:text-foreground prose-em:text-foreground/90
