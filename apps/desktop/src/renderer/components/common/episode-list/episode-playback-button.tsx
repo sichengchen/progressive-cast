@@ -33,9 +33,11 @@ export function EpisodePlaybackButton({ episode, onPlay, progress }: EpisodePlay
     (isCurrentEpisode ? currentDuration : 0) || progress?.duration || episode.duration || 0;
   const position = isCurrentEpisode ? currentTime : progress?.currentTime || 0;
   const timeLabel = duration
-    ? position > 0
-      ? `${formatTime(Math.max(duration - position, 0))} remaining`
-      : formatTime(duration)
+    ? progress?.isCompleted
+      ? formatTime(duration)
+      : position > 0
+        ? `${formatTime(Math.max(duration - position, 0))} remaining`
+        : formatTime(duration)
     : null;
   const action = isCurrentEpisode && isPlaying ? "Pause" : "Play";
 

@@ -87,6 +87,33 @@ test("saves playback progress and queues a sync checkpoint locator", async () =>
   }
 });
 
+test("restores persisted playback progress through a new playback service", async () => {
+  const dbPath = path.join(mkdtempSync(path.join(tmpdir(), "newcastle-")), "test.sqlite");
+  const initialDb = new LocalDatabase(dbPath);
+  seedEpisode(initialDb);
+
+  await new PlaybackService(initialDb).saveProgress({
+    currentTime: 100,
+    duration: 100,
+    episodeId: "episode_1",
+    isCompleted: true,
+    podcastId: "podcast_1",
+  });
+  initialDb.close();
+
+  const restoredDb = new LocalDatabase(dbPath);
+  try {
+    const [progress] = new PlaybackService(restoredDb).listProgress();
+
+    assert.equal(progress?.episodeId, "episode_1");
+    assert.equal(progress?.currentTime, 100);
+    assert.equal(progress?.isCompleted, true);
+    assert.match(progress?.lastPlayedAt ?? "", /^\d{4}-\d{2}-\d{2}T/);
+  } finally {
+    restoredDb.close();
+  }
+});
+
 test("does not queue progress sync when the episode or podcast is missing", async () => {
   const db = createTestDatabase();
   seedEpisode(db);

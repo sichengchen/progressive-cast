@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Download, Ellipsis, Heart, ListPlus, RotateCcw, Trash2 } from "lucide-react";
+import { CircleCheck, Download, Ellipsis, Heart, ListPlus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import {
@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -53,6 +54,10 @@ export function EpisodeActionsMenu({
   const isFavorite = usePodcastStore((state) =>
     state.favoriteEpisodes.some((favoriteEpisode) => favoriteEpisode.id === episode.id),
   );
+  const isListened = usePodcastStore(
+    (state) => state.playbackProgress.get(episode.id)?.isCompleted ?? false,
+  );
+  const setEpisodeListened = usePodcastStore((state) => state.setEpisodeListened);
   const toggleFavoriteEpisode = usePodcastStore((state) => state.toggleFavoriteEpisode);
 
   useEffect(() => {
@@ -61,6 +66,14 @@ export function EpisodeActionsMenu({
 
   const handlePlayNext = () => {
     addToQueue(episode);
+  };
+
+  const handleListenedChange = async (listened: boolean) => {
+    try {
+      await setEpisodeListened(episode, listened);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update listened status");
+    }
   };
 
   const handleDownload = async () => {
@@ -116,6 +129,13 @@ export function EpisodeActionsMenu({
               <Heart className={isFavorite ? "fill-current" : undefined} />
               {isFavorite ? "Remove from Favorites" : "Save to Favorites"}
             </DropdownMenuItem>
+            <DropdownMenuCheckboxItem
+              checked={isListened}
+              onCheckedChange={(checked) => void handleListenedChange(checked)}
+            >
+              <CircleCheck />
+              Listened
+            </DropdownMenuCheckboxItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>

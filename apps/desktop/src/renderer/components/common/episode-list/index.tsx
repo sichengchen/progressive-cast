@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { CircleCheck } from "lucide-react";
 import {
   List,
   ListItem,
@@ -122,7 +123,15 @@ export function EpisodeList({
               </ListItemLeading>
 
               <ListItemContent className="flex flex-col gap-1">
-                <ContentMetadata items={[formatEpisodeDate(episode.publishedAt)]} />
+                <div className="flex min-w-0 items-center gap-1.5">
+                  <ContentMetadata items={[formatEpisodeDate(episode.publishedAt)]} />
+                  {progress?.isCompleted ? (
+                    <CircleCheck
+                      aria-label="Listened"
+                      className="size-3.5 shrink-0 text-muted-foreground"
+                    />
+                  ) : null}
+                </div>
 
                 <ListItemTitle className="line-clamp-2 text-[15px] leading-5 tracking-[-0.01em]">
                   {episode.title}
