@@ -1,6 +1,6 @@
 {
   "name": "@rajio-app/desktop",
-  "version": "0.11.0",
+  "version": "0.10.0",
   "private": true,
   "type": "module",
   "productName": "Rajio",
@@ -43,6 +43,7 @@
       "hardenedRuntime": true,
       "icon": "resources/icon.png",
       "notarize": true,
+      "x64ArchFiles": "**/node_modules/better-sqlite3/prebuilds/*.node",
       "target": [
         {
           "arch": [
@@ -81,6 +82,7 @@
     "@tanstack/react-query": "5.99.1",
     "@tanstack/react-router": "1.168.23",
     "@vitejs/plugin-react": "^5.1.0",
+    "better-sqlite3": "^13.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -98,6 +100,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.1.11",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20.17.58",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",

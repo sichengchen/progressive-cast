@@ -1,6 +1,7 @@
 import { mkdirSync } from "node:fs";
 import path from "node:path";
-import { DatabaseSync } from "node:sqlite";
+
+import Database from "better-sqlite3";
 
 import type {
   DesktopSettings,
@@ -85,11 +86,11 @@ const defaultEpisodePageLimit = 20;
 const maxEpisodePageLimit = 100;
 
 export class LocalDatabase {
-  private readonly db: DatabaseSync;
+  private readonly db: Database.Database;
 
   constructor(dbPath: string) {
     mkdirSync(path.dirname(dbPath), { recursive: true });
-    this.db = new DatabaseSync(dbPath);
+    this.db = new Database(dbPath);
     this.db.exec("PRAGMA foreign_keys = ON");
     for (const statement of localDatabaseSchema) {
       this.db.exec(statement);

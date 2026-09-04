@@ -3,9 +3,9 @@ name: Cut release (desktop)
 on:
   workflow_dispatch:
     inputs:
-      next_bump:
-        description: Semantic version part to bump on main after the release
-        default: minor
+      bump:
+        description: Semantic version part to bump for this release
+        default: patch
         options:
           - minor
           - patch
@@ -21,8 +21,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  bump:
+    name: Bump release version
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.version.outputs.release }}
+      sha: ${{ steps.version.outputs.sha }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Bump and push release version
+        id: version
+        env:
+          INPUT_BUMP: ${{ inputs.bump }}
+        run: |
+          set -euo pipefail
+          current_version="$(node scripts/version.mjs current)"
+          release_version="$(node scripts/version.mjs bump "$current_version" "$INPUT_BUMP")"
+          tag="v${release_version}"
+          if git show-ref --verify --quiet "refs/tags/${tag}"; then
+            echo "Tag ${tag} already exists" >&2
+            exit 1
+          fi
+
+          node scripts/version.mjs set "$release_version"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/package.json apps/server/package.json packages/contracts/package.json
+          git commit -m "release: prepare ${tag}"
+          git push origin HEAD:main
+
+          {
+            echo "release=${release_version}"
+            echo "sha=$(git rev-parse HEAD)"
+            echo "tag=${tag}"
+          } >> "$GITHUB_OUTPUT"
+
   release:
     name: Build, notarize, and publish
+    needs: bump
     runs-on: macos-14
     timeout-minutes: 90
     env:
@@ -39,7 +81,7 @@ jobs:
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          ref: main
+          ref: ${{ needs.bump.outputs.sha }}
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v6
@@ -51,25 +93,6 @@ jobs:
         with:
           cache: pnpm
           node-version: 22
-
-      - name: Resolve and validate versions
-        id: versions
-        env:
-          INPUT_NEXT_BUMP: ${{ inputs.next_bump }}
-        run: |
-          set -euo pipefail
-          release_version="$(node scripts/version.mjs current)"
-          next_version="$(node scripts/version.mjs bump "$release_version" "$INPUT_NEXT_BUMP")"
-          tag="v${release_version}"
-          if git show-ref --verify --quiet "refs/tags/${tag}"; then
-            echo "Tag ${tag} already exists" >&2
-            exit 1
-          fi
-          {
-            echo "release=${release_version}"
-            echo "next=${next_version}"
-            echo "tag=${tag}"
-          } >> "$GITHUB_OUTPUT"
 
       - name: Determine notarization availability
         id: notarization
@@ -103,11 +126,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
-      - name: Prepare release version
-        env:
-          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
-        run: node scripts/version.mjs set "$RELEASE_VERSION"
 
       - name: Check and test
         run: |
@@ -149,12 +167,45 @@ jobs:
 
       - name: Locate DMG
         env:
-          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+          RELEASE_VERSION: ${{ needs.bump.outputs.release }}
         run: |
           set -euo pipefail
           dmg_path="apps/desktop/release/Rajio-${RELEASE_VERSION}-universal.dmg"
           test -f "$dmg_path"
           echo "dmg=${dmg_path}" >> "$GITHUB_ENV"
+
+      - name: Smoke test packaged app startup
+        run: |
+          set -euo pipefail
+          app_path="apps/desktop/release/mac-universal/Rajio.app"
+          executable="$app_path/Contents/MacOS/Rajio"
+          marker="$RUNNER_TEMP/rajio-startup-ready"
+          startup_log="$RUNNER_TEMP/rajio-startup.log"
+          rm -f "$marker" "$startup_log"
+
+          RAJIO_STARTUP_SMOKE_PATH="$marker" "$executable" > "$startup_log" 2>&1 &
+          app_pid=$!
+
+          for _ in {1..30}; do
+            if [[ -f "$marker" ]]; then
+              wait "$app_pid"
+              exit 0
+            fi
+
+            if ! kill -0 "$app_pid" 2>/dev/null; then
+              wait "$app_pid" || true
+              cat "$startup_log"
+              exit 1
+            fi
+
+            sleep 1
+          done
+
+          kill "$app_pid" 2>/dev/null || true
+          wait "$app_pid" 2>/dev/null || true
+          cat "$startup_log"
+          echo "Packaged Rajio did not finish startup within 30 seconds" >&2
+          exit 1
 
       - name: Notarize and staple DMG
         if: steps.notarization.outputs.enabled == 'true'
@@ -178,24 +229,20 @@ jobs:
           xcrun stapler validate "$dmg"
           spctl --assess --type execute --verbose=2 "$app_path"
 
-      - name: Commit and push the release tag
+      - name: Create and push the release tag
         env:
-          RELEASE_TAG: ${{ steps.versions.outputs.tag }}
+          RELEASE_TAG: ${{ needs.bump.outputs.tag }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apps/desktop/package.json apps/server/package.json packages/contracts/package.json
-          if ! git diff --cached --quiet; then
-            git commit -m "release: ${RELEASE_TAG}"
-          fi
           git tag --annotate "$RELEASE_TAG" --message "Rajio ${RELEASE_TAG}"
-          git push --atomic origin HEAD:main "refs/tags/${RELEASE_TAG}"
+          git push origin "refs/tags/${RELEASE_TAG}"
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ steps.versions.outputs.tag }}
+          RELEASE_TAG: ${{ needs.bump.outputs.tag }}
         run: gh release create "$RELEASE_TAG" "$dmg" --generate-notes --title "Rajio ${RELEASE_TAG}" --verify-tag
 
       - name: Check out Homebrew tap
@@ -207,7 +254,7 @@ jobs:
 
       - name: Update and push Homebrew cask
         env:
-          RELEASE_VERSION: ${{ steps.versions.outputs.release }}
+          RELEASE_VERSION: ${{ needs.bump.outputs.release }}
         run: |
           set -euo pipefail
           sha256="$(shasum --algorithm 256 "$dmg" | awk '{ print $1 }')"
@@ -220,13 +267,3 @@ jobs:
             git -C homebrew-tap commit -m "rajio ${RELEASE_VERSION}"
             git -C homebrew-tap push origin HEAD:main
           fi
-
-      - name: Bump main to the next version
-        env:
-          NEXT_VERSION: ${{ steps.versions.outputs.next }}
-        run: |
-          set -euo pipefail
-          node scripts/version.mjs set "$NEXT_VERSION"
-          git add apps/desktop/package.json apps/server/package.json packages/contracts/package.json
-          git commit -m "chore: start ${NEXT_VERSION}"
-          git push origin HEAD:main

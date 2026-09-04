@@ -1,5 +1,5 @@
-import { app, BrowserWindow, nativeImage, protocol } from "electron";
-import { existsSync } from "node:fs";
+import { app, BrowserWindow, dialog, nativeImage, protocol } from "electron";
+import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -19,6 +19,7 @@ const appIconPath = app.isPackaged
 const appIcon = nativeImage.createFromPath(appIconPath);
 const startupEpisodeArtworkLimit = 24;
 const startupArtworkWaitMs = 3_000;
+const startupSmokePath = process.env.RAJIO_STARTUP_SMOKE_PATH;
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -57,11 +58,18 @@ function createMainWindow(artworkReady: Promise<unknown> = Promise.resolve()): B
 
   window.once("ready-to-show", () => {
     void artworkReady.finally(() => {
-      if (!window.isDestroyed()) {
+      if (!startupSmokePath && !window.isDestroyed()) {
         window.show();
       }
     });
   });
+
+  if (startupSmokePath) {
+    window.webContents.once("did-finish-load", () => {
+      writeFileSync(startupSmokePath, "ready\n");
+      app.quit();
+    });
+  }
 
   if (rendererDevServerUrl) {
     void window.loadURL(rendererDevServerUrl);
@@ -78,45 +86,53 @@ if (existsSync(legacyUserDataPath)) {
 }
 app.setAppUserModelId(appId);
 
-app.whenReady().then(() => {
-  if (process.platform === "darwin" && app.dock && !appIcon.isEmpty()) {
-    app.dock.setIcon(appIcon);
-  }
-
-  const db = createLocalDatabase(app.getPath("userData"));
-  const imageCache = registerImageCacheProtocol(
-    path.join(app.getPath("userData"), "image-cache-v1"),
-  );
-  const podcastArtworkUrls = db.listPodcastArtworkUrls();
-  const episodeArtworkUrls = db.listEpisodeArtworkUrls();
-  const startupArtworkUrls = uniqueArtworkUrls([
-    ...podcastArtworkUrls,
-    ...episodeArtworkUrls.slice(0, startupEpisodeArtworkLimit),
-  ]);
-  const allArtworkUrls = uniqueArtworkUrls([...podcastArtworkUrls, ...episodeArtworkUrls]);
-  const initialArtworkWarmup = imageCache.warm(startupArtworkUrls);
-  const startupArtworkReady = waitUpTo(initialArtworkWarmup, startupArtworkWaitMs);
-
-  void initialArtworkWarmup.then(() => imageCache.warm(allArtworkUrls));
-  const defaultDownloadDirectory = resolveDefaultDownloadDirectory(
-    process.platform,
-    app.getName(),
-    app.getPath("appData"),
-    app.getPath("downloads"),
-  );
-  registerIpcHandlers(db, defaultDownloadDirectory);
-  createMainWindow(startupArtworkReady);
-
-  app.on("before-quit", () => {
-    db.close();
-  });
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createMainWindow();
+void app
+  .whenReady()
+  .then(() => {
+    if (process.platform === "darwin" && app.dock && !appIcon.isEmpty()) {
+      app.dock.setIcon(appIcon);
     }
+
+    const db = createLocalDatabase(app.getPath("userData"));
+    const imageCache = registerImageCacheProtocol(
+      path.join(app.getPath("userData"), "image-cache-v1"),
+    );
+    const podcastArtworkUrls = db.listPodcastArtworkUrls();
+    const episodeArtworkUrls = db.listEpisodeArtworkUrls();
+    const startupArtworkUrls = uniqueArtworkUrls([
+      ...podcastArtworkUrls,
+      ...episodeArtworkUrls.slice(0, startupEpisodeArtworkLimit),
+    ]);
+    const allArtworkUrls = uniqueArtworkUrls([...podcastArtworkUrls, ...episodeArtworkUrls]);
+    const initialArtworkWarmup = imageCache.warm(startupArtworkUrls);
+    const startupArtworkReady = waitUpTo(initialArtworkWarmup, startupArtworkWaitMs);
+
+    void initialArtworkWarmup.then(() => imageCache.warm(allArtworkUrls));
+    const defaultDownloadDirectory = resolveDefaultDownloadDirectory(
+      process.platform,
+      app.getName(),
+      app.getPath("appData"),
+      app.getPath("downloads"),
+    );
+    registerIpcHandlers(db, defaultDownloadDirectory);
+    createMainWindow(startupArtworkReady);
+
+    app.on("before-quit", () => {
+      db.close();
+    });
+
+    app.on("activate", () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        createMainWindow();
+      }
+    });
+  })
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("Failed to start Rajio:", error);
+    dialog.showErrorBox("Rajio failed to start", message);
+    app.quit();
   });
-});
 
 function uniqueArtworkUrls(urls: Array<string | undefined>): string[] {
   return [...new Set(urls.filter((url): url is string => Boolean(url)))];
