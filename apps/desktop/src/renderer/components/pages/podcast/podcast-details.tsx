@@ -8,6 +8,7 @@ import { ContentMetadata } from "@/components/common/content-metadata";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -89,9 +90,9 @@ export function PodcastDetails({
                     <DialogTitle>{podcast.title}</DialogTitle>
                   </DialogHeader>
                   <div className="max-h-96 overflow-y-auto">
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                    <DialogDescription className="whitespace-pre-wrap leading-relaxed">
                       {cleanDescription || "No description available."}
-                    </p>
+                    </DialogDescription>
                   </div>
                 </DialogContent>
               </Dialog>
@@ -111,9 +112,9 @@ export function PodcastDetails({
                   <DialogTitle>{podcast.title}</DialogTitle>
                 </DialogHeader>
                 <div className="max-h-96 overflow-y-auto">
-                  <p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                  <DialogDescription className="whitespace-pre-wrap leading-6">
                     {cleanDescription}
-                  </p>
+                  </DialogDescription>
                 </div>
               </DialogContent>
             </Dialog>
