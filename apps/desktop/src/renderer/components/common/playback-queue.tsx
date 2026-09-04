@@ -126,10 +126,10 @@ export function PlaybackQueue() {
                     </ListItemTitle>
                   </ListItemContent>
                   {isCurrentEpisode ? null : (
-                    <ListItemActions className="ml-auto min-w-7 justify-end">
+                    <ListItemActions className="ml-auto min-w-8 justify-end">
                       <Button
                         aria-label={`Remove ${episode.title} from play queue`}
-                        className="size-7 text-muted-foreground"
+                        className="size-8 text-muted-foreground"
                         onClick={() => removeFromQueue(episode.id)}
                         size="icon"
                         title="Remove from play queue"
