@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { useLocation, useNavigate } from "@tanstack/react-router";
+import { BackNavigation } from "@/components/common/back-navigation";
 import { Button } from "@/components/ui/button";
 import { MobileTabBar, type MobileTabBarItem } from "@/components/ui-custom/mobile-tab-bar";
 import { AddPodcastDialog } from "@/components/common/add-podcast-dialog";
@@ -8,7 +9,7 @@ import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-a
 import { WelcomeScreen } from "@/components/common/welcome";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { usePodcastStore } from "@/lib/store";
-import { ArrowLeft, Radio, Search, Settings, Sparkles } from "lucide-react";
+import { Radio, Search, Settings, Sparkles } from "lucide-react";
 
 interface ToolbarAction {
   disabled?: boolean;
@@ -91,15 +92,12 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
       {title ? (
         <div className="mt-6 flex items-center gap-3 px-2">
           {isMobile && backTo ? (
-            <Button
-              className="-ml-2 p-2"
+            <BackNavigation
+              className="-ml-2"
+              iconOnly
+              label="Back"
               onClick={() => navigate({ to: backTo })}
-              size="sm"
-              variant="outline"
-            >
-              <ArrowLeft className="h-5 w-5" />
-              <span className="sr-only">Back</span>
-            </Button>
+            />
           ) : null}
 
           <h1 className="flex-1 line-clamp-1 text-2xl font-bold">{title}</h1>

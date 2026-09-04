@@ -17,7 +17,11 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CoverImage } from "@/components/ui/cover-image";
 import { DesktopSafeScrollArea } from "@/components/common/desktop-safe-scroll-area";
-import { PodcastActionsMenu, RemovePodcastDialog } from "@/components/common/podcast-actions-menu";
+import {
+  PodcastActionsContextMenu,
+  PodcastActionsMenu,
+  RemovePodcastDialog,
+} from "@/components/common/podcast-actions-menu";
 import { usePodcastStore } from "@/lib/store";
 import type { Podcast } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -233,57 +237,60 @@ export function PodcastSidebar() {
                     const isMenuOpen = actionsPodcastId === podcast.id;
 
                     return (
-                      <li
+                      <PodcastActionsContextMenu
+                        isRefreshing={isRefreshing}
                         key={podcast.id}
-                        className={cn(
-                          "group/menu-item relative flex min-w-0 items-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                          isActive &&
-                            "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
-                        )}
-                        onContextMenu={(event) => {
-                          event.preventDefault();
-                          setActionsPodcastId(podcast.id);
-                        }}
+                        onRefresh={() => void handleRefreshPodcast(podcast)}
+                        onRequestRemove={() => setPodcastPendingRemoval(podcast)}
+                        podcastTitle={podcast.title}
                       >
-                        <button
-                          onClick={() => {
-                            setSelectedPodcast(podcast.id);
-                            navigate({
-                              params: {
-                                podcastId: podcast.id,
-                              },
-                              to: "/podcast/$podcastId",
-                            });
-                          }}
-                          className="flex h-auto min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden"
+                        <li
+                          className={cn(
+                            "group/menu-item relative flex min-w-0 items-center rounded-md transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                            isActive &&
+                              "bg-sidebar-accent font-medium text-sidebar-accent-foreground",
+                          )}
                         >
-                          <div className="flex items-center gap-2 w-full min-w-0">
-                            <CoverImage
-                              src={podcast.imageUrl}
-                              alt={podcast.title}
-                              className="w-8 h-8 flex-shrink-0"
-                            />
-                            <div className="flex-1 min-w-0 text-left overflow-hidden">
-                              <div className="font-medium text-sm truncate leading-tight">
-                                {podcast.title}
-                              </div>
-                              {podcast.author && (
-                                <div className="text-xs text-muted-foreground truncate leading-tight">
-                                  {podcast.author}
+                          <button
+                            onClick={() => {
+                              setSelectedPodcast(podcast.id);
+                              navigate({
+                                params: {
+                                  podcastId: podcast.id,
+                                },
+                                to: "/podcast/$podcastId",
+                              });
+                            }}
+                            className="flex h-auto min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden"
+                          >
+                            <div className="flex items-center gap-2 w-full min-w-0">
+                              <CoverImage
+                                src={podcast.imageUrl}
+                                alt={podcast.title}
+                                className="w-8 h-8 flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0 text-left overflow-hidden">
+                                <div className="font-medium text-sm truncate leading-tight">
+                                  {podcast.title}
                                 </div>
-                              )}
+                                {podcast.author && (
+                                  <div className="text-xs text-muted-foreground truncate leading-tight">
+                                    {podcast.author}
+                                  </div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </button>
-                        <PodcastActionsMenu
-                          isRefreshing={isRefreshing}
-                          onOpenChange={(open) => setActionsPodcastId(open ? podcast.id : null)}
-                          onRefresh={() => void handleRefreshPodcast(podcast)}
-                          onRequestRemove={() => setPodcastPendingRemoval(podcast)}
-                          open={isMenuOpen}
-                          podcastTitle={podcast.title}
-                        />
-                      </li>
+                          </button>
+                          <PodcastActionsMenu
+                            isRefreshing={isRefreshing}
+                            onOpenChange={(open) => setActionsPodcastId(open ? podcast.id : null)}
+                            onRefresh={() => void handleRefreshPodcast(podcast)}
+                            onRequestRemove={() => setPodcastPendingRemoval(podcast)}
+                            open={isMenuOpen}
+                            podcastTitle={podcast.title}
+                          />
+                        </li>
+                      </PodcastActionsContextMenu>
                     );
                   })}
                 </ul>

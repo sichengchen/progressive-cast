@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Info } from "lucide-react";
+import { ContentDetailsHeader } from "@/components/common/content-details-header";
 import { Button } from "@/components/ui/button";
-import { CoverImage } from "@/components/ui/cover-image";
-import { ContentMetadata } from "@/components/common/content-metadata";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +18,14 @@ import type { Episode, Podcast } from "@/lib/types";
 import { richTextToPlainText } from "@/lib/utils";
 
 interface PodcastDetailsProps {
+  actions?: ReactNode;
   episodes: Episode[];
   isLoadingEpisodes?: boolean;
   podcast: Podcast;
 }
 
 export function PodcastDetails({
+  actions,
   episodes,
   isLoadingEpisodes = false,
   podcast,
@@ -50,77 +51,60 @@ export function PodcastDetails({
       : "No episodes";
 
   return (
-    <header className="border-b border-border/60 px-2 py-5">
-      <div className="flex min-w-0 items-start gap-5 md:gap-6">
-        <div className="shrink-0">
-          <CoverImage
-            src={podcast.imageUrl}
-            alt={podcast.title}
-            className="size-28 rounded-lg shadow-sm ring-1 ring-foreground/10 md:size-36"
-            fetchPriority="high"
-          />
-        </div>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-2.5 text-left">
-          <h1 className="line-clamp-2 text-2xl font-semibold leading-tight tracking-[-0.025em] md:text-[2rem]">
-            {podcast.title}
-          </h1>
-
-          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <ContentMetadata
-              className="text-sm leading-5"
-              items={[
-                podcast.author,
-                language,
-                episodes.length ? `${episodes.length} episodes` : null,
-                updated,
-              ]}
-            />
-
-            {cleanDescription ? (
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button className="size-8 md:hidden" size="icon" variant="ghost">
-                    <Info className="size-4" />
-                    <span className="sr-only">About this show</span>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl">
-                  <DialogHeader>
-                    <DialogTitle>{podcast.title}</DialogTitle>
-                  </DialogHeader>
-                  <div className="max-h-96 overflow-y-auto">
-                    <DialogDescription className="whitespace-pre-wrap leading-relaxed">
-                      {cleanDescription || "No description available."}
-                    </DialogDescription>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            ) : null}
-          </div>
-
-          {cleanDescription ? (
-            <Dialog>
-              <DialogTrigger
-                aria-label="Show full description"
-                className="hidden max-w-3xl text-left text-sm leading-5 text-muted-foreground transition-colors hover:text-foreground md:line-clamp-2"
-              >
+    <ContentDetailsHeader
+      actions={actions}
+      artworkAlt={podcast.title}
+      artworkSrc={podcast.imageUrl}
+      metadataAction={
+        cleanDescription ? (
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="size-8 md:hidden" size="icon" variant="ghost">
+                <Info className="size-4" />
+                <span className="sr-only">About this show</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>{podcast.title}</DialogTitle>
+              </DialogHeader>
+              <div className="max-h-96 overflow-y-auto">
+                <DialogDescription className="whitespace-pre-wrap leading-relaxed">
+                  {cleanDescription || "No description available."}
+                </DialogDescription>
+              </div>
+            </DialogContent>
+          </Dialog>
+        ) : null
+      }
+      metadataItems={[
+        podcast.author,
+        language,
+        episodes.length ? `${episodes.length} episodes` : null,
+        updated,
+      ]}
+      title={podcast.title}
+    >
+      {cleanDescription ? (
+        <Dialog>
+          <DialogTrigger
+            aria-label="Show full description"
+            className="hidden max-w-3xl text-left text-sm leading-5 text-muted-foreground transition-colors hover:text-foreground md:line-clamp-2"
+          >
+            {cleanDescription}
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>{podcast.title}</DialogTitle>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto">
+              <DialogDescription className="whitespace-pre-wrap leading-6">
                 {cleanDescription}
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{podcast.title}</DialogTitle>
-                </DialogHeader>
-                <div className="max-h-96 overflow-y-auto">
-                  <DialogDescription className="whitespace-pre-wrap leading-6">
-                    {cleanDescription}
-                  </DialogDescription>
-                </div>
-              </DialogContent>
-            </Dialog>
-          ) : null}
-        </div>
-      </div>
-    </header>
+              </DialogDescription>
+            </div>
+          </DialogContent>
+        </Dialog>
+      ) : null}
+    </ContentDetailsHeader>
   );
 }

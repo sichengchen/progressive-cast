@@ -3,6 +3,7 @@
 import { Pause, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { usePodcastStore } from "@/lib/store";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 import { formatTime } from "@/lib/utils";
@@ -32,6 +33,7 @@ export function EpisodePlaybackButton({ episode, onPlay, progress }: EpisodePlay
   const duration =
     (isCurrentEpisode ? currentDuration : 0) || progress?.duration || episode.duration || 0;
   const position = isCurrentEpisode ? currentTime : progress?.currentTime || 0;
+  const hasProgress = duration > 0 && position > 0 && !progress?.isCompleted;
   const timeLabel = duration
     ? progress?.isCompleted
       ? formatTime(duration)
@@ -40,6 +42,7 @@ export function EpisodePlaybackButton({ episode, onPlay, progress }: EpisodePlay
         : formatTime(duration)
     : null;
   const action = isCurrentEpisode && isPlaying ? "Pause" : "Play";
+  const visibleTimeLabel = hasProgress ? formatTime(Math.max(duration - position, 0)) : timeLabel;
 
   const handleClick = () => {
     if (!isCurrentEpisode) {
@@ -59,9 +62,9 @@ export function EpisodePlaybackButton({ episode, onPlay, progress }: EpisodePlay
     <Button
       aria-label={`${action} ${episode.title}${timeLabel ? `, ${timeLabel}` : ""}`}
       aria-pressed={isCurrentEpisode && isPlaying}
-      className={timeLabel ? "h-7 gap-1.5 px-2.5 text-xs leading-none" : "size-7"}
+      className={visibleTimeLabel ? "h-7 gap-1.5 px-2.5 text-xs leading-none" : "size-7"}
       onClick={handleClick}
-      size={timeLabel ? "sm" : "icon"}
+      size={visibleTimeLabel ? "sm" : "icon"}
       title={`${action} episode`}
       type="button"
       variant="outline"
@@ -71,7 +74,16 @@ export function EpisodePlaybackButton({ episode, onPlay, progress }: EpisodePlay
       ) : (
         <Play className="size-3.5" data-icon="inline-start" fill="currentColor" />
       )}
-      {timeLabel ? <span className="tabular-nums leading-none">{timeLabel}</span> : null}
+      {hasProgress ? (
+        <Progress
+          aria-label={`${Math.round((position / duration) * 100)}% played`}
+          className="h-1 w-8 bg-muted-foreground/25 [&_[data-slot=progress-indicator]]:bg-foreground"
+          value={(position / duration) * 100}
+        />
+      ) : null}
+      {visibleTimeLabel ? (
+        <span className="tabular-nums leading-none">{visibleTimeLabel}</span>
+      ) : null}
     </Button>
   );
 }

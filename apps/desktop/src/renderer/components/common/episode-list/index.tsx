@@ -26,7 +26,7 @@ import { cn, formatEpisodeDate, richTextToPlainText } from "@/lib/utils";
 import type { Episode, PlaybackProgress } from "@/lib/types";
 
 import { EpisodeSkeleton } from "./episode-skeleton";
-import { EpisodeActionsMenu } from "./episode-actions-menu";
+import { EpisodeActionsContextMenu, EpisodeActionsMenu } from "./episode-actions-menu";
 import { EpisodePlaybackButton } from "./episode-playback-button";
 
 interface EpisodeListProps {
@@ -117,89 +117,97 @@ export function EpisodeList({
           const showDescription = variant !== "compact";
 
           return (
-            <ListItem
-              aria-label={`Open ${episode.title}`}
+            <EpisodeActionsContextMenu
+              currentEpisodeId={currentEpisodeId}
+              episode={episode}
               key={episode.id}
-              className={cn(
-                "group rounded-lg px-2 transition-colors hover:bg-muted/55 hover:after:hidden",
-                variant === "featured"
-                  ? "items-start py-3 after:left-[7.75rem] after:right-2"
-                  : variant === "editorial"
-                    ? "py-3 after:left-[5.25rem] after:right-2"
-                    : "py-2.5 after:left-[4.25rem] after:right-2",
-              )}
-              interactive
-              onClick={() =>
-                navigate({
-                  params: { episodeId: episode.id },
-                  to: "/episode/$episodeId",
-                })
-              }
-              onContextMenu={(event) => {
-                event.preventDefault();
-                setActionsEpisodeId(episode.id);
-              }}
+              onDeleteComplete={onDeleteComplete}
+              onDownloadComplete={onDownloadComplete}
             >
-              <ListItemLeading>
-                <CoverImage
-                  src={episode.imageUrl}
-                  alt={episode.title}
-                  className={cn(
-                    "rounded-md",
-                    variant === "featured"
-                      ? "size-24 md:size-28"
-                      : variant === "editorial"
-                        ? "size-16"
-                        : "size-12",
-                  )}
-                  loading="lazy"
-                />
-              </ListItemLeading>
-
-              <ListItemContent
+              <ListItem
+                aria-label={`Open ${episode.title}`}
                 className={cn(
-                  "flex flex-col gap-1",
-                  variant === "featured" && "min-h-24 justify-center md:min-h-28",
+                  "group rounded-lg px-2 transition-colors hover:bg-muted/55 hover:after:hidden",
+                  variant === "featured"
+                    ? "items-start py-3 after:left-[7.75rem] after:right-2"
+                    : variant === "editorial"
+                      ? "items-stretch py-3 after:left-[7.25rem] after:right-2"
+                      : "py-2.5 after:left-[4.25rem] after:right-2",
                 )}
+                interactive
+                onClick={() =>
+                  navigate({
+                    params: { episodeId: episode.id },
+                    to: "/episode/$episodeId",
+                  })
+                }
               >
-                <div className="flex min-w-0 items-center gap-1.5">
-                  <ContentMetadata items={metadataItems} />
-                  {progress?.isCompleted ? (
-                    <CircleCheck
-                      aria-label="Listened"
-                      className="size-3.5 shrink-0 text-muted-foreground"
-                    />
-                  ) : null}
-                </div>
+                <ListItemLeading>
+                  <CoverImage
+                    src={episode.imageUrl}
+                    alt={episode.title}
+                    className={cn(
+                      "rounded-md",
+                      variant === "featured"
+                        ? "size-24 md:size-28"
+                        : variant === "editorial"
+                          ? "size-24"
+                          : "size-12",
+                    )}
+                    loading="lazy"
+                  />
+                </ListItemLeading>
 
-                <ListItemTitle
+                <ListItemContent
                   className={cn(
-                    "line-clamp-2 tracking-[-0.01em]",
-                    variant === "featured" ? "text-base leading-6" : "text-[15px] leading-5",
+                    "flex flex-col gap-1",
+                    variant === "featured" && "min-h-24 justify-center md:min-h-28",
+                    variant === "editorial" && "min-h-24 justify-center",
                   )}
                 >
-                  {episode.title}
-                </ListItemTitle>
+                  <div className="flex min-w-0 items-center gap-1.5">
+                    <ContentMetadata items={metadataItems} />
+                    {progress?.isCompleted ? (
+                      <CircleCheck
+                        aria-label="Listened"
+                        className="size-3.5 shrink-0 text-muted-foreground"
+                      />
+                    ) : null}
+                  </div>
 
-                {showDescription && description ? (
-                  <ListItemDescription className="mt-0 line-clamp-2 leading-5">
-                    {description}
-                  </ListItemDescription>
-                ) : null}
-              </ListItemContent>
+                  <ListItemTitle
+                    className={cn(
+                      "line-clamp-2 tracking-[-0.01em]",
+                      variant === "featured" ? "text-base leading-6" : "text-[15px] leading-5",
+                    )}
+                  >
+                    {episode.title}
+                  </ListItemTitle>
 
-              <ListItemActions className={cn("gap-2", variant === "featured" && "self-center")}>
-                <EpisodePlaybackButton episode={episode} onPlay={playEpisode} progress={progress} />
-                <EpisodeActionsMenu
-                  currentEpisodeId={currentEpisodeId}
-                  episode={episode}
-                  onDeleteComplete={onDeleteComplete}
-                  onDownloadComplete={onDownloadComplete}
-                  onOpenChange={(open) => setActionsEpisodeId(open ? episode.id : null)}
-                  open={actionsEpisodeId === episode.id}
-                />
-              </ListItemActions>
-            </ListItem>
+                  {showDescription && description ? (
+                    <ListItemDescription className="mt-0 line-clamp-2 leading-5">
+                      {description}
+                    </ListItemDescription>
+                  ) : null}
+                </ListItemContent>
+
+                <ListItemActions className={cn("gap-2", variant === "featured" && "self-center")}>
+                  <EpisodePlaybackButton
+                    episode={episode}
+                    onPlay={playEpisode}
+                    progress={progress}
+                  />
+                  <EpisodeActionsMenu
+                    currentEpisodeId={currentEpisodeId}
+                    episode={episode}
+                    onDeleteComplete={onDeleteComplete}
+                    onDownloadComplete={onDownloadComplete}
+                    onOpenChange={(open) => setActionsEpisodeId(open ? episode.id : null)}
+                    open={actionsEpisodeId === episode.id}
+                  />
+                </ListItemActions>
+              </ListItem>
+            </EpisodeActionsContextMenu>
           );
         })}
       </List>

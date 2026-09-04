@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Ellipsis, RefreshCw, Trash2 } from "lucide-react";
 
 import {
@@ -14,6 +15,13 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -22,13 +30,55 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Podcast } from "@/lib/types";
 
-interface PodcastActionsMenuProps {
+interface PodcastActionProps {
   isRefreshing: boolean;
-  onOpenChange: (open: boolean) => void;
   onRefresh: () => void;
   onRequestRemove: () => void;
-  open: boolean;
   podcastTitle: string;
+}
+
+interface PodcastActionsMenuProps extends PodcastActionProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+}
+
+interface PodcastActionsContextMenuProps extends PodcastActionProps {
+  children: ReactNode;
+}
+
+function PodcastActionItems({
+  context = false,
+  isRefreshing,
+  onRefresh,
+  onRequestRemove,
+}: Omit<PodcastActionProps, "podcastTitle"> & { context?: boolean }) {
+  if (context) {
+    return (
+      <ContextMenuGroup>
+        <ContextMenuItem disabled={isRefreshing} onSelect={onRefresh}>
+          <RefreshCw className={isRefreshing ? "animate-spin" : undefined} />
+          Update show
+        </ContextMenuItem>
+        <ContextMenuItem onSelect={onRequestRemove} variant="destructive">
+          <Trash2 />
+          Remove from library
+        </ContextMenuItem>
+      </ContextMenuGroup>
+    );
+  }
+
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuItem disabled={isRefreshing} onSelect={onRefresh}>
+        <RefreshCw className={isRefreshing ? "animate-spin" : undefined} />
+        Update show
+      </DropdownMenuItem>
+      <DropdownMenuItem onSelect={onRequestRemove} variant="destructive">
+        <Trash2 />
+        Remove from library
+      </DropdownMenuItem>
+    </DropdownMenuGroup>
+  );
 }
 
 export function PodcastActionsMenu({
@@ -53,18 +103,34 @@ export function PodcastActionsMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-44" side="right" sideOffset={6}>
-        <DropdownMenuGroup>
-          <DropdownMenuItem disabled={isRefreshing} onSelect={onRefresh}>
-            <RefreshCw className={isRefreshing ? "animate-spin" : undefined} />
-            Update show
-          </DropdownMenuItem>
-          <DropdownMenuItem onSelect={onRequestRemove} variant="destructive">
-            <Trash2 />
-            Remove from library
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
+        <PodcastActionItems
+          isRefreshing={isRefreshing}
+          onRefresh={onRefresh}
+          onRequestRemove={onRequestRemove}
+        />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+export function PodcastActionsContextMenu({
+  children,
+  isRefreshing,
+  onRefresh,
+  onRequestRemove,
+}: PodcastActionsContextMenuProps) {
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuContent className="w-44">
+        <PodcastActionItems
+          context
+          isRefreshing={isRefreshing}
+          onRefresh={onRefresh}
+          onRequestRemove={onRequestRemove}
+        />
+      </ContextMenuContent>
+    </ContextMenu>
   );
 }
 

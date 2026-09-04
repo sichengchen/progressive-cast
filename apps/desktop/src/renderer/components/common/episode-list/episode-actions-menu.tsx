@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { CircleCheck, Download, Ellipsis, Heart, ListPlus, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -16,6 +16,15 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
+  ContextMenu,
+  ContextMenuCheckboxItem,
+  ContextMenuContent,
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -27,23 +36,23 @@ import {
 import { usePodcastStore } from "@/lib/store";
 import type { Episode } from "@/lib/types";
 
-interface EpisodeActionsMenuProps {
+interface EpisodeActionProps {
   currentEpisodeId?: string;
   episode: Episode;
   onDeleteComplete?: () => void | Promise<void>;
   onDownloadComplete?: () => void | Promise<void>;
+}
+
+interface EpisodeActionsMenuProps extends EpisodeActionProps {
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }
 
-export function EpisodeActionsMenu({
-  currentEpisodeId,
-  episode,
-  onDeleteComplete,
-  onDownloadComplete,
-  onOpenChange,
-  open,
-}: EpisodeActionsMenuProps) {
+interface EpisodeActionsContextMenuProps extends EpisodeActionProps {
+  children: ReactNode;
+}
+
+function useEpisodeActions({ episode, onDeleteComplete, onDownloadComplete }: EpisodeActionProps) {
   const [downloadFailed, setDownloadFailed] = useState(false);
   const [isDownloaded, setIsDownloaded] = useState(Boolean(episode.isDownloaded));
   const [isDownloading, setIsDownloading] = useState(false);
@@ -63,10 +72,6 @@ export function EpisodeActionsMenu({
   useEffect(() => {
     setIsDownloaded(Boolean(episode.isDownloaded));
   }, [episode.isDownloaded]);
-
-  const handlePlayNext = () => {
-    addToQueue(episode);
-  };
 
   const handleListenedChange = async (listened: boolean) => {
     try {
@@ -104,6 +109,118 @@ export function EpisodeActionsMenu({
     }
   };
 
+  return {
+    downloadFailed,
+    handleDownload,
+    handleListenedChange,
+    handlePlayNext: () => addToQueue(episode),
+    handleRemoveDownload,
+    isDownloaded,
+    isDownloading,
+    isFavorite,
+    isListened,
+    removeDialogOpen,
+    setRemoveDialogOpen,
+    toggleFavoriteEpisode: () => toggleFavoriteEpisode(episode),
+  };
+}
+
+type EpisodeActionsState = ReturnType<typeof useEpisodeActions>;
+
+function EpisodeMenuItems({
+  actions,
+  context = false,
+  currentEpisodeId,
+  episode,
+}: {
+  actions: EpisodeActionsState;
+  context?: boolean;
+  currentEpisodeId?: string;
+  episode: Episode;
+}) {
+  const Item = context ? ContextMenuItem : DropdownMenuItem;
+  const CheckboxItem = context ? ContextMenuCheckboxItem : DropdownMenuCheckboxItem;
+  const Group = context ? ContextMenuGroup : DropdownMenuGroup;
+  const Separator = context ? ContextMenuSeparator : DropdownMenuSeparator;
+
+  return (
+    <>
+      <Group>
+        <Item disabled={currentEpisodeId === episode.id} onSelect={actions.handlePlayNext}>
+          <ListPlus />
+          Play Next
+        </Item>
+        <Item onSelect={actions.toggleFavoriteEpisode}>
+          <Heart className={actions.isFavorite ? "fill-current" : undefined} />
+          {actions.isFavorite ? "Remove from Favorites" : "Save to Favorites"}
+        </Item>
+        <CheckboxItem
+          checked={actions.isListened}
+          onCheckedChange={(checked) => void actions.handleListenedChange(checked)}
+        >
+          <CircleCheck />
+          Listened
+        </CheckboxItem>
+      </Group>
+      <Separator />
+      <Group>
+        {actions.isDownloaded ? (
+          <Item onSelect={() => actions.setRemoveDialogOpen(true)}>
+            <Trash2 />
+            Remove Download
+          </Item>
+        ) : (
+          <Item disabled={actions.isDownloading} onSelect={() => void actions.handleDownload()}>
+            {actions.downloadFailed ? <RotateCcw /> : <Download />}
+            {actions.isDownloading
+              ? "Downloading…"
+              : actions.downloadFailed
+                ? "Retry Download"
+                : "Download"}
+          </Item>
+        )}
+      </Group>
+    </>
+  );
+}
+
+function RemoveDownloadDialog({ actions }: { actions: EpisodeActionsState }) {
+  return (
+    <AlertDialog onOpenChange={actions.setRemoveDialogOpen} open={actions.removeDialogOpen}>
+      <AlertDialogContent onClick={(event) => event.stopPropagation()}>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Remove this download?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The episode will remain in your library and can be downloaded again later.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-white hover:bg-destructive/90"
+            onClick={(event) => {
+              event.preventDefault();
+              void actions.handleRemoveDownload();
+            }}
+          >
+            Remove
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function EpisodeActionsMenu({
+  currentEpisodeId,
+  episode,
+  onDeleteComplete,
+  onDownloadComplete,
+  onOpenChange,
+  open,
+}: EpisodeActionsMenuProps) {
+  const actions = useEpisodeActions({ episode, onDeleteComplete, onDownloadComplete });
+
   return (
     <>
       <DropdownMenu onOpenChange={onOpenChange} open={open}>
@@ -120,62 +237,41 @@ export function EpisodeActionsMenu({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-52">
-          <DropdownMenuGroup>
-            <DropdownMenuItem disabled={currentEpisodeId === episode.id} onSelect={handlePlayNext}>
-              <ListPlus />
-              Play Next
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => toggleFavoriteEpisode(episode)}>
-              <Heart className={isFavorite ? "fill-current" : undefined} />
-              {isFavorite ? "Remove from Favorites" : "Save to Favorites"}
-            </DropdownMenuItem>
-            <DropdownMenuCheckboxItem
-              checked={isListened}
-              onCheckedChange={(checked) => void handleListenedChange(checked)}
-            >
-              <CircleCheck />
-              Listened
-            </DropdownMenuCheckboxItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            {isDownloaded ? (
-              <DropdownMenuItem onSelect={() => setRemoveDialogOpen(true)}>
-                <Trash2 />
-                Remove Download
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem disabled={isDownloading} onSelect={() => void handleDownload()}>
-                {downloadFailed ? <RotateCcw /> : <Download />}
-                {isDownloading ? "Downloading…" : downloadFailed ? "Retry Download" : "Download"}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuGroup>
+          <EpisodeMenuItems
+            actions={actions}
+            currentEpisodeId={currentEpisodeId}
+            episode={episode}
+          />
         </DropdownMenuContent>
       </DropdownMenu>
+      <RemoveDownloadDialog actions={actions} />
+    </>
+  );
+}
 
-      <AlertDialog onOpenChange={setRemoveDialogOpen} open={removeDialogOpen}>
-        <AlertDialogContent onClick={(event) => event.stopPropagation()}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove this download?</AlertDialogTitle>
-            <AlertDialogDescription>
-              The episode will remain in your library and can be downloaded again later.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-white hover:bg-destructive/90"
-              onClick={(event) => {
-                event.preventDefault();
-                void handleRemoveDownload();
-              }}
-            >
-              Remove
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+export function EpisodeActionsContextMenu({
+  children,
+  currentEpisodeId,
+  episode,
+  onDeleteComplete,
+  onDownloadComplete,
+}: EpisodeActionsContextMenuProps) {
+  const actions = useEpisodeActions({ episode, onDeleteComplete, onDownloadComplete });
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+        <ContextMenuContent className="w-52">
+          <EpisodeMenuItems
+            actions={actions}
+            context
+            currentEpisodeId={currentEpisodeId}
+            episode={episode}
+          />
+        </ContextMenuContent>
+      </ContextMenu>
+      <RemoveDownloadDialog actions={actions} />
     </>
   );
 }
