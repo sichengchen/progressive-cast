@@ -93,11 +93,8 @@ export function ResumePlayingPage() {
   const [continueEpisode, ...earlierEpisodes] = sortedEpisodes;
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
-      <section aria-labelledby="continue-heading">
-        <h2 className="px-2 pb-1 text-sm font-semibold" id="continue-heading">
-          Continue
-        </h2>
+    <div className="flex flex-col gap-5 pb-4 pt-5">
+      <section aria-label="Continue playing">
         <EpisodeList
           currentEpisodeId={currentEpisodeId}
           episodes={[continueEpisode]}

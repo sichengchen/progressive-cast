@@ -106,7 +106,7 @@ export function WhatsNewPage() {
   }
 
   return (
-    <div className="flex flex-col gap-5 pb-4">
+    <div className="flex flex-col gap-5 pb-4 pt-5">
       {episodeGroups.map((group, index) => {
         const isLastGroup = index === episodeGroups.length - 1;
 
