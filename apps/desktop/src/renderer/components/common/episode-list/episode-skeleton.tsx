@@ -27,7 +27,7 @@ export function EpisodeSkeleton({ count = 10, variant = "default" }: EpisodeSkel
             variant === "featured"
               ? "items-start py-3 after:left-[7.75rem]"
               : variant === "editorial"
-                ? "items-stretch py-3 after:left-[7.25rem]"
+                ? "items-stretch py-3 after:left-[8.25rem]"
                 : "py-2.5 after:left-[4.25rem]",
           )}
         >
@@ -38,14 +38,17 @@ export function EpisodeSkeleton({ count = 10, variant = "default" }: EpisodeSkel
                 variant === "featured"
                   ? "size-24 md:size-28"
                   : variant === "editorial"
-                    ? "size-24"
+                    ? "size-28"
                     : "size-12",
               )}
             />
           </ListItemLeading>
 
           <ListItemContent
-            className={cn("flex flex-col gap-1.5", variant === "editorial" && "justify-center")}
+            className={cn(
+              "flex flex-col gap-1.5",
+              variant === "editorial" && "h-28 justify-center",
+            )}
           >
             <ListItemMeta>
               <Skeleton className="h-3 w-16" />

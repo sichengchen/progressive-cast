@@ -593,7 +593,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     );
     set({
       playbackQueue,
-      playbackState: createPlaybackState(state.playbackState, episode),
+      playbackState: createPlaybackState(
+        state.playbackState,
+        episode,
+        state.playbackProgress.get(episode.id),
+      ),
     });
 
     if (playbackQueue.length !== state.playbackQueue.length) {
@@ -610,7 +614,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
     set({
       playbackQueue,
-      playbackState: createPlaybackState(state.playbackState, nextEpisode),
+      playbackState: createPlaybackState(
+        state.playbackState,
+        nextEpisode,
+        state.playbackProgress.get(nextEpisode.id),
+      ),
     });
     persistPlaybackQueue(playbackQueue);
     return true;
@@ -628,7 +636,11 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     );
     set({
       playbackQueue,
-      playbackState: createPlaybackState(state.playbackState, episode),
+      playbackState: createPlaybackState(
+        state.playbackState,
+        episode,
+        state.playbackProgress.get(episode.id),
+      ),
     });
     persistPlaybackQueue(playbackQueue);
   },
@@ -1125,12 +1137,16 @@ function findEpisode(episodeId: string, state: PodcastStore) {
   );
 }
 
-function createPlaybackState(playbackState: PlaybackState, episode: Episode): PlaybackState {
+function createPlaybackState(
+  playbackState: PlaybackState,
+  episode: Episode,
+  progress?: PlaybackProgress,
+): PlaybackState {
   return {
     ...playbackState,
     currentEpisode: episode,
-    currentTime: 0,
-    duration: episode.duration ?? 0,
+    currentTime: progress?.isCompleted ? 0 : (progress?.currentTime ?? 0),
+    duration: progress?.duration || episode.duration || 0,
     isLoading: true,
     isPlaying: true,
     seekRequested: false,

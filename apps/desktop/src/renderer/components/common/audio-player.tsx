@@ -633,7 +633,7 @@ export function AudioPlayer() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-6">
             {/* Volume Controls */}
             <div className="flex w-32 items-center gap-2">
               <Volume2 className="h-4 w-4 text-muted-foreground" />
@@ -647,31 +647,35 @@ export function AudioPlayer() {
             </div>
 
             {/* Queue and Show Notes */}
-            <Button
-              aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
-              aria-pressed={queueOpen}
-              className={
-                queueOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"
-              }
-              onClick={toggleQueue}
-              size="icon"
-              variant="ghost"
-            >
-              <ListMusic />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                aria-label={queueOpen ? "Hide Up Next" : "Show Up Next"}
+                aria-pressed={queueOpen}
+                className={
+                  queueOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"
+                }
+                onClick={toggleQueue}
+                size="icon"
+                variant="ghost"
+              >
+                <ListMusic />
+              </Button>
 
-            <Button
-              aria-label={showNotesOpen ? "Hide show notes" : "Show show notes"}
-              aria-pressed={showNotesOpen}
-              size="icon"
-              variant="ghost"
-              onClick={toggleShowNotes}
-              className={
-                showNotesOpen ? "bg-muted text-foreground hover:bg-muted" : "text-muted-foreground"
-              }
-            >
-              <Info className="h-4 w-4" />
-            </Button>
+              <Button
+                aria-label={showNotesOpen ? "Hide show notes" : "Show show notes"}
+                aria-pressed={showNotesOpen}
+                size="icon"
+                variant="ghost"
+                onClick={toggleShowNotes}
+                className={
+                  showNotesOpen
+                    ? "bg-muted text-foreground hover:bg-muted"
+                    : "text-muted-foreground"
+                }
+              >
+                <Info className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       )}

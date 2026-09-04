@@ -131,7 +131,7 @@ export function EpisodeList({
                   variant === "featured"
                     ? "items-start py-3 after:left-[7.75rem] after:right-2"
                     : variant === "editorial"
-                      ? "items-stretch py-3 after:left-[7.25rem] after:right-2"
+                      ? "items-stretch py-3 after:left-[8.25rem] after:right-2"
                       : "py-2.5 after:left-[4.25rem] after:right-2",
                 )}
                 interactive
@@ -151,7 +151,7 @@ export function EpisodeList({
                       variant === "featured"
                         ? "size-24 md:size-28"
                         : variant === "editorial"
-                          ? "size-24"
+                          ? "size-28"
                           : "size-12",
                     )}
                     loading="lazy"
@@ -162,7 +162,7 @@ export function EpisodeList({
                   className={cn(
                     "flex flex-col gap-1",
                     variant === "featured" && "min-h-24 justify-center md:min-h-28",
-                    variant === "editorial" && "min-h-24 justify-center",
+                    variant === "editorial" && "h-28 justify-center",
                   )}
                 >
                   <div className="flex min-w-0 items-center gap-1.5">

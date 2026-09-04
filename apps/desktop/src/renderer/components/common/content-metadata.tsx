@@ -22,7 +22,7 @@ export function ContentMetadata({ className, items }: ContentMetadataProps) {
       {visibleItems.map((item, index) => (
         <span className="flex min-w-0 items-center" key={`${item}-${index}`}>
           {index > 0 ? (
-            <span aria-hidden="true" className="mx-1 text-border">
+            <span aria-hidden="true" className="mx-1.5 text-muted-foreground/60">
               ·
             </span>
           ) : null}
