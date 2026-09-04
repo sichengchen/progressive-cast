@@ -12,6 +12,8 @@ import {
   parsePlaybackQueue,
   putEpisodeFirst,
   putEpisodeNext,
+  reorderPlaybackQueue,
+  type QueueDropPlacement,
   serializePlaybackQueue,
 } from "@/lib/playback-queue";
 import type {
@@ -127,6 +129,11 @@ interface PodcastStore {
   refreshStorageStats: () => Promise<void>;
   resumePlayback: () => void;
   removeFromQueue: (episodeId: string) => void;
+  reorderQueue: (
+    sourceEpisodeId: string,
+    targetEpisodeId: string,
+    placement: QueueDropPlacement,
+  ) => void;
   retryDownload: (episode: Episode) => Promise<void>;
   saveProgress: (
     episodeId: string,
@@ -767,6 +774,27 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
     const playbackQueue = get().playbackQueue.filter(
       (queuedEpisode) => queuedEpisode.id !== episodeId,
     );
+    set({ playbackQueue });
+    persistPlaybackQueue(playbackQueue);
+  },
+
+  reorderQueue: (sourceEpisodeId, targetEpisodeId, placement) => {
+    const state = get();
+    const episodeIds = reorderPlaybackQueue(
+      state.playbackQueue.map((episode) => episode.id),
+      sourceEpisodeId,
+      targetEpisodeId,
+      placement,
+      state.playbackState.currentEpisode?.id,
+    );
+    const episodesById = new Map(
+      state.playbackQueue.map((episode) => [episode.id, episode] as const),
+    );
+    const playbackQueue = episodeIds.flatMap((episodeId) => {
+      const episode = episodesById.get(episodeId);
+      return episode ? [episode] : [];
+    });
+
     set({ playbackQueue });
     persistPlaybackQueue(playbackQueue);
   },

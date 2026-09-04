@@ -6,6 +6,8 @@ interface PlaybackQueuePayload {
   version: number;
 }
 
+export type QueueDropPlacement = "after" | "before";
+
 export function parsePlaybackQueue(value?: string): string[] {
   if (!value) {
     return [];
@@ -69,4 +71,28 @@ export function putEpisodeNext(
     episodeId,
     ...withoutEpisode.slice(currentIndex + 1),
   ].slice(0, playbackQueueLimit);
+}
+
+export function reorderPlaybackQueue(
+  episodeIds: string[],
+  sourceEpisodeId: string,
+  targetEpisodeId: string,
+  placement: QueueDropPlacement,
+  currentEpisodeId?: string,
+): string[] {
+  if (
+    sourceEpisodeId === targetEpisodeId ||
+    sourceEpisodeId === currentEpisodeId ||
+    !episodeIds.includes(sourceEpisodeId) ||
+    !episodeIds.includes(targetEpisodeId)
+  ) {
+    return episodeIds;
+  }
+
+  const reordered = episodeIds.filter((episodeId) => episodeId !== sourceEpisodeId);
+  const targetIndex = reordered.indexOf(targetEpisodeId);
+  const requestedIndex = targetIndex + (placement === "after" ? 1 : 0);
+  const firstReorderableIndex = currentEpisodeId && reordered[0] === currentEpisodeId ? 1 : 0;
+  reordered.splice(Math.max(firstReorderableIndex, requestedIndex), 0, sourceEpisodeId);
+  return reordered;
 }

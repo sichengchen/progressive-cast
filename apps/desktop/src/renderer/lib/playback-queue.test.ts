@@ -6,6 +6,7 @@ import {
   parsePlaybackQueue,
   putEpisodeFirst,
   putEpisodeNext,
+  reorderPlaybackQueue,
   serializePlaybackQueue,
 } from "./playback-queue";
 
@@ -43,5 +44,28 @@ test("merges resumable episodes behind the persisted queue", () => {
   assert.deepEqual(
     mergePlaybackQueue(["current", "next"], ["current", "resume_1", "resume_2"]),
     ["current", "next", "resume_1", "resume_2"],
+  );
+});
+
+test("reorders queued episodes without moving the current episode", () => {
+  assert.deepEqual(
+    reorderPlaybackQueue(
+      ["current", "episode_1", "episode_2", "episode_3"],
+      "episode_3",
+      "episode_1",
+      "before",
+      "current",
+    ),
+    ["current", "episode_3", "episode_1", "episode_2"],
+  );
+  assert.deepEqual(
+    reorderPlaybackQueue(
+      ["current", "episode_1", "episode_2"],
+      "current",
+      "episode_2",
+      "after",
+      "current",
+    ),
+    ["current", "episode_1", "episode_2"],
   );
 });
