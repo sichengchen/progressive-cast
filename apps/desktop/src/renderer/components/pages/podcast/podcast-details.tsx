@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatDistanceToNow } from "date-fns";
-import ISO6391 from "iso-639-1";
 import type { Episode, Podcast } from "@/lib/types";
 import { richTextToPlainText } from "@/lib/utils";
 
@@ -44,9 +43,6 @@ export function PodcastDetails({
     [episodes],
   );
 
-  const language = podcast.language
-    ? ISO6391.getName(podcast.language.split("-")[0]) || podcast.language
-    : null;
   const updated = latestEpisode
     ? `Updated ${formatDistanceToNow(new Date(latestEpisode.publishedAt), { addSuffix: true })}`
     : isLoadingEpisodes
@@ -99,7 +95,7 @@ export function PodcastDetails({
           </Dialog>
         ) : null
       }
-      metadataItems={[podcast.author, language]}
+      metadataItems={[podcast.author]}
       title={podcast.title}
     >
       {cleanDescription ? (
