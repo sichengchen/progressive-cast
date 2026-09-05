@@ -10,7 +10,7 @@ use serde::Serialize;
 #[derive(Serialize)]
 #[serde(untagged)]
 enum Response {
-    Success { value: ParsedFeed },
+    Success { value: Box<ParsedFeed> },
     Failure { error: String },
 }
 
@@ -21,7 +21,9 @@ pub fn parse_feed_json(request: &str) -> String {
         .map_err(|error| format!("Invalid request: {error}"))
         .and_then(parse_feed);
     let response = match result {
-        Ok(value) => Response::Success { value },
+        Ok(value) => Response::Success {
+            value: Box::new(value),
+        },
         Err(error) => Response::Failure { error },
     };
     serde_json::to_string(&response).expect("feed response is JSON serializable")
