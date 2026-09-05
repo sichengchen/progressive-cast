@@ -20,6 +20,9 @@ playwright-report
 /out/
 
 # production
+/target
+/packages/core-wasm/generated
+/packages/core-swift/.build
 /build
 /apps/*/dist
 /apps/*/release
