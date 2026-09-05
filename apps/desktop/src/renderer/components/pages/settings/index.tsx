@@ -133,7 +133,7 @@ export function SettingsPage() {
 
   return (
     <>
-      <div className="space-y-6 py-4 px-2">
+      <div className="mx-auto flex max-w-4xl flex-col gap-8 px-2 py-6">
         {/* Theme Settings */}
         <SettingsGroup title="Appearance">
           <SettingsSelect
@@ -214,7 +214,7 @@ export function SettingsPage() {
 
           {storageStats && storageStats.totalSize > 500 * 1024 * 1024 && (
             <SettingsAlert variant="warning" icon={AlertCircle}>
-              <p className="text-yellow-800 dark:text-yellow-200">
+              <p className="text-muted-foreground">
                 You&apos;re using over 500MB of storage. Consider removing some downloads to free up
                 space.
               </p>

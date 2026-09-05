@@ -1,7 +1,6 @@
 import * as React from "react";
 import { LucideIcon } from "lucide-react";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -41,16 +40,16 @@ export function SettingsGroup({
   className,
 }: SettingsGroupProps) {
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className={cn("flex items-center gap-2", Icon && "")}>
-          {Icon && <Icon className="w-5 h-5" />}
+    <section className={cn("flex flex-col gap-1", className)} aria-label={title}>
+      <header className="flex flex-col gap-1 border-b border-border/60 pb-3">
+        <h2 className="flex items-center gap-2 text-base font-semibold">
+          {Icon && <Icon className="size-4" />}
           {title}
-        </CardTitle>
+        </h2>
         {description && <p className="text-sm text-muted-foreground">{description}</p>}
-      </CardHeader>
-      <CardContent className="space-y-6">{children}</CardContent>
-    </Card>
+      </header>
+      <div className="divide-y divide-border/60">{children}</div>
+    </section>
   );
 }
 
@@ -58,21 +57,37 @@ export function SettingsGroup({
 interface SettingsItemProps {
   label: string;
   description?: string;
+  controlId?: string;
   children: React.ReactNode;
   className?: string;
 }
 
-export function SettingsItem({ label, description, children, className }: SettingsItemProps) {
+export function SettingsItem({
+  label,
+  description,
+  controlId,
+  children,
+  className,
+}: SettingsItemProps) {
   return (
     <div
       className={cn(
-        "flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3",
+        "flex min-w-0 flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >
-      <div className="space-y-1">
-        <Label className="text-sm font-medium">{label}</Label>
-        {description && <p className="text-sm text-muted-foreground">{description}</p>}
+      <div className="flex min-w-0 flex-col gap-1">
+        <Label htmlFor={controlId} className="text-sm font-medium">
+          {label}
+        </Label>
+        {description && (
+          <p
+            id={controlId ? `${controlId}-description` : undefined}
+            className="text-sm text-muted-foreground [overflow-wrap:anywhere]"
+          >
+            {description}
+          </p>
+        )}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -97,9 +112,21 @@ export function SettingsSwitch({
   disabled,
   className,
 }: SettingsSwitchProps) {
+  const controlId = React.useId();
   return (
-    <SettingsItem label={label} description={description} className={className}>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+    <SettingsItem
+      controlId={controlId}
+      label={label}
+      description={description}
+      className={className}
+    >
+      <Switch
+        id={controlId}
+        aria-describedby={description ? `${controlId}-description` : undefined}
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </SettingsItem>
   );
 }
@@ -131,10 +158,20 @@ export function SettingsSelect({
   disabled,
   className,
 }: SettingsSelectProps) {
+  const controlId = React.useId();
   return (
-    <SettingsItem label={label} description={description} className={className}>
+    <SettingsItem
+      controlId={controlId}
+      label={label}
+      description={description}
+      className={className}
+    >
       <Select value={value} onValueChange={onValueChange} disabled={disabled}>
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger
+          id={controlId}
+          aria-describedby={description ? `${controlId}-description` : undefined}
+          className="w-full sm:w-40"
+        >
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
         <SelectContent>
@@ -241,14 +278,14 @@ interface SettingsStatsProps {
 
 export function SettingsStats({ label, description, stats, className }: SettingsStatsProps) {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("flex flex-col gap-3 py-4", className)}>
       {(label || description) && (
         <div>
           {label && <Label className="text-sm font-medium">{label}</Label>}
           {description && <p className="text-sm text-muted-foreground mt-1">{description}</p>}
         </div>
       )}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {stats.map((stat, index) => (
           <div key={index} className={stat.className}>
             <p className="text-muted-foreground text-sm">{stat.label}</p>
@@ -267,7 +304,7 @@ interface SettingsDividerProps {
 }
 
 export function SettingsDivider({ className, children }: SettingsDividerProps) {
-  return <div className={cn("pt-4 border-t", className)}>{children}</div>;
+  return <div className={cn("border-border/60", className)}>{children}</div>;
 }
 
 // Alert Setting - Warning or info display
@@ -285,15 +322,15 @@ export function SettingsAlert({
   className,
 }: SettingsAlertProps) {
   const variantStyles = {
-    default: "border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-950",
-    warning: "border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950",
-    destructive: "border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950",
+    default: "border-border bg-muted/50",
+    warning: "border-border bg-muted/50",
+    destructive: "border-destructive/30 bg-destructive/10",
   };
 
   const iconStyles = {
-    default: "text-blue-600 dark:text-blue-400",
-    warning: "text-yellow-600 dark:text-yellow-400",
-    destructive: "text-red-600 dark:text-red-400",
+    default: "text-muted-foreground",
+    warning: "text-foreground",
+    destructive: "text-destructive",
   };
 
   return (
