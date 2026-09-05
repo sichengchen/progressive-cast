@@ -71,6 +71,7 @@ pnpm test
 ## Additional Docs
 
 - [Product roadmap](docs/ROADMAP.md)
+- [Shared Rust core: build, bindings, and tests](docs/shared-core.md)
 - [Export OPML from Cosmos (小宇宙)](docs/opml-cosmos.md)
 
 ## License
