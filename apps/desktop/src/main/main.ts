@@ -1,9 +1,10 @@
-import { app, BrowserWindow, dialog, nativeImage, protocol } from "electron";
+import { app, BrowserWindow, dialog, nativeImage, protocol, shell } from "electron";
 import { existsSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { createLocalDatabase } from "./db";
+import { registerExternalNavigation } from "./external-navigation";
 import { imageCacheScheme, registerImageCacheProtocol } from "./image-protocol";
 import { registerIpcHandlers } from "./ipc";
 import { resolveDefaultDownloadDirectory } from "./settings";
@@ -55,6 +56,8 @@ function createMainWindow(artworkReady: Promise<unknown> = Promise.resolve()): B
     },
     width: 1280,
   });
+
+  registerExternalNavigation(window.webContents, (url) => shell.openExternal(url));
 
   window.once("ready-to-show", () => {
     void artworkReady.finally(() => {
