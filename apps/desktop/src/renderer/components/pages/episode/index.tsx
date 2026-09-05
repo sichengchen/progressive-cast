@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 
-import { BackNavigation } from "@/components/common/back-navigation";
+import { PageNavigation } from "@/components/common/page-navigation";
 import { ContentDetailsHeader } from "@/components/common/content-details-header";
 import { EpisodeActionsMenu } from "@/components/common/episode-list/episode-actions-menu";
 import { EpisodePlaybackButton } from "@/components/common/episode-list/episode-playback-button";
@@ -107,9 +107,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
 
   return (
     <article className="mx-auto max-w-4xl pb-12 pt-5">
-      <div className="mb-1 px-2">
-        <BackNavigation className="-ml-2" label={backTitle} onClick={handleBack} />
-      </div>
+      <PageNavigation backLabel={backTitle} title={episode.title} onBack={handleBack} />
 
       <ContentDetailsHeader
         actions={
