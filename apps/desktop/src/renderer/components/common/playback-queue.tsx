@@ -83,7 +83,7 @@ export function PlaybackQueue() {
                   aria-current={isCurrentEpisode ? "true" : undefined}
                   aria-label={`Play ${episode.title}`}
                   className={cn(
-                    "rounded-md px-2 py-2.5 after:left-[3.75rem] after:right-2 hover:bg-muted/55 hover:after:hidden",
+                    "rounded-md px-2 py-2.5 after:left-[3.75rem] after:right-2 hover:bg-muted/55",
                     !isCurrentEpisode && "cursor-grab active:cursor-grabbing",
                     dropTarget?.episodeId === episode.id &&
                       dropTarget.placement === "before" &&
@@ -105,11 +105,7 @@ export function PlaybackQueue() {
                   onDrop={(event) => {
                     event.preventDefault();
                     if (draggedEpisodeId && dropTarget) {
-                      reorderQueue(
-                        draggedEpisodeId,
-                        dropTarget.episodeId,
-                        dropTarget.placement,
-                      );
+                      reorderQueue(draggedEpisodeId, dropTarget.episodeId, dropTarget.placement);
                     }
                     resetDragState();
                   }}

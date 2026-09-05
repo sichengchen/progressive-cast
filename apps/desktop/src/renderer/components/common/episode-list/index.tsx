@@ -129,7 +129,7 @@ export function EpisodeList({
               <ListItem
                 aria-label={`Open ${episode.title}`}
                 className={cn(
-                  "group rounded-lg px-2 transition-colors hover:bg-muted/55 hover:after:hidden",
+                  "group rounded-lg px-2 transition-colors hover:bg-muted/55",
                   variantStyles.item,
                 )}
                 interactive
