@@ -119,6 +119,8 @@ When the selected device becomes unreachable, show it as unavailable and offer *
 
 ## Milestone overview
 
+Implementation has started in A. The RSS core, native Swift wrapper, TypeScript/Wasm package, and cross-runtime fixture harnesses are implemented. Library reducers, sync operation types, and persistence contracts are the next A deliverables. Production client migration remains in B. See [shared-core build and test documentation](shared-core.md).
+
 | Milestone | Outcome | Main dependencies |
 | --- | --- | --- |
 | A — Shared Rust core and independent-operation foundations | Rust domain engine, native and Wasm bindings, and platform adapter contracts | Existing desktop behavior and shared contracts |
