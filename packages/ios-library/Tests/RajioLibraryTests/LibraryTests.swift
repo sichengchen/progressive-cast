@@ -76,4 +76,26 @@ final class LibraryTests: XCTestCase {
         XCTAssertTrue(podcasts.isEmpty)
         XCTAssertEqual(count, 0)
     }
+    func testOutboxFailureRollsBackProgress() async throws {
+        let fixture = try XCTUnwrap(fixtures().first { !$0.expected.episodes.isEmpty })
+        let path = temporaryPath()
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        let db = try LibraryDatabase(path: path)
+        try await db.ingest(feedUrl: fixture.request.feedUrl, xml: fixture.request.xml, fetchedAt: fixture.request.fetchedAt)
+        let id = fixture.expected.episodes[0].id
+        try await db.saveProgress(episodeId: id, position: 10, duration: 100, at: fixture.request.fetchedAt)
+        let injection = try DatabaseQueue(path: path)
+        try await injection.write { db in
+            try db.execute(sql: "CREATE TRIGGER fail_outbox BEFORE INSERT ON outbox BEGIN SELECT RAISE(ABORT, 'injected failure'); END")
+        }
+        do {
+            try await db.saveProgress(episodeId: id, position: 80, duration: 100, at: fixture.request.fetchedAt)
+            XCTFail("Expected the injected transaction failure")
+        } catch { }
+        let progress = try await db.progress(episodeId: id)
+        let count = try await db.pendingOperationCount()
+        XCTAssertEqual(progress?.position, 10)
+        XCTAssertEqual(count, 2)
+    }
+
 }
