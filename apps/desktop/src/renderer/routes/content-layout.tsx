@@ -19,13 +19,7 @@ interface ToolbarAction {
 }
 
 interface AppPageLayoutProps {
-  backTo?:
-    | "/downloaded"
-    | "/favorites"
-    | "/library"
-    | "/search"
-    | "/settings"
-    | "/whats-new";
+  backTo?: "/downloaded" | "/favorites" | "/library" | "/search" | "/settings" | "/whats-new";
   children: ReactNode;
   title?: string;
   toolBar?: ToolbarAction[];
@@ -88,7 +82,7 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
   const pageContent = (
     <div className="app-drag mx-auto max-w-6xl px-4 py-3">
       {title ? (
-        <div className="mt-6 flex items-center gap-3 px-2">
+        <div className="sticky top-0 z-30 -mx-4 mt-6 flex items-center gap-3 border-b border-border/60 bg-background/95 px-6 py-3 backdrop-blur-sm">
           {isMobile && backTo ? (
             <BackNavigation
               className="-ml-2"
@@ -128,6 +122,7 @@ export function AppPageLayout({ backTo, children, title, toolBar }: AppPageLayou
       <div className="flex h-full min-h-0 flex-col">
         {isMobile ? (
           <div
+            data-page-scroll
             className="flex-1 overflow-y-auto"
             style={{
               paddingBottom: hasActiveEpisode

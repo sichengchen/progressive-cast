@@ -3,7 +3,6 @@
 import { useRef } from "react";
 import { Radio, Plus, Import } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { usePodcastStore } from "@/lib/store";
 import { toast } from "sonner";
 
@@ -48,22 +47,24 @@ export function WelcomeScreen() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] p-8">
-      <Card className="max-w-md w-full">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Radio className="w-8 h-8 text-primary" />
+    <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center px-2 py-10">
+      <section className="flex w-full max-w-sm flex-col gap-6" aria-labelledby="welcome-title">
+        <header className="flex flex-col items-center gap-4 text-center">
+          <div className="flex size-14 items-center justify-center rounded-xl bg-muted">
+            <Radio className="size-7 text-foreground" />
           </div>
-          <CardTitle className="text-2xl">Welcome!</CardTitle>
-        </CardHeader>
-        <CardContent className="text-center space-y-4 px-8">
+          <h1 id="welcome-title" className="text-2xl font-semibold tracking-tight">
+            Welcome to Rajio
+          </h1>
+        </header>
+        <div className="flex flex-col gap-4 text-center">
           <p className="text-muted-foreground text-sm">
             Rajio is a podcast player. Get started by adding your first podcast.
           </p>
 
-          <div className="space-y-2">
-            <Button className="w-full" size="lg" onClick={() => setShowAddPodcastDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
+          <div className="flex flex-col gap-2">
+            <Button className="w-full" size="default" onClick={() => setShowAddPodcastDialog(true)}>
+              <Plus data-icon="inline-start" />
               Add Podcast
             </Button>
 
@@ -72,15 +73,15 @@ export function WelcomeScreen() {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <Button
               className="w-full"
-              size="lg"
+              size="default"
               variant="outline"
               onClick={handleImportClick}
               disabled={progressDialog.isOpen}
             >
-              <Import className="w-4 h-4 mr-2" />
+              <Import data-icon="inline-start" />
               {progressDialog.isOpen ? "Importing..." : "Import OPML"}
             </Button>
           </div>
@@ -92,8 +93,8 @@ export function WelcomeScreen() {
             onChange={handleFileSelect}
             className="hidden"
           />
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     </div>
   );
 }
