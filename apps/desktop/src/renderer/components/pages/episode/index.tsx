@@ -107,7 +107,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
 
   return (
     <article className="mx-auto max-w-4xl pb-12 pt-5">
-      <PageNavigation backLabel={backTitle} title={episode.title} onBack={handleBack} />
+      <PageNavigation backLabel={backTitle} onBack={handleBack} />
 
       <ContentDetailsHeader
         actions={
