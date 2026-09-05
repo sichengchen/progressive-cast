@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useCanGoBack, useNavigate, useRouter } from "@tanstack/react-router";
+import { useCanGoBack, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
 
 import { BackNavigation } from "@/components/common/back-navigation";
 import { ContentDetailsHeader } from "@/components/common/content-details-header";
@@ -22,6 +22,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
   const navigate = useNavigate();
   const router = useRouter();
   const canGoBack = useCanGoBack();
+  const previousPageTitle = useLocation({ select: (location) => location.state.previousPageTitle });
   const [episode, setEpisode] = useState<Episode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionsOpen, setActionsOpen] = useState(false);
@@ -52,6 +53,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
   }, [episodeId, getEpisode]);
 
   const podcast = podcasts.find((item) => item.id === episode?.podcastId);
+  const backTitle = (canGoBack ? previousPageTitle : undefined) ?? podcast?.title ?? "What's New";
   const handleBack = () => {
     if (canGoBack) {
       router.history.back();
@@ -83,7 +85,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
             It may have been removed from the podcast feed.
           </p>
           <Button className="mt-4" onClick={handleBack} size="sm">
-            {canGoBack ? "Back" : "Back to What's New"}
+            {`Back to ${backTitle}`}
           </Button>
         </div>
       </div>
@@ -106,11 +108,7 @@ export function EpisodePage({ episodeId }: EpisodePageProps) {
   return (
     <article className="mx-auto max-w-4xl pb-12 pt-5">
       <div className="mb-1 px-2">
-        <BackNavigation
-          className="-ml-2"
-          label={canGoBack ? "Back" : (podcast?.title ?? "What's New")}
-          onClick={handleBack}
-        />
+        <BackNavigation className="-ml-2" label={backTitle} onClick={handleBack} />
       </div>
 
       <ContentDetailsHeader

@@ -1,6 +1,6 @@
 "use client";
 
-import { useNavigate } from "@tanstack/react-router";
+import { useOpenEpisode } from "@/hooks/use-open-episode";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Play, Pause, Rewind, FastForward, Volume2, Info, ListMusic } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export function AudioPlayer() {
   const isPlayingRef = useRef(false);
   const [mounted, setMounted] = useState(false);
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
+  const openEpisode = useOpenEpisode();
 
   const playbackState = usePodcastStore((state) => state.playbackState);
   const preferences = usePodcastStore((state) => state.preferences);
@@ -447,10 +447,7 @@ export function AudioPlayer() {
     } else {
       // On desktop, the artwork opens the episode's dedicated detail screen.
       if (currentEpisode) {
-        navigate({
-          params: { episodeId: currentEpisode.id },
-          to: "/episode/$episodeId",
-        });
+        void openEpisode(currentEpisode.id);
       }
     }
   };

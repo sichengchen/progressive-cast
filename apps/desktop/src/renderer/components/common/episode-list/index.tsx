@@ -9,7 +9,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { useOpenEpisode } from "@/hooks/use-open-episode";
 import { CircleCheck } from "lucide-react";
 import {
   List,
@@ -65,7 +65,7 @@ export function EpisodeList({
   skeletonCount,
   variant = "default",
 }: EpisodeListProps) {
-  const navigate = useNavigate();
+  const openEpisode = useOpenEpisode();
   const variantStyles = episodeListVariantStyles[variant];
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const [actionsEpisodeId, setActionsEpisodeId] = useState<string | null>(null);
@@ -133,12 +133,7 @@ export function EpisodeList({
                   variantStyles.item,
                 )}
                 interactive
-                onClick={() =>
-                  navigate({
-                    params: { episodeId: episode.id },
-                    to: "/episode/$episodeId",
-                  })
-                }
+                onClick={() => openEpisode(episode.id)}
               >
                 <ListItemLeading>
                   <CoverImage
